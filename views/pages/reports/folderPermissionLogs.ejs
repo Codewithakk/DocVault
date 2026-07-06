@@ -1,0 +1,278 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Folder Access & Permission Logs</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">User Management</li>
+                            <li class="breadcrumb-item">Reports</li>
+                            <li class="breadcrumb-item active" aria-current="page">Folder Permission Logs</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-3">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="input-icon-end position-relative" style="max-width: 200px;">
+                            <input type="text" class="form-control datetimepicker" placeholder="Select Date">
+                            <span class="input-icon-addon">
+                                <i class="ti ti-calendar text-gray-7"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="folderPermissionLogsTable" class="table table-hover datatable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th></th>
+                                        <th>User</th>
+                                        <th>Folder</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody><!-- Dynamic Data --></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                        Technology</a></p>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+        <%- include('../../modals/grandFolderAccess') %>
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+            <script>
+                $(document).ready(function () {
+                    let selectedLogId = null;
+
+                    const table = $('#folderPermissionLogsTable').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        searching: true,
+
+                        ajax: function (data, callback) {
+                            const page = Math.ceil(data.start / data.length) + 1;
+                            const limit = data.length;
+
+                            const orderColIndex = data.order[0].column;
+                            const sortDir = data.order[0].dir === "asc" ? 1 : -1;
+
+                            const columnsMap = ["createdAt", "user", "folder", "requestedAt", "requestStatus"];
+                            const sortField = columnsMap[orderColIndex];
+
+                            const search = data.search.value || "";
+
+                            $.ajax({
+                                url: `/api/folders/permissions?page=${page}&limit=${limit}`,
+                                type: 'GET',
+                                success: function (res) {
+                                    callback({
+                                        draw: data.draw,
+                                        recordsTotal: res.pagination.total,
+                                        recordsFiltered: res.pagination.total,
+                                        data: res.data.map(log => [
+                                            `<div class="btn-group" role="group">
+                                <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                                    <i class="ti ti-settings"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item share-btn"
+                                           href="#"
+                                           data-id="${log._id}"
+                                           data-email="${log.user?.email ?? ''}"
+                                           data-folder-id="${log.folder?._id ?? ''}"
+                                           data-bs-toggle="modal"
+                                           data-bs-target="#grantFolderAccessModal">
+                                           Grant Access
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item reject-btn"
+                                           href="#"
+                                           data-id="${log._id}">
+                                           Reject
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>`,
+                                            log.user?.username ?? 'N/A',
+                                            log.folder?.name ?? 'N/A',
+                                            new Date(log.requestedAt).toLocaleDateString(),
+                                            log.requestStatus === 'approved'
+                                                ? '<span class="badge bg-soft-success">Approved</span>'
+                                                : log.requestStatus === 'rejected'
+                                                    ? '<span class="badge bg-soft-danger">Rejected</span>'
+                                                    : '<span class="badge bg-soft-warning">Pending</span>'
+                                        ])
+                                    });
+                                },
+                                error: () => showToast("Failed loading permission logs", "danger")
+                            });
+                        },
+
+                        columns: [
+                            { title: "", orderable: false },
+                            { title: "User" },
+                            { title: "Folder" },
+                            { title: "Date" },
+                            { title: "Status" }
+                        ]
+                    });
+
+
+                    /* ============================
+                       Load User Access in Modal
+                       ============================ */
+                    $(document).on("click", ".share-btn", async function () {
+                        const email = $(this).data("email");
+                        const logId = $(this).data("id");
+                        const folder = $(this).data("folder-id");
+
+                        $("#userEmail").val(email).prop("readonly", true);
+                        $("#grantBtn").data("log-id", logId);
+
+                        try {
+                            const res = await fetch(`/api/folders/${folder}/access?email=${email}`);
+                            const data = await res.json();
+
+                            if (data.success && data.userAccess) {
+                                $("#access").val(data.userAccess.access);
+                                $("#duration").val(data.userAccess.duration);
+                            } else {
+                                $("#access").val("read");
+                                $("#duration").val("");
+                            }
+                        } catch {
+                            showToast("Failed loading user access", "warning");
+                        }
+                    });
+
+
+                    /* ============================
+                       Grant Access (PATCH)
+                       ============================ */
+                    $("#grantBtn").on("click", async function () {
+                        const btn = $(this);
+                        const spinner = btn.find(".spinner-border");
+                        const btnText = btn.find(".btn-text");
+
+                        const logId = btn.data("log-id");
+
+                        const payload = {
+                            requestStatus: "approved",
+                            access: $("#access").val(),
+                            duration: $("#duration").val()
+                        };
+
+                        try {
+                            // Show spinner and disable button
+                            spinner.removeClass("d-none");
+                            btn.prop("disabled", true);
+
+                            const res = await fetch(`/api/folders/permissions/${logId}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload)
+                            });
+                            const data = await res.json();
+
+                            bootstrap.Modal.getInstance(document.getElementById("grantFolderAccessModal")).hide();
+                            table.ajax.reload();
+
+                            showToast(data.message || "Access Granted", "success");
+                        } catch {
+                            showToast("Approval Failed", "danger");
+                        } finally {
+                            // Hide spinner and enable button
+                            spinner.addClass("d-none");
+                            btnText.text("Grant Access");
+                            btn.prop("disabled", false);
+                        }
+                    });
+
+                    /* ==================================
+                       Reject Access Request (PATCH)
+                       ================================== */
+                    $(document).on("click", ".reject-btn", function (e) {
+                        e.preventDefault();
+                        selectedLogId = $(this).data("id");
+
+                        // Update modal content dynamically
+                        $("#trashdocLabel").html('<img src="/img/icons/bin.png"><br>Reject Access Request');
+                        $("#trashdoc-modal .modal-body").text("Are you sure you want to reject this access request?");
+                        $("#confirm-trash-folder").text("Yes, Reject").removeClass("btn-light").addClass("btn-primary");
+
+                        // Reset button state
+                        const btn = $("#confirm-trash-folder");
+                        btn.prop("disabled", false);
+                        if (!btn.find(".spinner-border").length) {
+                            btn.append('<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>');
+                        }
+                        btn.find(".spinner-border").addClass("d-none");
+
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById("trashdoc-modal"));
+                        modal.show();
+                    });
+
+                    /* ============================
+                       Confirm Reject with Spinner
+                       ============================ */
+                    $("#confirm-trash-folder").on("click", async function () {
+                        if (!selectedLogId) return;
+
+                        const btn = $(this);
+                        const spinner = btn.find(".spinner-border");
+
+                        // Show spinner and disable button
+                        spinner.removeClass("d-none");
+                        btn.prop("disabled", true);
+
+                        try {
+                            const res = await fetch(`/api/folders/permissions/${selectedLogId}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ requestStatus: "rejected" })
+                            });
+                            const data = await res.json();
+
+                            // Hide modal and reload table
+                            bootstrap.Modal.getInstance(document.getElementById("trashdoc-modal")).hide();
+                            $('#folderPermissionLogsTable').DataTable().ajax.reload();
+
+                            showToast(data.message || "Rejected Successfully", "success");
+                        } catch {
+                            showToast("Failed to reject request", "danger");
+                        } finally {
+                            spinner.addClass("d-none");
+                            btn.prop("disabled", false);
+                        }
+                    });
+                });
+            </script>

@@ -1,0 +1,358 @@
+<%- include('../partials/header') %>
+
+<div class="page-wrapper">
+    <div class="content">
+        <!-- Breadcrumb -->
+        <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+            <div class="my-auto mb-2">
+                <h2 class="mb-1">My Profile</h2>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                        <li class="breadcrumb-item">My Profile</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        <!-- /Breadcrumb -->
+
+        <div class="profile-card dflexbtwn mb-4">
+            <div class="d-flex align-items-center">
+                <span class="avatar avatar-lg me-3 avatar-rounded">
+                    <img id="profileImage" src="" alt="img"
+                        style="width:60px; height:60px; object-fit:cover; border-radius:50%;">
+                </span>
+                <div>
+                    <h6 class="mb-0" id="profileName">Guest</h6>
+                    <small class="text-muted" id="profileDesignation">Manager</small>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="toggleProfile()">Edit Profile</button>
+        </div>
+
+        <!-- View Mode -->
+        <div id="viewProfile">
+            <div class="row g-4">
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Name:</div>
+                    <div class="value" id="viewName"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Email:</div>
+                    <div class="value" id="viewEmail"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Phone Number:</div>
+                    <div class="value" id="viewPhone"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Designation:</div>
+                    <div class="value" id="viewDesignation"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Department:</div>
+                    <div class="value" id="viewDepartment"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Address:</div>
+                    <div class="value" id="viewAddress"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Country:</div>
+                    <div class="value" id="viewCountry"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">State:</div>
+                    <div class="value" id="viewState"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">City:</div>
+                    <div class="value" id="viewCity"></div>
+                </div>
+                <div class="col-md-12 profileview_fields">
+                    <div class="label">Pin Code:</div>
+                    <div class="value" id="viewPostCode"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div id="editProfile" style="display:none;">
+            <form id="editProfileForm" enctype="multipart/form-data">
+                <div class="row g-4">
+                    <!-- Name / Profile Image -->
+                    <div class="col-md-6">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control" id="inputFirstName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Profile Image</label>
+                        <input type="file" name="profile_image" class="form-control" id="inputProfileImage">
+                    </div>
+
+                    <!-- Email / Phone Number -->
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" id="inputEmail" disabled>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" name="phone_number" class="form-control" id="inputPhone">
+                    </div>
+
+                    <!-- Designation / Department -->
+                    <div class="col-md-6">
+                        <label class="form-label">Designation</label>
+                        <input type="text" class="form-control" id="inputDesignation" disabled>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Department</label>
+                        <input type="text" class="form-control" id="inputDepartment" disabled>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="col-12">
+                        <label class="form-label">Address</label>
+                        <input type="text" name="address" class="form-control" id="inputAddress">
+                    </div>
+
+                    <!-- Country / State -->
+                    <div class="col-md-6">
+                        <label class="form-label">Country</label>
+                        <select name="country" class="form-control" id="country"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">State</label>
+                        <select name="state" class="form-control" id="state"></select>
+                    </div>
+
+                    <!-- City / Post Code -->
+                    <div class="col-md-6">
+                        <label class="form-label">City</label>
+                        <select name="city" class="form-control" id="city"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Pin Code</label>
+                        <input type="text" name="post_code" class="form-control" id="inputPostCode">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 mb-4">
+                    <button type="button" class="btn btn-light me-2" onclick="toggleProfile()">Cancel</button>
+                    <input type="hidden" name="name" id="inputHiddenName">
+                    <button type="submit" id="updateBtn" class="btn btn-primary">Update & Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+	const NEW_TAG_PREFIX = 'NEW_LOC:';
+	
+	// Strip NEW_LOC: prefix
+	function parseNewLocationTag(value) {
+		if (value && typeof value === 'string' && value.startsWith(NEW_TAG_PREFIX)) {
+			return value.substring(NEW_TAG_PREFIX.length).trim();
+		}
+		return value || '';
+	}
+	
+	// Create Select2 "Add New"
+	function createSelect2Tag(params) {
+		const term = $.trim(params.term || '');
+		if (!term) return null;
+		return { id: NEW_TAG_PREFIX + term, text: term + ' (Add New)', newTag: true };
+	}
+	
+	// Convert API response to Select2 format using ID
+	function processLocationResults(data) {
+		if (!data.success || !Array.isArray(data.data)) return { results: [] };
+		return { results: data.data.map(item => ({ id: item._id, text: item.name })) };
+	}
+	
+	// Initialize Select2 with parent ID dependency
+	function initLocationSelect2(selector, type) {
+		$(selector).select2({
+			placeholder: `Search or add ${type}`,
+			tags: true,
+			createTag: createSelect2Tag,
+			allowClear: true,
+			dropdownParent: $('#editProfile'),
+			ajax: {
+				url: `${baseUrl}/api/${type}`,
+				dataType: 'json',
+				delay: 300,
+				data: function (params) {
+					const data = { search: params.term || '' };
+					if (type === 'state') data.countryId = $('#country').val();
+					if (type === 'city') {
+						data.countryId = $('#country').val();
+						data.stateId = $('#state').val();
+					}
+					return data;
+				},
+				processResults: processLocationResults,
+				cache: true
+			}
+		});
+	
+		$(selector).on('select2:select', function (e) {
+			const data = e.params.data;
+			if (data.newTag) {
+				const newOption = new Option(data.text, data.id, true, true);
+				$(this).append(newOption).trigger('change');
+			}
+		});
+	}
+	
+	// Set Select2 value by ID
+	function setSelect2ValueById(selectElement, id, text) {
+		if (!id) { selectElement.val(null).trigger('change'); return; }
+		const existingOption = selectElement.find(`option[value="${id}"]`);
+		if (existingOption.length) selectElement.val(id).trigger('change');
+		else {
+			const newOption = new Option(text || id, id, true, true);
+			selectElement.append(newOption).trigger('change');
+		}
+	}
+	
+	// Toggle view/edit
+	function toggleProfile() {
+		$('#viewProfile').toggle();
+		$('#editProfile').toggle();
+	}
+	
+	// Load profile
+function loadProfile() {
+    fetch(`${baseUrl}/api/auth/profile`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success || !data.user) return console.error('Failed to load profile');
+
+            const u = data.user;
+            const loc = u.location || {};
+
+            // -----------------------
+            // Header
+            // -----------------------
+            $('#profileName').text(u.name || 'Guest');
+            $('#profileDesignation').text(u.userDetails?.designation?.name || 'Superadmin');
+            $('#profileImage').attr('src', u.profile_image || '/img/profiles/avatar-12.jpg');
+
+            // -----------------------
+            // View Mode
+            // -----------------------
+            $('#viewName').text(u.name || '-');
+            $('#viewEmail').text(u.email || '-');
+            $('#viewPhone').text(u.phone_number || '-');
+            $('#viewDesignation').text(u.userDetails?.designation?.name || 'Superadmin');
+            $('#viewDepartment').text(u.userDetails?.department?.name || 'Admin');
+            $('#viewAddress').text(u.address || '-');
+            $('#viewCountry').text(loc.country_name || 'N/A');
+            $('#viewState').text(loc.state_name || 'N/A');
+            $('#viewCity').text(loc.city_name || 'N/A');
+            $('#viewPostCode').text(u.post_code || '-');
+
+            // -----------------------
+            // Edit Mode
+            // -----------------------
+            $('#inputFirstName').val(u.name || '');
+            $('#inputHiddenName').val(u.name || '');
+            $('#inputEmail').val(u.email || '');
+            $('#inputPhone').val(u.phone_number || '');
+            $('#inputAddress').val(u.address || '');
+            $('#inputPostCode').val(u.post_code || '');
+            $('#inputDesignation').val(u.userDetails?.designation?.name || 'Superadmin');
+            $('#inputDepartment').val(u.userDetails?.department?.name || 'Admin');
+
+            // Set Select2 dropdowns
+            setSelect2ValueById($('#country'), loc.country, loc.country_name);
+            setSelect2ValueById($('#state'), loc.state, loc.state_name);
+            setSelect2ValueById($('#city'), loc.city, loc.city_name);
+        })
+        .catch(err => console.error('Load profile error:', err));
+}
+
+	// Reset dependent dropdowns
+	$('#country').on('change', function() { $('#state, #city').val(null).trigger('change'); });
+	$('#state').on('change', function() { $('#city').val(null).trigger('change'); });
+	
+	$(document).ready(function() {
+		initLocationSelect2('#country', 'country');
+		initLocationSelect2('#state', 'state');
+		initLocationSelect2('#city', 'city');
+	
+		loadProfile();
+	
+		// Profile image preview
+		$('#inputProfileImage').on('change', function(e) {
+			const file = e.target.files[0];
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = e => $('#profileImage').attr('src', e.target.result);
+				reader.readAsDataURL(file);
+			}
+		});
+	
+		// Form submit
+		$('#editProfileForm').on('submit', async function(e) {
+			e.preventDefault();
+			const btn = $('#updateBtn')[0];
+			showLoader(btn);
+			const formData = new FormData(this);
+	
+			const countryId = $('#country').val();
+			const stateId = $('#state').val();
+			const cityId = $('#city').val();
+	
+			if (!countryId || !stateId || !cityId) {
+				hideLoader(btn);
+				showToast('Please select Country, State, and City', 'error');
+				return;
+			}
+	
+			// Get names from Select2
+			const countryName = $('#country').select2('data')[0]?.text || '';
+			const stateName = $('#state').select2('data')[0]?.text || '';
+			const cityName = $('#city').select2('data')[0]?.text || '';
+	
+			// Set form data
+			formData.set('name', $('#inputFirstName').val().trim());
+			formData.set('phone_number', $('#inputPhone').val());
+			formData.set('address', $('#inputAddress').val());
+			formData.set('post_code', $('#inputPostCode').val());
+	
+			formData.set('country_id', countryId);
+			formData.set('country_name', countryName);
+	
+			formData.set('state_id', stateId);
+			formData.set('state_name', stateName);
+	
+			formData.set('city_id', cityId);
+			formData.set('city_name', cityName);
+	
+			formData.delete('email'); // if email shouldn't be updated
+	
+			// Submit profile update
+			fetch(`${baseUrl}/api/auth/edit-profile`, { method: 'PATCH', credentials: 'include', body: formData })
+				.then(r => r.json())
+				.then(result => {
+					hideLoader(btn);
+					if (result.success) {
+						toggleProfile();
+						loadProfile();
+						showToast('Profile updated!', 'success');
+					} else showToast(result.message || 'Update failed', 'error');
+				})
+				.catch(err => {
+					hideLoader(btn);
+					console.error(err);
+					showToast('Network error', 'error');
+				});
+		});
+	});
+	</script>
+	
+
+<%- include('../partials/footer') %>

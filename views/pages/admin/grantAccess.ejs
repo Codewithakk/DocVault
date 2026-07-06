@@ -1,0 +1,50 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-4">
+                <div class="my-auto">
+                    <h2 class="mb-1">Manage Access</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Manage Access</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="container my-5">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h4 class="mb-4">
+                            Grant Access to <strong>
+                                <%= requester.name %>
+                            </strong> for "<%= document.metadata?.fileName %>"
+                        </h4>
+                        <form method="POST" action="/api/documents/grant-access/<%= token %>">
+                            <div class="mb-3">
+                                <label for="duration" class="form-label">Select Duration</label>
+                                <select class="form-select w-auto" name="duration" id="duration" required>
+                                    <option value="oneday">1 Day</option>
+                                    <option value="oneweek">1 Week</option>
+                                    <option value="onemonth">1 Month</option>
+                                    <option value="lifetime">Lifetime</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Grant Access</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>

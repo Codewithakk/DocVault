@@ -1,0 +1,386 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">My Approvals</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                Dashboard
+                            </li>
+                            <li class="breadcrumb-item">
+                                Approvals
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                        <!-- Left Side: Status Buttons -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-primary rounded-pill status-tab">All</button>
+                            <button type="button"
+                                class="btn btn-outline-primary rounded-pill status-tab">Pending</button>
+                            <button type="button"
+                                class="btn btn-outline-primary rounded-pill status-tab">Rejected</button>
+                            <button type="button"
+                                class="btn btn-outline-primary rounded-pill status-tab">Approved</button>
+                            <button type="button" class="btn btn-outline-primary rounded-pill status-tab">Draft</button>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                            <div class="position-relative mb-0">
+                                <input type="text" class="form-control pe-6" id="documentDate"
+                                    placeholder="Select Date Range" readonly style="margin-right:10px">
+                                <!-- Calendar Icon -->
+                                <span class="calendar-icon">
+                                    <i class="ti ti-calendar text-gray-7"></i>
+                                </span>
+                                <!-- Clear Button (×) -->
+                                <button type="button" id="clearDateRange" class="btn-close clear-btn"
+                                    title="Clear date range">
+                                </button>
+                            </div>
+                            <div class="mb-0">
+                                <select id="department" class="form-select select2" style="width: 200px;">
+                                    <option value="">-- Select Department --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="custom-datatable-filter table-responsive">
+                                <table id="approvalTable" class="table datatable">
+                                    <thead>
+                                        <tr>
+                                            <th>Action</th>
+                                            <th>Track</th>
+                                            <th>File Name</th>
+                                            <th>Created Date</th>
+                                            <th>Department</th>
+                                            <th>Approver</th>
+                                            <th>Request Status</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Data will be injected via Ajax -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- /Projects -->
+            </div>
+
+        </div>
+
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                    Technology</a></p>
+        </div>
+
+    </div>
+    <!-- /Page Wrapper -->
+
+    <%- include('../../partials/footer') %>
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+        <script src="/js/components/shareDocument.js"></script>
+        <script>
+            $(document).ready(function () {
+                const currentUrl = window.location.href;
+                const urlObj = new URL(currentUrl);
+                const queryParams = new URLSearchParams(urlObj.search);
+                const documentId = queryParams.get('id');
+                const fileIcons = {
+                    ppt: "/img/icons/fn1.png",
+                    pptx: "/img/icons/fn1.png",
+                    doc: "/img/icons/fn2.png",
+                    docx: "/img/icons/fn2.png",
+                    xls: "/img/icons/fn3.png",
+                    xlsx: "/img/icons/fn3.png",
+                    pdf: "/img/icons/fn4.png",
+                    default: "/img/icons/fn1.png"
+                };
+
+                const statusClassMap = {
+                    'draft': 'bg-soft-info text-info',
+                    'pending': 'bg-soft-warning text-warning',
+                    'approved': 'bg-soft-success text-success',
+                    'rejected': 'bg-soft-danger text-danger',
+                    'underreview': 'bg-soft-warning text-warning',
+                    'archived': 'bg-soft-secondary text-secondary'
+                };
+                let selectedDateRange = null;
+
+                const fp = flatpickr("#documentDate", {
+                    mode: "range",
+                    dateFormat: "d-m-Y",
+                    allowInput: false,           // ← Blocks typing completely
+                    clickOpens: true,
+                    locale: {
+                        rangeSeparator: " to "
+                    },
+
+                    // When user selects both dates
+                    onChange: function (selectedDates, dateStr, instance) {
+                        if (selectedDates.length === 2) {
+                            selectedDateRange = {
+                                start: selectedDates[0],
+                                end: selectedDates[1]
+                            };
+                            document.getElementById("clearDateRange").style.display = "block";
+                            table.ajax.reload(); // Refresh table with new date range
+                        }
+                    },
+
+                    // When user clears or closes without full range
+                    onClose: function (selectedDates) {
+                        if (selectedDates.length < 2 && selectedDates.length > 0) {
+                            setTimeout(() => {
+                                fp.clear();
+                            }, 100);
+                        }
+                        if (selectedDates.length === 0) {
+                            selectedDateRange = null;
+                            document.getElementById("clearDateRange").style.display = "none";
+                            table.ajax.reload();
+                        }
+                    }
+                });
+
+                // Clear button functionality
+                document.getElementById("clearDateRange").addEventListener("click", function () {
+                    fp.clear();
+                    selectedDateRange = null;
+                    this.style.display = "none";
+                    table.ajax.reload();
+                });
+                // -------------------------
+                // Initialize DataTable
+                // -------------------------
+                const table = $('#approvalTable').DataTable({
+                    ajax: {
+                        url: `/api/approval-requests?documentId=${documentId || ""}`,
+                        Credentials: 'include',
+                        type: 'GET',
+                        data: function (d) {
+                            // send filters with every request
+                            d.status = $('.status-tab.btn-primary').text() || 'All';
+                            d.department = $('#department').val() || '';
+                            if (selectedDateRange) {
+                                d.startDate = selectedDateRange.start.toISOString();
+                                d.endDate = selectedDateRange.end.toISOString();
+                            } else {
+                                d.startDate = "";
+                                d.endDate = "";
+                            }
+
+                        },
+                        dataSrc: function (json) {
+                            return json.data.map(item => {
+                                const file = item.files || null;
+                                const fileExt = file?.originalName?.split('.').pop().toLowerCase() || '';
+                                const fileIcon = fileIcons[fileExt] || fileIcons.default;
+                                const fileSize = file?.fileSize || null;
+                                const isApproved = (item.status || '').toLowerCase() === 'approved';
+                                const fileInfoHtml = file ? `
+                        <div class="d-flex align-items-center">
+                            <span class="avatar rounded bg-light me-2">
+                                <img src="${fileIcon}" alt="icon" style="height:30px; width:30px; object-fit:contain;">
+                            </span>
+                            <div>
+                                <p class="mb-0 text-dark">${item.metadata?.fileName || file?.originalName || '-'}</p>
+                                ${fileSize ? `<small class="text-muted">${fileSize}</small>` : ''}
+                            </div>
+                        </div>` : '-';
+
+                                const statusKey = (item.status || '').toLowerCase().replace(/\s+/g, '');
+                                const statusClass = statusClassMap[statusKey] || 'bg-soft-secondary text-secondary';
+                                let approverNames = [];
+
+                                if (item.projectManager?.name) {
+                                    approverNames.push(item.projectManager.name);
+                                }
+
+                                if (item.sharedWithUsers?.length) {
+                                    approverNames.push(...item.sharedWithUsers.map(u => u.name));
+                                }
+
+                                let approversHtml = "";
+                                const totalApprovers = approverNames.length;
+
+                                // If more than 2 → tooltip
+                                if (totalApprovers > 2) {
+
+                                    let tooltipText = approverNames.join(", ");
+
+                                    approversHtml = `
+        <span class="approver-tooltip" data-bs-toggle="tooltip" title="${tooltipText}">
+            ${approverNames[0]} 
+            <span class="text-success">+${totalApprovers - 1}</span>
+        </span>
+    `;
+
+                                    // If 2 or fewer → show normally (no tooltip)
+                                } else {
+                                    approversHtml = approverNames.join(", ") || "-";
+                                }
+
+                                const actionsDropdown = `
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                                <i class="ti ti-settings"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/documents/${item._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
+                               <li><a class="dropdown-item" href="/documents/edit/${item._id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
+<li>
+                <a class="dropdown-item" 
+                   href="#" 
+                   data-bs-toggle="modal" 
+                   data-bs-target="#sharedoc-modal"
+                   data-doc-id="${item._id}"
+                   data-file-id="${item.files?._id || ''}">
+                   <i class="ti ti-share"></i> Share
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" 
+                   href="#" 
+                   data-bs-toggle="modal" 
+                   data-bs-target="#versionhistory-modal"
+                   data-id="${item._id}">
+                   <i class="ti ti-history"></i> Version History
+                </a>
+            </li>
+                                                                      <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-file-id="${item._id || ''}" data-bs-target="#downloaddoc-modal"><i class="ti ti-download"></i> Download</a></li>
+                    <li><a class="dropdown-item btn-delete" href="#" data-id="${item._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal"><i class="ti ti-trash"></i> Move to Trash</a></li>
+                    ${!isApproved ? `
+        <li>
+            <a class="dropdown-item archive-document" href="#" data-id="${item._id}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal">
+                <i class="ti ti-archive"></i> Move to Archive
+            </a>
+        </li>` : ''}
+
+                        </div>`;
+
+                                return {
+                                    "0": actionsDropdown,
+                                    "1": `<button class="btn btn-outline-primary track-btn" data-id="${item._id}">Track</button>`,
+                                    "2": fileInfoHtml,
+                                    "3": `<p class="tbl_date">${formatDateTime(item.documentDate || item.createdAt || item.updatedAt)}</p>`,
+                                    "4": item.department?.name || '-',
+                                    "5": approversHtml,
+                                    "6": `<span class="badge badge-md ${statusClass}">${item.status}</span>`,
+                                    "7": `<p>${item.comment || '-'}</p>`
+                                };
+                            });
+                        }
+                    },
+                    columns: [
+                        { data: "0" },
+                        { data: "1" },
+                        { data: "2" },
+                        { data: "3" },
+                        { data: "4" },
+                        { data: "5" },
+                        { data: "6" },
+                        { data: "7" }
+                    ],
+                    order: [[1, "asc"]],
+                    columnDefs: [
+                        { orderable: false, targets: [0, 5, 6] }
+                    ]
+                });
+
+                // Track button
+                $('#approvalTable').on('click', '.track-btn', function () {
+                    const docId = $(this).data('id');
+                    if (docId) window.location.href = `/document/${docId}/approval/track`;
+                });
+
+                // -------------------------
+                // Filters
+                // -------------------------
+
+                // Status filter
+                $('.status-tab').on('click', function () {
+                    $('.status-tab').removeClass('btn-primary').addClass('btn-outline-primary');
+                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                    table.ajax.reload(); // reload with new filter
+                });
+
+                // Department filter
+                $('#department').on('change', function () {
+                    table.ajax.reload();
+                });
+
+                // Date filter
+                $('.datetimepicker').on('change', function () {
+                    table.ajax.reload();
+                });
+
+                function initSelect2(selector, url, textKey) {
+                    $(selector).select2({
+                        placeholder: '-- Select Department --',
+                        allowClear: true,
+                        ajax: {
+                            url,
+                            dataType: 'json',
+                            delay: 250,
+                            data: params => ({ search: params.term }),
+                            processResults: data => {
+                                const results = [
+                                    { id: '', text: 'Select Department' }, // Option to clear selection
+                                    ...data.data.map(item => ({ id: item._id, text: item[textKey] }))
+                                ];
+                                return { results };
+                            }
+                        }
+                    });
+
+                    // When "Select Department" is clicked, clear selection
+                    $(selector).on('select2:select', function (e) {
+                        if (e.params.data.id === '') {
+                            $(this).val(null).trigger('change');
+                        }
+                    });
+                }
+
+                initSelect2('#department', `/api/departments/search`, 'name');
+                setTimeout(() => {
+                    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(t => {
+                        new bootstrap.Tooltip(t);
+                    });
+                }, 500);
+                // Helper: format bytes
+                function formatBytes(bytes, decimals = 2) {
+                    if (!bytes) return '';
+                    const k = 1024;
+                    const dm = decimals < 0 ? 0 : decimals;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+                }
+            });
+        </script>

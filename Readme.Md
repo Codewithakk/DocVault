@@ -1,0 +1,693 @@
+changes i do in styles.css
+
+//line 17639
+.sidebar-menu ul li>ul>li {
+  padding-left: 20px;
+}
+
+line 17540
+.dropdown_wrap li a i {
+  left: -12px;
+}
+
+line 17527
+.sidebar .sidebar-menu>ul li .submenu>ul li a {
+  padding-left: 10px;
+}
+
+line 17434
+.sidebar .sidebar-menu>ul>li ul li a span {
+  font-size: 16px;
+  white-space: nowrap;
+  font-weight: 300;
+  margin-right: 5px;
+}
+
+line 17404
+.sidebar .sidebar-menu>ul>li ul {
+  display: block;
+  margin-bottom: 19px;
+}
+
+
+line 17361
+.sidebar .sidebar-menu>ul>li>a.active span {
+  color: #FE9F43;  chnage to fonnt-wiegh-500
+}
+
+removed
+.sidebar .sidebar-menu>ul>li>a.active {
+  background: rgba(254, 159, 67, 0.08);
+  color: #FE9F43;
+  border-radius: 5px;
+}
+
+line 28735
+.dataTables_paginate .pagination li a {
+  background: transparent;
+  border-color: #E5E7EB;
+  border-radius: 50% !important;
+  /* width: 26px; */    removed this 
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  font-size: 12px;
+}
+
+line 6745
+added   width: fit-content;
+.progress {
+  background-color: #E9EDF4;
+  height: 0.75rem;   --> height: 1.60rem;
+  border-radius: 0.25rem;
+}
+
+
+
+mystyle
+
+line 250
+added width: fit-content;
+    .file-item {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+
+
+aprrove page
+
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Approvals Requests</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item">Approvals</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-4">
+                    <div class="dflexbtwn">
+                        <div class="filterbtn_wrps">
+                            <button class="btn filterbtn active" data-filter="">All</button>
+                            <button class="btn filterbtn" data-filter="Pending">Pending</button>
+                            <button class="btn filterbtn" data-filter="Rejected">Rejected</button>
+                            <button class="btn filterbtn" data-filter="Approved">Approved</button>
+                            <button class="btn filterbtn" data-filter="Draft">Draft</button>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="mb-0">
+                                <select id="department" class="form-select select2" style="width: 200px;"></select>
+                            </div>
+                            <div class="input-icon-end position-relative">
+                                <input type="text" class="form-control datetimepicker" placeholder="Date">
+                                <span class="input-icon-addon"><i class="ti ti-calendar text-gray-7"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="custom-datatable-filter table-responsive">
+                                <table class="table datatable" id="approvalsTable">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>File Name</th>
+                                            <th>Date Submitted</th>
+                                            <th>Submitted by</th>
+                                            <th>Department</th>
+                                            <th>Approval Status</th>
+                                            <th>Approval Action</th>
+                                            <th>Track Approvals</th>
+                                            <th>Remark</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="#" class="text-primary">Duplex services & Technology</a></p>
+        </div>
+    </div>
+    <!-- /Page Wrapper -->
+
+    <!-- Approval Modal -->
+    <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 pb-0">
+                    <h5 class="modal-title fw-bold" id="approvalModalLabel">Action Approval Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Loading -->
+                    <div id="modalLoading" class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Loading approval details...</p>
+                    </div>
+
+                    <!-- Content -->
+                    <div id="modalContent" style="display: none;">
+                        <p class="fs-16">
+                            <i class="ti ti-user"></i>
+                            <strong id="modalOwnerName"></strong> has requested document approval
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="flxtblleft">
+                                <span class="avatar rounded bg-light mb-2">
+                                    <img id="modalFileIcon" src="/img/icons/fn1.png" alt="File" width="40">
+                                </span>
+                                <div class="flxtbltxt">
+                                    <p class="fs-14 mb-1 fw-normal text-neutral" id="modalFileName"></p>
+                                    <span class="fs-11 fw-light text-black" id="modalFileSize"></span>
+                                </div>
+                            </div>
+                            <a id="modalViewFile" href="#" class="text-primary fs-16" target="_blank">View File</a>
+                        </div>
+
+                        <p class="fs-16 small mb-1">Approval Request on <strong id="modalRequestDate"></strong></p>
+
+                        <div class="mb-3">
+                            <label class="form-label fs-16 fw-semibold">Description</label>
+                            <textarea class="form-control text-left rounded" rows="2" readonly
+                                id="modalDescription"></textarea>
+                        </div>
+
+                        <!-- Approval Toggle -->
+                        <div class="approval-switch d-flex mb-3" id="approvalToggle">
+                            <button type="button" class="btn flex-fill border-0 py-2 active" id="approveBtn">
+                                <i class="ti ti-circle-check me-1"></i> Approve
+                            </button>
+                            <button type="button" class="btn flex-fill border-0 py-2" id="declineBtn">
+                                <i class="ti ti-circle-x me-1"></i> Decline
+                            </button>
+                            <button type="button" class="btn flex-fill border-0 py-2" id="needDiscussionBtn">
+                                <i class="ti ti-message-circle me-1"></i> Need Discussion
+                            </button>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col">
+                                <p class="mb-1 fs-16">Compliance and Retention File</p>
+                                <p id="modalCompliance"></p>
+                            </div>
+                            <div class="col">
+                                <p class="mb-1 fs-16">Expiry Date</p>
+                                <p id="modalExpiryDate"></p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fs-16 mb-2">Leave a comment <span
+                                    id="commentOptional">(optional)</span></label>
+                            <textarea class="form-control" rows="2" id="modalComment"
+                                placeholder="Enter your comment here..."></textarea>
+                        </div>
+
+                        <p class="text-muted fs-16" id="modalNotifyText"></p>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pb-4" id="modalFooter">
+                    <button type="button" class="btn btn-lg btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-lg btn-success rounded-pill px-4" id="submitApprovalBtn">
+                        Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+
+
+        <!-- DataTables CSS -->
+        <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+        <!-- Scripts -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const baseUrl = window.location.origin;
+                let currentDocumentId = null;
+                let currentRow = null; // To refresh only this row
+                let currentMode = 'approve'; // 'approve', 'edit', 'view'
+
+                // File Icons
+                const fileIcons = {
+                    xls: "/img/icons/fn3.png", xlsx: "/img/icons/fn3.png",
+                    doc: "/img/icons/fn2.png", docx: "/img/icons/fn2.png",
+                    pdf: "/img/icons/fn4.png",
+                    ppt: "/img/icons/fn1.png", pptx: "/img/icons/fn1.png",
+                    default: "/img/icons/fn1.png"
+                };
+
+                function getFileIcon(filename) {
+                    const ext = filename?.split('.').pop()?.toLowerCase();
+                    return fileIcons[ext] || fileIcons.default;
+                }
+
+                function formatFileSize(bytes) {
+                    if (!bytes) return '0 KB';
+                    const kb = bytes / 1024;
+                    return kb < 1024 ? `${kb.toFixed(1)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+                }
+
+                function formatDate(dateStr) {
+                    if (!dateStr) return 'Not set';
+                    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                }
+
+                function stripHtml(html) {
+                    const div = document.createElement('div');
+                    div.innerHTML = html || '';
+                    return div.textContent || div.innerText || '';
+                }
+
+                // Populate Modal
+                function populateModal(data, mode = 'approve', remark = '') {
+                    const doc = data.data.document;
+                    const file = doc.files.find(f => f.isPrimary) || doc.files[0];
+
+                    document.getElementById('modalLoading').style.display = 'none';
+                    document.getElementById('modalContent').style.display = 'block';
+
+                    // Static Data
+                    document.getElementById('modalOwnerName').textContent = doc.owner?.name || 'User';
+                    const version = doc.versioning?.currentVersion?.$numberDecimal || '1.0';
+                    document.getElementById('modalFileName').innerHTML = `${file.originalName} <span class="text-success">v${version}</span>`;
+                    document.getElementById('modalFileSize').textContent = formatFileSize(file.fileSize);
+                    document.getElementById('modalFileIcon').src = getFileIcon(file.originalName);
+                    document.getElementById('modalViewFile').href = `/folders/view/${file._id}`;
+                    document.getElementById('modalRequestDate').textContent = formatDate(doc.createdAt);
+                    document.getElementById('modalDescription').value = stripHtml(doc.description);
+                    document.getElementById('modalCompliance').textContent = doc.compliance?.isCompliance ? 'Yes' : 'No';
+                    document.getElementById('modalExpiryDate').textContent = doc.compliance?.expiryDate ? formatDate(doc.compliance.expiryDate) : 'Not set';
+                    document.getElementById('modalNotifyText').textContent = `${doc.owner?.name || 'User'} and other approver members will be notified`;
+
+                    // Dynamic UI Based on Mode
+                    const toggle = document.getElementById('approvalToggle');
+                    const commentBox = document.getElementById('modalComment');
+                    const submitBtn = document.getElementById('submitApprovalBtn');
+                    const footer = document.getElementById('modalFooter');
+                    const title = document.getElementById('approvalModalLabel');
+                    const optional = document.getElementById('commentOptional');
+
+                    if (mode === 'view') {
+                        title.textContent = 'View Approval';
+                        toggle.style.display = 'none';
+                        submitBtn.style.display = 'none';
+                        commentBox.setAttribute('readonly', true);
+                        footer.innerHTML = `<button type="button" class="btn btn-lg btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>`;
+                    }
+                    else if (mode === 'edit') {
+                        title.textContent = 'Edit Approval';
+                        toggle.style.display = 'flex';
+                        submitBtn.style.display = 'inline-block';
+                        submitBtn.textContent = 'Save Changes';
+                        submitBtn.classList.replace('btn-success', 'btn-primary');
+                        commentBox.removeAttribute('readonly');
+                        optional.textContent = '';
+
+                        // Keep current status reflected
+                        const approveBtn = document.getElementById('approveBtn');
+                        const declineBtn = document.getElementById('declineBtn');
+
+                        // Determine the user's current approval status
+                        const currentUser = data.data.currentUser || {}; // optional, depending on your API
+                        const currentAuthority = (data.data.document.documentApprovalAuthority || [])
+                            .find(a => a.userId?._id === currentUser._id);
+
+                        const currentStatus = currentAuthority?.status || data.data.currentStatus || 'Pending';
+
+                        // Highlight the current status
+                        approveBtn.classList.toggle('active', currentStatus === 'Approved');
+                        declineBtn.classList.toggle('active', currentStatus === 'Rejected');
+
+                        // Attach toggle handlers
+                        approveBtn.onclick = () => {
+                            approveBtn.classList.add('active');
+                            declineBtn.classList.remove('active');
+                        };
+                        declineBtn.onclick = () => {
+                            declineBtn.classList.add('active');
+                            approveBtn.classList.remove('active');
+                        };
+                    }
+
+                    else {
+                        // approve mode
+                        title.textContent = 'Action Approval Request';
+                        toggle.style.display = 'flex';
+                        submitBtn.style.display = 'inline-block';
+                        submitBtn.textContent = 'Approve';
+                        submitBtn.classList.replace('btn-primary', 'btn-success');
+                        commentBox.removeAttribute('readonly');
+                        optional.textContent = '(optional)';
+                    }
+
+                    // Set comment
+                    commentBox.value = remark;
+
+                    // Reset toggle state
+                    // Reset toggle state (for 'approve' mode)
+                    if (mode === 'approve') {
+                        const approveBtn = document.getElementById('approveBtn');
+                        const declineBtn = document.getElementById('declineBtn');
+                        const discussionBtn = document.getElementById('needDiscussionBtn');
+                        console.log("clciked initally", discussionBtn)
+                        // Reset active states
+                        approveBtn.classList.add('active');
+                        declineBtn.classList.remove('active');
+                        discussionBtn.classList.remove('active');
+
+                        // Add click handlers
+                        approveBtn.onclick = () => {
+                            approveBtn.classList.add('active');
+                            declineBtn.classList.remove('active');
+                            discussionBtn.classList.remove('active');
+                        };
+                        declineBtn.onclick = () => {
+                            approveBtn.classList.remove('active');
+                            declineBtn.classList.add('active');
+                            discussionBtn.classList.remove('active');
+                        };
+                        discussionBtn.onclick = () => {
+                            approveBtn.classList.remove('active');
+                            declineBtn.classList.remove('active');
+                            discussionBtn.classList.add('active');
+                        };
+                    }
+                }
+
+                // Load Document Data
+                async function loadDocument(docId) {
+                    try {
+                        const res = await fetch(`/api/documents/${docId}/approval/track`);
+                        const data = await res.json();
+                        if (data.success) return data;
+                        throw new Error(data.message || 'Failed to load');
+                    } catch (err) {
+                        console.error(err);
+                        showToast('Error loading document details', 'error');
+                        return null;
+                    }
+                }
+
+                // Open Modal with Mode
+                $(document).on('click', '.openApprovalModal', async function () {
+                    const docId = this.getAttribute('data-id');
+                    const approverStat = this.getAttribute('data-status');
+                    const remark = this.getAttribute('data-remark') || '';
+                    const outerStat = this.getAttribute('data-outer-status');  // NEW
+
+                    currentDocumentId = docId;
+                    currentRow = $(this).closest('tr');
+
+                    // FORCE VIEW MODE IF DOCUMENT IS ALREADY APPROVED
+                    let mode = 'approve';
+                    if (outerStat === 'Approved') {
+                        mode = 'view';
+                    } else {
+                        mode = approverStat === 'Approved' ? 'edit'
+                            : approverStat === 'Rejected' ? 'view'
+                                : 'approve';
+                    }
+
+                    currentMode = mode;
+
+                    // Show loading
+                    document.getElementById('modalLoading').style.display = 'block';
+                    document.getElementById('modalContent').style.display = 'none';
+
+                    const data = await loadDocument(docId);
+                    if (data) {
+                        populateModal(data, mode, remark);
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+                    modal.show();
+                });
+
+                // Submit Approval / Edit
+                document.getElementById('submitApprovalBtn').addEventListener('click', async () => {
+                    if (!currentDocumentId || currentMode === 'view') return;
+
+                    const submitBtn = document.getElementById('submitApprovalBtn');
+                    const approveBtn = document.getElementById('approveBtn');
+                    const declineBtn = document.getElementById('declineBtn');
+                    const discussionBtn = document.getElementById('needDiscussionBtn');
+                    const comment = document.getElementById('modalComment').value.trim();
+                    console.log("Clciked nedd", discussionBtn)
+                    // Detect which action user selected
+                    let action = 'approve';
+                    if (declineBtn.classList.contains('active')) {
+                        action = 'reject';
+                    } else if (discussionBtn.classList.contains('active')) {
+                        action = 'need_discussion';
+                    }
+
+                    // For "Need Discussion", remark is compulsory
+                    if (action === 'need_discussion' && !comment) {
+                        showToast('Please enter a remark for discussion.', 'error');
+                        return;
+                    }
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+                    try {
+                        const res = await fetch(`/api/documents/${currentDocumentId}/approval`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action, comment })
+                        });
+                        const result = await res.json();
+
+                        if (res.ok && result.success) {
+                            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
+                            if (modalInstance) modalInstance.hide();
+                            await refreshRowOnly(currentDocumentId);
+                            showToast(result.message || `Action submitted successfully!`, 'success');
+                        } else {
+                            showToast(result.message || 'Operation failed', 'error');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showToast('Network error', 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit';
+                    }
+                });
+
+                // Refresh only one row after edit/approve
+                async function refreshRowOnly(docId) {
+                    const table = $('#approvalsTable').DataTable();
+
+                    try {
+                        const res = await fetch(`/api/my-approvals?docId=${docId}&limit=1`);
+                        const json = await res.json();
+                        const newData = json.data?.[0];
+
+                        if (newData && currentRow) {
+                            // Find row in DataTable by document ID to ensure proper redraw
+                            const rowIndex = table.rows().eq(0).filter((idx) => {
+                                const data = table.row(idx).data();
+                                return data && data._id === docId;
+                            });
+
+                            if (rowIndex.length) {
+                                table.row(rowIndex[0]).data(newData).draw(false);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Row refresh failed', err);
+                    }
+                }
+
+                // Initialize Select2
+                $('#department').select2({
+                    placeholder: '-- Select Department --',
+                    allowClear: true,
+                    ajax: {
+                        url: `${baseUrl}/api/departments/search`,
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({ search: params.term }),
+                        processResults: data => ({
+                            results: (data.data || []).map(d => ({ id: d._id, text: d.name }))
+                        })
+                    }
+                });
+
+                // Initialize Datepicker
+                flatpickr(".datetimepicker", { dateFormat: "Y-m-d", allowInput: true });
+
+                // DataTable
+                const table = $('#approvalsTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: function (data, callback) {
+                        const page = Math.floor(data.start / data.length) + 1;
+                        const limit = data.length;
+                        let sortField = 'createdAt', sortOrder = 'desc';
+
+                        if (data.order?.length) {
+                            const colMap = { 1: 'metadata.fileName', 2: 'createdAt', 3: 'documentDonor.name' };
+                            sortField = colMap[data.order[0].column] || 'createdAt';
+                            sortOrder = data.order[0].dir;
+                        }
+
+                        $.get('/api/my-approvals', {
+                            page, limit,
+                            status: $('.filterbtn.active').data('filter'),
+                            department: $('#department').val() || '',
+                            createdAt: $('.datetimepicker').val() || '',
+                            sortField, sortOrder
+                        }, res => {
+                            callback({
+                                draw: data.draw,
+                                data: res.data || [],
+                                recordsTotal: res.pagination?.total || 0,
+                                recordsFiltered: res.pagination?.total || 0
+                            });
+                        }).fail(() => {
+                            callback({ data: [], recordsTotal: 0, recordsFiltered: 0 });
+                        });
+                    },
+                    columns: [
+                        { data: null, orderable: false, render: () => `<div class="btn-group" role="group"><button type="button" class="btn border-0" data-bs-toggle="dropdown"><i class="ti ti-settings"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item" href="#"><i class="ti ti-eye"></i> View</a></li></ul></div>` },
+                        {
+                            data: null,
+                            render: (data, type, row) => {
+                                const file = row.files?.find(f => f.isPrimary) || row.files?.[0];
+                                if (!file) return '<div class="flxtblleft"><div class="flxtbltxt"><p>-</p></div></div>';
+                                const fileName = file.originalName || 'Unknown';
+                                const fileSize = formatFileSize(file.fileSize);
+                                const version = row.versioning?.currentVersion?.$numberDecimal || '1.0';
+                                const icon = getFileIcon(fileName);
+                                return `<div class="flxtblleft">
+                            <span class="avatar rounded bg-light mb-2"><img src="${icon}" alt="icon"></span>
+                            <div class="flxtbltxt">
+                                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName} <span class="text-success">v${version}</span></p>
+                                <span class="fs-11 fw-light text-black">${fileSize}</span>
+                            </div>
+                        </div>`;
+                            }
+                        },
+                        { data: "createdAt", render: d => new Date(d).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) },
+                        { data: "documentDonor.name", defaultContent: '-' },
+                        { data: "department.name", defaultContent: '-' },
+                        {
+                            data: "documentApprovalAuthority",
+                            render: function (approvers) {
+                                if (!Array.isArray(approvers) || approvers.length === 0) return '<span class="status-badge status-pending">Pending</span>';
+                                const latest = approvers.reduce((a, b) => new Date(a.approvedOn || a.addDate) > new Date(b.approvedOn || b.addDate) ? a : b);
+                                const status = latest.status === 'Approved' || latest.isApproved ? 'Approved' : latest.status === 'Rejected' ? 'Rejected' : 'Pending';
+                                const badge = { 'Approved': 'bg-soft-success text-success', 'Rejected': 'bg-soft-danger text-danger', 'Pending': 'status-pending' }[status];
+                                return `<span class="status-badge ${badge}">${status}</span>`;
+                            }
+                        },
+                        {
+                            data: null,
+                            render: (data, type, row) => {
+                                const approvers = row.documentApprovalAuthority || [];
+                                const latest = approvers.length
+                                    ? approvers.reduce((a, b) =>
+                                        new Date(a.approvedOn || a.addDate) >
+                                            new Date(b.approvedOn || b.addDate) ? a : b)
+                                    : null;
+
+                                const approverStatus = latest?.status || 'Pending';
+                                const remark = latest?.remark || '';
+                                const outerStatus = row.status;               // <-- outer doc status
+
+                                let mode = 'approve';
+                                let label = 'Approve';
+                                let btnCls = 'adminapprv_btn';
+
+                                if (outerStatus === 'Approved') {
+                                    mode = 'view';
+                                    label = 'View';
+                                    btnCls = 'btn btn-light';
+                                } else {
+                                    const cfg = {
+                                        'Pending': { label: 'Approve', class: 'adminapprv_btn', mode: 'approve' },
+                                        'Approved': { label: 'Edit', class: 'adminapprv_btn bg-primary', mode: 'edit' },
+                                        'Rejected': { label: 'View', class: 'btn btn-light', mode: 'view' }
+                                    }[approverStatus] || cfg['Pending'];
+
+                                    label = cfg.label;
+                                    btnCls = cfg.class;
+                                    mode = cfg.mode;
+                                }
+
+                                return `
+    <button class="${btnCls} openApprovalModal"
+            data-id="${row._id}"
+            data-status="${approverStatus}"
+            data-remark="${remark}"
+            data-mode="${mode}"
+            data-outer-status="${outerStatus}">  <!-- ADD THIS -->
+        ${label}
+    </button>`;
+                            }
+                        },
+                        { data: "_id", render: id => `<a href="/document/${id}/approval/track" class="site-btnmd">Track</a>` },
+                        {
+                            data: null, render: (data, type, row) => {
+                                const latest = (row.documentApprovalAuthority || []).reduce((a, b) => new Date(a.approvedOn || a.addDate) > new Date(b.approvedOn || b.addDate) ? a : b, {});
+                                return latest?.remark ? `<p class="mb-0 text-truncate" style="max-width:150px;" title="${latest.remark}">${latest.remark}</p>` : '-';
+                            }
+                        }
+                    ]
+                });
+
+                // Filters
+                $('.filterbtn').on('click', function () {
+                    $('.filterbtn').removeClass('active');
+                    $(this).addClass('active');
+                    table.ajax.reload();
+                });
+
+                $('#department, .datetimepicker').on('change', () => table.ajax.reload());
+            });
+        </script>#   e - s a n g r a h - p r o d  
+ 

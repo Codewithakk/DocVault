@@ -1,0 +1,461 @@
+<%- include('../../partials/header') %>
+	<style>
+		.sbtxt a {
+			color: #007bff;
+			text-decoration: none;
+			font-weight: 500;
+			cursor: pointer;
+		}
+
+		.sbtxt a:hover {
+			text-decoration: underline;
+		}
+	</style>
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Reports</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Dashboard
+							</li>
+							<li class="breadcrumb-item">
+								Reports
+							</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="row">
+				<div class="seprate_crdhdr mb-4">
+					<!-- Top Row: Upload Left, Search Right -->
+					<div class="d-flex align-items-center justify-content-between mb-3">
+						<h4 class="mb-3">Uploaded Documents</h4>
+						<!-- Search Right -->
+						<!-- <div class="position-relative" style="width: 400px;">
+							<input type="text" name="q" class="form-control" placeholder="Search user">
+							<span class="input-icon-addon">
+								<i class="ti ti-search"></i>
+							</span>
+						</div> -->
+					</div>
+
+
+					<!-- Filters Section -->
+					<div class="d-flex flex-wrap gap-2 align-items-center w-100 justify-content-between">
+						<div class="select-dropdown flex-grow-1">
+							<select id="roleSelect" class="select w-50">
+								<option value="">Select Role</option>
+								<% roles.forEach(role=> { %>
+									<option value="<%= role %>">
+										<%= role.charAt(0).toUpperCase() + role.slice(1) %>
+									</option>
+									<% }) %>
+							</select>
+						</div>
+						<div class="select-dropdown flex-grow-1">
+							<select id="department" class="form-select select2" style="width: 120px;">
+								<option value="">Select Department</option>
+							</select>
+						</div>
+						<div class="select-dropdown flex-grow-1">
+							<select id="docTypeSelect" class="select w-100">
+								<option value="" id="clear">Select Doc type</option>
+								<% docTypes.forEach(doc=> { %>
+									<option value="<%= doc.value %>">
+										<%= doc.label %>
+									</option>
+									<% }) %>
+							</select>
+						</div>
+						<div class="select-dropdown flex-grow-1">
+							<!-- Select -->
+							<select class="select2 w-70" id="designation_select">
+								<option value="">Select Designation</option>
+								<% designation.forEach(d=> { %>
+									<option value="<%= d._id %>">
+										<%= d.name.charAt(0).toUpperCase() + d.name.slice(1).toLowerCase() %>
+									</option>
+									<% }) %>
+							</select>
+						</div>
+						<div class="input-icon-end position-relative flex-grow-1">
+							<input type="text" class="form-control pe-6" id="documentDate"
+								placeholder="Select Date Range" readonly>
+
+							<!-- Calendar Icon -->
+							<span class="calendar-icon">
+								<i class="ti ti-calendar text-gray-7"></i>
+							</span>
+
+							<!-- Clear Button (×) -->
+							<button type="button" id="clearDateRange" class="btn-close clear-btn"
+								title="Clear date range">
+							</button>
+						</div>
+					</div>
+
+
+					<div class="w-100 text-end pt-3">
+						<button id="exportBtn" class="btn btn-primary btn-lg rounded-pill">
+							<i class="ti ti-download"></i> Export Report
+						</button>
+
+						<p class="sbtxt gap-1 pt-2">
+							<a href="#" class="export-link" data-format="xlsx">XLSX</a> /
+							<a href="#" class="export-link" data-format="ods">ODS</a> /
+							<a href="#" class="export-link" data-format="csv">CSV</a> /
+							<a href="#" class="export-link" data-format="pdf">PDF</a>
+						</p>
+					</div>
+				</div>
+
+				<div class="col-xxl-12 col-xl-12">
+					<div class="card flex-fill">
+						<div class="card-body p-0">
+							<div class="custom-datatable-filter table-responsive">
+								<table id="documentsTable" class="table datatable">
+									<thead>
+										<tr>
+											<th>File Name</th>
+											<th>Owner</th>
+											<th>Designation</th>
+											<th>Department</th>
+											<th>Role</th>
+											<th>Approver</th>
+											<th>Last Modified On</th>
+											<th>Tags</th>
+											<th>Meta data</th>
+											<th>Shared with</th>
+											<th>Created on</th>
+											<th>Description</th>
+											<!-- <th>Signature</th> -->
+											<th>Status</th>
+										</tr>
+									</thead>
+									<tbody>
+									</tbody>
+								</table>
+
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Projects -->
+			</div>
+
+		</div>
+
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+
+	</div>
+	<!-- /Page Wrapper -->
+
+	<%- include('../../partials/footer') %>
+		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+		<script>
+			$(document).ready(function () {
+				function sanitize(text) {
+					return text.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 50);
+				}
+				let selectedDateRange = null;
+
+				const fp = flatpickr("#documentDate", {
+					mode: "range",
+					dateFormat: "d-m-Y",
+					allowInput: true,
+					clickOpens: true,
+					locale: {
+						rangeSeparator: " to "
+					},
+					conjunction: " to ",
+					// When user selects both dates
+					onChange: function (selectedDates, dateStr, instance) {
+						if (selectedDates.length === 2) {
+							selectedDateRange = {
+								start: selectedDates[0],
+								end: selectedDates[1]
+							};
+							document.getElementById("clearDateRange").style.display = "block";
+							table.ajax.reload();
+						}
+					},
+					// When user clears or closes without full range
+					onClose: function (selectedDates) {
+						{
+							if (selectedDates.length < 2 && selectedDates.length > 0) {
+								fp.clear();
+							}
+							if (selectedDates.length === 0) {
+								selectedDateRange = null;
+								document.getElementById("clearDateRange").style.display = "none";
+								table.ajax.reload();
+							}
+						}
+					}
+				});
+
+				// Clear button functionality
+				document.getElementById("clearDateRange").addEventListener("click", function () {
+					fp.clear();
+					selectedDateRange = null;
+					this.style.display = "none";
+					table.ajax.reload();
+				});
+				// ------------------------- Initialize Select2 with Clear Option -------------------------
+				function initSelect2(selector, url, textKey) {
+					$(selector).select2({
+						placeholder: `Select Department`,
+						allowClear: true,
+						ajax: {
+							url: url,
+							dataType: 'json',
+							delay: 250,
+							data: params => ({ search: params.term }),
+							processResults: data => {
+								const results = [
+									{ id: '', text: `-- Select Department --` },
+									...data.data.map(item => ({
+										id: item._id,
+										text: item[textKey]
+											.split(' ')
+											.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+											.join(' ')
+									}))
+								];
+								return { results };
+							}
+						}
+					});
+					$(selector).on('select2:select', function (e) {
+						if (!e.params.data.id) {
+							$(this).val(null).trigger('change');
+						}
+					});
+				}
+
+				initSelect2('#department', `${baseUrl}/api/departments/search`, 'name');
+
+				$('#docTypeSelect').select2({
+					placeholder: "Select Doc type",
+					allowClear: true,
+					width: '100%',
+					minimumResultsForSearch: 0,
+					sorter: function (data) {
+						return data.sort(function (a, b) {
+							if (a.id === "") return -1;
+							if (b.id === "") return 1;
+							return a.text.localeCompare(b.text);
+						});
+					}
+				});
+
+				$('#clear').on('select2:select', function (e) {
+					if ($(this).val() === "") {
+						$(this).val(null).trigger('change.select2');
+					}
+				});
+
+				$('#designation_select').select2({
+					placeholder: 'Select Designation',
+					allowClear: true
+				});
+
+				$('#roleSelect').select2({
+					placeholder: "Select Role"
+				});
+
+				// ------------------------- DataTable Initialization -------------------------
+				const table = $('#documentsTable').DataTable({
+					processing: true,
+					serverSide: true,
+					pageLength: 10,
+					lengthMenu: [10, 25, 50, 100],
+					ajax: {
+						url: `${baseUrl}/api/documents`,
+						type: 'GET',
+						data: function (d) {
+							let dateRange = null;
+							if (selectedDateRange && selectedDateRange.start && selectedDateRange.end) {
+								const formatDate = (date) => {
+									const d = date.getDate().toString().padStart(2, '0');
+									const m = (date.getMonth() + 1).toString().padStart(2, '0');
+									const y = date.getFullYear();
+									return `${d}-${m}-${y}`;
+								};
+								dateRange = `${formatDate(selectedDateRange.start)} to ${formatDate(selectedDateRange.end)}`;
+							}
+
+							return {
+								page: Math.ceil(d.start / d.length) + 1,
+								limit: d.length,
+								search: d.search.value,
+								orderColumn: d.order.length ? d.order[0].column + 1 : undefined,
+								orderDir: d.order.length ? d.order[0].dir : undefined,
+
+								// Filters
+								role: $('#roleSelect').val() || undefined,
+								department: $('#department').val() || undefined,
+								docType: $('#docTypeSelect').val() || undefined,
+								designation: $('#designation_select').val() || undefined,
+								dateRange: dateRange
+							};
+						},
+dataSrc: function (json) {
+    if (!json || !json.data) {
+        return [];
+    }
+
+    json.recordsTotal = json.data.pagination.totalDocuments || 0;
+    json.recordsFiltered = json.data.pagination.totalDocuments || 0;
+    const documents = json.data.documents.map(doc => {
+
+        const approversHtml = (() => {
+            if (!doc.wantApprovers || !doc.documentApprovalAuthority?.length) {
+                return '<span class="text-muted">N/A</span>';
+            }
+
+            return doc.documentApprovalAuthority
+                .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                .map(approver => {
+                    const name = approver.userId?.name || 'Unknown';
+                    const status = approver.status || 'Pending';
+
+                    const badge = {
+                        'Approved': '<span class="badge bg-success badge-sm ms-2">Approved</span>',
+                        'Rejected': '<span class="badge bg-danger badge-sm ms-2">Rejected</span>',
+                        'Pending': '<span class="badge bg-warning badge-sm ms-2">Pending</span>'
+                    }[status];
+
+                    return `
+                        <div class="d-flex justify-content-between">
+                            <span>${name}</span> ${badge}
+                        </div>
+                    `;
+                }).join('');
+        })();
+
+        return {
+            fileName: `${doc.metadata?.fileName || '—'} <br><small>${doc.files?.fileSize || ''}</small>`,
+            owner: doc.owner?.name || '—',
+            designation: doc.owner?.userDetails?.designation?.name || '—',
+            department: doc.department?.name || '—',
+            role: 'Admin',
+            approver: approversHtml,
+            lastModified: new Date(doc.updatedAt).toLocaleString(),
+            tags: doc.tags?.join(', ') || '—',
+            metadata: doc.metadata?.fileDescription || '—',
+            sharedWith: doc.sharedWithUsers?.map(u => u.name).join(', ') || '—',
+            createdOn: new Date(doc.createdAt).toLocaleString(),
+            description: doc.description ? doc.description.replace(/<\/?[^>]+(>|$)/g, '').substring(0, 30) + (doc.description.length > 30 ? '...' : ''): '-',
+            // signature: doc.signature?.fileUrl? `<img src="${doc.signature.fileUrl}" style="height:40px">`: '—',
+            status: `<span class="badge ${doc.status === 'Approved' ? 'bg-success' : 'bg-warning'}">${doc.status}</span>`
+        };
+    });
+
+    return documents;
+}
+					},
+					columns: [
+						{ data: 'fileName' },
+						{ data: 'owner' },
+						{ data: 'designation' },
+						{ data: 'department' },
+						{ data: 'role' },
+						{ data: 'approver', orderable: false },
+						{ data: 'lastModified' },
+						{ data: 'tags' },
+						{ data: 'metadata' },
+						{ data: 'sharedWith' },
+						{ data: 'createdOn' },
+						{ data: 'description' },
+						// { data: 'signature' },
+						{ data: 'status' }
+					],
+					order: [[6, 'desc']], // Default: Last Modified
+					columnDefs: [
+						{ targets: [5, 12], orderable: false } // Disable sorting on Approver, Signature, Status
+					]
+				});
+
+				// ------------------------- Export Functionality -------------------------
+				$('.export-link').on('click', async function (e) {
+					e.preventDefault();
+					const format = $(this).data('format');
+					let dateRange = null;
+					if (selectedDateRange && selectedDateRange.start && selectedDateRange.end) {
+						const formatDate = (date) => {
+							const d = date.getDate().toString().padStart(2, '0');
+							const m = (date.getMonth() + 1).toString().padStart(2, '0');
+							const y = date.getFullYear();
+							return `${d}-${m}-${y}`;
+						};
+						dateRange = `${formatDate(selectedDateRange.start)} to ${formatDate(selectedDateRange.end)}`;
+					}
+					// Get ALL current filters including search
+					const filters = {
+						role: $('#roleSelect').val(),
+						department: $('#department').val(),
+						docType: $('#docTypeSelect').val(),
+						designation: $('#designation_select').val(),
+						search: $('input[name="q"]').val(),
+						dateRange: dateRange
+					};
+
+					try {
+						const response = await fetch(`${baseUrl}/api/export`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+							},
+							body: JSON.stringify({
+								format,
+								filters,
+								exportAll: true
+							})
+						});
+
+						if (!response.ok) {
+							const error = await response.json();
+							showToast(`Export failed: ${error.message}`, 'error');
+							return;
+						}
+
+						const blob = await response.blob();
+						const fileURL = window.URL.createObjectURL(blob);
+						const a = document.createElement('a');
+						a.href = fileURL;
+						a.download = `documents-report-${new Date().toISOString().slice(0, 10)}.${format}`;
+						document.body.appendChild(a);
+						a.click();
+						a.remove();
+
+						showToast(`Export completed successfully!`, 'success');
+					} catch (err) {
+						console.error('Export error:', err);
+						showToast('Export failed. Please try again.', 'error');
+					}
+				});
+
+				// ------------------------- Live Filtering -------------------------
+				$('#roleSelect, #department, #docTypeSelect, #designation_select, input[name="q"]')
+					.on('change keyup', function () {
+						table.ajax.reload();
+					});
+			});
+		</script>

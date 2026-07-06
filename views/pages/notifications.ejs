@@ -1,0 +1,190 @@
+<%- include('../partials/header') %>
+
+	<div class="page-wrapper">
+		<div class="content">
+			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1" id="notification-count">Notification (0 Unread)</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+							<li class="breadcrumb-item">Notification</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<div class="card">
+				<div class="card-body">
+					<div class="table-responsive">
+						<table id="notification-table" class="table table-bordered table-hover">
+							<thead class="thead-light">
+								<tr>
+									<th></th>
+									<th>Title</th>
+									<th>Created Date</th>
+									<th>Action</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<%- include('../partials/footer') %>
+
+		<!-- DataTables JS -->
+		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+		<script>
+			document.addEventListener("DOMContentLoaded", function () {
+				const notificationCount = document.getElementById("notification-count");
+				const modalEl = document.getElementById("trashdoc-modal");
+				const modalTitle = modalEl.querySelector(".modal-title");
+				const modalBody = modalEl.querySelector(".modal-body");
+				let selectedNotificationId = null;
+
+				const NOTIFICATION_API = '/api/notifications';
+
+				// Render functions
+				const renderDeleteButton = (data, type, row) => `
+        <div class="action-icon d-inline-flex">
+            <a href="javascript:void(0);" class="delete-btn" data-id="${data}" data-title="${row.message}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal">
+                <i class="ti ti-trash text-danger"></i>
+            </a>
+        </div>`;
+
+				const renderMessage = data => `<p class="fs-14 text-dark fw-medium mb-0">${data}</p>`;
+
+				const renderDate = data => new Date(data).toLocaleString("en-GB", {
+					day: '2-digit', month: '2-digit', year: 'numeric',
+					hour: '2-digit', minute: '2-digit'
+				});
+
+				const renderAction = (data, type, row) => {
+					let actionUrl = "#";
+					let buttonHtml = "";
+
+					if (row.type === "approval_request") {
+						actionUrl = `/approval-requests?documentId=${row.relatedDocument?._id}`;
+						buttonHtml = `<button class="approvbtn adminapprv_btn btn-sm" data-url="${actionUrl}">Approve</button>`;
+						return buttonHtml;
+					}
+
+					// Map all other types exactly as in your original routes
+					if (row.type === "document_approved") {
+						actionUrl = `/document/${row.relatedDocument?._id}/approval/track`;
+					}
+					else if (row.type === "document") {
+						actionUrl = `/documents/list?documentId=${row.relatedDocument?._id}`;
+					}
+					else if (row.type === "approval_update") {
+						actionUrl = `/employee/approval?id=${row.relatedDocument?._id}`;
+					}
+					else if (row.type === "document_discussion") {
+						actionUrl = `/employee/approval?id=${row.relatedDocument?._id}`;
+					}
+					else if (row.type === "project_assigned") {
+						actionUrl = `/projects?id=${row.relatedProject?._id}`;
+					}
+					return `<a href="${actionUrl}" class="fs-16 text-primary fw-light">View</a>`;
+				};
+				// Initialize DataTable
+				const table = $('#notification-table').DataTable({
+					processing: true,
+					serverSide: true,
+					responsive: true,
+					pageLength: 10,
+					lengthMenu: [10, 25, 50, 100],
+					ordering: true,
+					searching: false,
+					ajax: {
+						url: '/api/notifications',
+						type: 'GET',
+						data: d => ({
+							draw: d.draw,
+							start: d.start,
+							length: d.length,
+							search: d.search,
+							order: d.order
+						}),
+						dataFilter: data => {
+							const json = JSON.parse(data);
+							if (json) {
+								$('#notification-count').text(`Notification (${json.totalUnread} Unread)`);
+								return JSON.stringify({
+									draw: json.draw,
+									recordsTotal: json.recordsTotal,
+									recordsFiltered: json.recordsFiltered,
+									data: json.data
+								});
+							}
+							return data;
+						}
+					},
+					columns: [
+						{ data: '_id', render: renderDeleteButton, orderable: false },
+						{ data: 'message', render: renderMessage },
+						{ data: 'createdAt', render: renderDate },
+						{ data: null, render: renderAction, orderable: false }
+					],
+					order: [[2, 'desc']],
+					language: {
+						emptyTable: "No notifications available",
+						zeroRecords: "No matching notifications found"
+					}
+				});
+				// Approve button click
+				$('#notification-table tbody').on('click', '.approvbtn', function () {
+					const url = $(this).data('url');
+					if (url) window.location.href = url;
+				});
+
+				// Mark as read
+				$('#notification-table tbody').on('click', '.approvbtn, .fs-16.text-primary', async function () {
+					const row = $(this).closest('tr');
+					const notificationId = row.find('.delete-btn').data('id');
+					if (!notificationId) return;
+
+					try {
+						await fetch(`${NOTIFICATION_API}/${notificationId}/read`, { method: 'PATCH' });
+						row.removeClass('table-warning');
+
+						// Update unread count
+						const unreadCount = parseInt(notificationCount.textContent.match(/\d+/)[0]) - 1;
+						notificationCount.textContent = `Notification (${unreadCount} Unread)`;
+					} catch (err) {
+						console.error("Failed to mark as read", err);
+					}
+				});
+
+				// Open delete modal
+				$('#notification-table tbody').on('click', '.delete-btn', function () {
+					selectedNotificationId = $(this).data('id');
+					const notificationTitle = $(this).data('title');
+					modalTitle.textContent = "Delete Permanently";
+					modalBody.textContent = `Are you sure you want to permanently delete the notification "${notificationTitle}"?`;
+				});
+
+				// Confirm delete
+				document.getElementById("confirm-trash-folder").addEventListener("click", async () => {
+					if (!selectedNotificationId) return;
+
+					try {
+						await fetch(`${NOTIFICATION_API}/${selectedNotificationId}`, { method: 'DELETE' });
+						selectedNotificationId = null;
+
+						bootstrap.Modal.getInstance(modalEl).hide();
+						showToast("Notification deleted successfully", 'success');
+						table.ajax.reload(null, false);
+					} catch (err) {
+						console.error("Failed to delete notification", err);
+						showToast("Failed to delete notification", 'danger');
+					}
+				});
+			});
+		</script>

@@ -1,0 +1,188 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="dflexbtwn page-breadcrumb mb-3" id="breadcrumbWrapper">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1" id="pageTitle">User List</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0" id="breadcrumbNav">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">User List</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="/users/register" class="btn btn-primary">
+                        <i class="ti ti-plus me-1"></i> Add New User
+                    </a>
+                </div>
+            </div>
+
+            <!-- User List Table -->
+            <div class="card" id="userListCard">
+                <div class="card-body p-0" id="userListBody">
+                    <div class="custom-datatable-filter table-responsive" id="userTableWrapper">
+                        <table class="table datatable" id="userTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Sr No.</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Profile Type</th>
+                                    <th>Status</th>
+                                    <th>Department</th>
+                                    <th>Designation</th>
+                                    <th>Last Login</th>
+                                    <th>Created At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3"
+                id="footerWrapper">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by
+                    <a href="javascript:void(0);" id="devLink" class="text-primary">Duplex Services & Technology</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <%- include('../../modals/deleteModal') %>
+
+
+        <%- include('../../partials/footer') %>
+
+            <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+            <script>
+                $(document).ready(function () {
+                    // Map frontend columns to backend fields
+                    const columnMap = {
+                        srNo: "_id",
+                        name: "name",
+                        email: "email",
+                        phone: "phone_number",
+                        profile_type: "profile_type",
+                        status: "status",
+                        department: "userDetails.department",
+                        designation: "userDetails.designation",
+                        lastLogin: "lastLogin",
+                        createdAt: "createdAt"
+                    };
+
+                    const table = $('#userTable').DataTable({
+                        serverSide: true,
+                        processing: true,
+                        ajax: function (data, callback) {
+                            const page = Math.ceil(data.start / data.length) + 1;
+                            const limit = data.length;
+                            const sortBy = columnMap[data.columns[data.order[0].column].data] || "createdAt";
+                            const sortOrder = data.order[0].dir;
+
+                            $.ajax({
+                                url: '/api/user',
+                                method: "GET",
+                                data: {
+                                    page,
+                                    limit,
+                                    search: data.search.value,
+                                    sortBy,
+                                    sortOrder
+                                },
+                                success: function (res) {
+                                    if (!res.success) {
+                                        callback({ draw: data.draw, data: [] });
+                                        return;
+                                    }
+
+                                    const users = res.users.map((user, index) => ({
+                                        srNo: (page - 1) * limit + index + 1,
+                                        name: user.name,
+                                        email: user.email,
+                                        phone: user.phone_number || "-",
+                                        profile_type: user.profile_type,
+                                        status: user.status,
+                                        department: user.userDetails?.department?.name || "-",
+                                        designation: user.userDetails?.designation?.name || "-",
+                                        lastLogin: user.lastLogin ? formatDateTime(user.lastLogin) : "-",
+                                        createdAt: formatDateTime(user.createdAt),
+                                        actions: `
+                            <a href="/users/edit/${user._id}" class="text-primary me-2"><i class="ti ti-edit"></i></a>
+                            <a href="#" class="text-danger btn-delete" data-id="${user._id}"><i class="ti ti-trash"></i></a>
+                        `
+                                    }));
+
+                                    callback({
+                                        draw: data.draw,
+                                        recordsTotal: res.total,
+                                        recordsFiltered: res.total,
+                                        data: users
+                                    });
+                                },
+                                error: function () {
+                                    callback({ draw: data.draw, data: [] });
+                                }
+                            });
+                        },
+                        columns: [
+                            { data: 'srNo' },
+                            { data: 'name' },
+                            { data: 'email' },
+                            { data: 'phone' },
+                            { data: 'profile_type' },
+                            { data: 'status' },
+                            { data: 'department' },
+                            { data: 'designation' },
+                            { data: 'lastLogin' },
+                            { data: 'createdAt' },
+                            { data: 'actions', orderable: false, searchable: false }
+                        ],
+                        order: [[9, 'desc']],
+                        lengthMenu: [10, 25, 50]
+                    });
+
+                    // Delete user
+                    $(document).on('click', '.btn-delete', function (e) {
+                        e.preventDefault();
+                        const deleteUserId = $(this).data('id');
+                        $('#confirmDeleteModal').modal('show');
+
+                        $('#confirmDeleteBtn').off('click').on('click', function () {
+                            $.ajax({
+                                url: `/api/user/${deleteUserId}`,
+                                method: 'DELETE',
+                                success: function (res) {
+                                    $('#confirmDeleteModal').modal('hide');
+                                    if (res.success) {
+                                        table.ajax.reload(null, false);
+                                        showToast('User deleted successfully', 'success');
+                                    } else {
+                                        showToast(res.message || 'Failed to delete user', 'error');
+                                    }
+                                },
+                                error: function () {
+                                    $('#confirmDeleteModal').modal('hide');
+                                    showToast('Error deleting user', 'error');
+                                }
+                            });
+                        });
+                    });
+                });
+            </script>

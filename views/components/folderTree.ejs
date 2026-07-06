@@ -1,0 +1,18 @@
+<% function renderFolders(folders) { %>
+    <ul class="folder-list">
+        <% folders.forEach(folder=> { %>
+            <li>
+                <% if (folder.children && folder.children.length> 0) { %>
+                    <span class="folder-toggle">&#9654; <%= folder.name %></span>
+                    <%= renderFolders(folder.children) %>
+                        <% } else { %>
+                            <span class="folder-item">
+                                <%= folder.name %>
+                            </span>
+                            <% } %>
+            </li>
+            <% }); %>
+    </ul>
+    <% } %>
+
+        <%= renderFolders(folders) %>

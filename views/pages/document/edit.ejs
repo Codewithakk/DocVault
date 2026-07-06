@@ -1,0 +1,364 @@
+<%- include('../../partials/header') %>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Edit Document</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="/"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item"><a href="/documents/list">Documents</a></li>
+                            <li class="breadcrumb-item active">Edit Document</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="add-info-fieldset">
+                <form id="documentForm" enctype="multipart/form-data">
+                    <input type="hidden" name="_method" value="PATCH">
+
+                    <!-- Store data in hidden fields as backup -->
+                    <input type="hidden" id="hiddenDocumentId" value="<%= document._id %>">
+                    <div id="hiddenDocumentData" data-document="<%= encodeURIComponent(JSON.stringify(document)) %>">
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Project Name -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                                    <select id="projectName" name="project" class="form-select select2" required>
+
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Department -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Department <span class="text-danger">*</span></label>
+                                    <select id="department" name="department" class="form-select select2" required>
+                                        <% if (document.department) { %>
+                                            <option value="<%= document.department._id %>" selected>
+                                                <%= document.department.name %>
+                                            </option>
+                                            <% } %>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Project Manager -->
+                            <!-- <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Project Manager</label>
+                                    <select id="projectManager" name="projectManager" class="form-select select2">
+                                        <% if (document.projectManager) { %>
+                                            <option value="<%= document.projectManager._id %>" selected>
+                                                <%= document.projectManager.name %>
+                                            </option>
+                                            <% } %>
+                                    </select>
+                                </div>
+                            </div> -->
+
+                            <!-- Document Donor -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Document Donor</label>
+                                    <select id="documentDonor" name="documentDonor" class="form-select select2">
+                                        <% if (document.documentDonor) { %>
+                                            <option value="<%= document.documentDonor._id %>" selected>
+                                                <%= document.documentDonor.name %>
+                                            </option>
+                                            <% } %>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Document Vendor -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Document Vendor</label>
+                                    <select id="documentVendor" name="documentVendor" class="form-select select2">
+                                        <% if (document.documentVendor) { %>
+                                            <option value="<%= document.documentVendor._id %>" selected>
+                                                <%= document.documentVendor.name %>
+                                            </option>
+                                            <% } %>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Start Date -->
+                            <!-- <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Add Date</label>
+                                    <div class="input-icon-end position-relative">
+                                        <input type="text"
+                                               name="documentDate"
+                                               class="form-control datetimepicker"
+                                               placeholder="dd/mm/yyyy"
+                                               value="<%= document.startDate ? new Date(document.startDate).toLocaleDateString('en-GB') : '' %>"
+                                               readonly>
+                                        <span class="input-icon-addon">
+                                            <i class="ti ti-calendar text-gray-7"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div> -->
+
+                            <!-- Tags -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Tags (comma separated)</label>
+                                    <input type="text" name="tags" class="form-control" placeholder="tag1, tag2, tag3"
+                                        value="<%= document.tags ? document.tags.join(', ') : '' %>">
+                                </div>
+                            </div>
+
+                            <!-- Metadata -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Meta Data File Name</label>
+                                    <input type="text"
+                                           id="metadataFileName"
+                                           name="metadataFileName"
+                                           class="form-control"
+                                           value="<%= document.metadata ? (document.metadata.fileName || '') : '' %>">
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label">File Contains Description</label>
+                                    <textarea id="summernote" name="description" style="display: none;">
+                                    <%= document.description ? document.description : '' %>
+                                </textarea>
+                                    <div class="summernote">
+                                        <%= document.description ? document.description : '' %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Compliance -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-5">
+                                        <label class="form-label mb-0">Compliance and Retention Document</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="compliance" value="yes"
+                                                id="complianceYes" <%=document.compliance==='yes' ||
+                                                (document.compliance && document.compliance.isCompliance) ? 'checked'
+                                                : '' %>>
+                                            <label class="form-check-label" for="complianceYes">Yes</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="compliance" value="no"
+                                                id="complianceNo" <%=!document.compliance || document.compliance==='no'
+                                                || (document.compliance && !document.compliance.isCompliance)
+                                                ? 'checked' : '' %>>
+                                            <label class="form-check-label" for="complianceNo">No</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Expiry Date -->
+                            <div class="col-md-6" id="expiryDateContainer"
+                                style="display: <%= document.compliance === 'yes' || (document.compliance && document.compliance.isCompliance) ? 'block' : 'none' %>;">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-5">
+                                        <label class="form-label mb-0">Enter Expiry Date</label>
+                                        <div class="input-icon-end position-relative">
+                                            <input type="text" class="form-control datetimepicker" name="expiryDate"
+                                                placeholder="dd/mm/yyyy"
+                                                value="<%= document.expiryDate ? new Date(document.expiryDate).toLocaleDateString('en-GB') : (document.compliance && document.compliance.expiryDate ? new Date(document.compliance.expiryDate).toLocaleDateString('en-GB') : '') %>"
+                                                <%=document.compliance==='yes' || (document.compliance &&
+                                                document.compliance.isCompliance) ? 'required' : '' %>>
+                                            <span class="input-icon-addon"><i
+                                                    class="ti ti-calendar text-gray-7"></i></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Approver Authority -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-5">
+                                        <label class="form-label mb-0">File Access grant Required</label>
+                            
+                                        <!-- Hidden field to preserve value on submit -->
+                                        <input type="hidden" name="wantApprovers" value="<%= document.wantApprovers %>">
+                            
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="wantApprovers_display"
+                                                value="true" id="wantApproversYes"
+                                                <%= isEdit && document.wantApprovers === true ? 'checked' : '' %> disabled>
+                                            <label class="form-check-label" for="wantApproversYes">Yes</label>
+                                        </div>
+                            
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="wantApprovers_display"
+                                                value="false" id="wantApproversNo"
+                                                <%= isEdit && document.wantApprovers === false ? 'checked' : '' %> disabled>
+                                            <label class="form-check-label" for="wantApproversNo">No</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Comment -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Leave a comment (Optional)</label>
+                                    <input type="text" class="form-control" name="comment"
+                                        value="<%= document.comment ? document.comment : '' %>">
+                                </div>
+                            </div>
+
+                            <!-- Link -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Add Link (if any)</label>
+                                    <input type="url" class="form-control" name="link" placeholder="https://example.com"
+                                        value="<%= document.link ? document.link : '' %>">
+                                </div>
+                            </div>
+
+                            <!-- Display Directory Path -->
+                            <div class="mb-2" id="uploadDirectoryWrapper">
+                                <h6 class="mb-1" style="font-weight: 600; color: #333;">File Directory</h6>
+                                <div id="uploadDirectoryPath" class="text-truncate"
+                                    style="font-size: 0.9rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <!-- will be filled dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Folders List -->
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Select Folder</label>
+                                <div id="folderContainer" class="d-flex flex-wrap gap-2">
+                                    <!-- Folder buttons will be injected here -->
+                                </div>
+                                <input type="hidden" name="folderId" id="selectedFolderId"
+                                    value="<%= document.folderId ? (document.folderId._id || document.folderId) : '' %>">
+                            </div>
+
+                            <!-- File Upload -->
+                            <div class="col-md-12">
+                                <label class="form-label">File Uploads</label>
+                                <div class="upload-box mb-3" id="uploadBox">
+                                    <i class="ti ti-cloud-upload fa-2x text-primary mb-2"></i>
+                                    <p class="mb-1"><strong>Click to upload file</strong> or drag and drop</p>
+                                    <small class="text-muted">Max 10GB total storage. DOCX / PPTX / CSV / PDF</small>
+                                    <input type="file" class="form-control d-none" id="fileInput" name="files" multiple>
+                                </div>
+                                <!-- New Files Upload Area -->
+                                <div id="fileList" class="mt-3">
+                                    <h6 class="mb-2">Uplaoded Files:</h6>
+                                    <div class="row" id="newFilesContainer">
+                                        <!-- New files will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Signature -->
+                            <!-- <div class="col-md-12">
+                                <label class="form-label">Add Your Signature</label>
+                                <div class="signtrboxwrp mb-3">
+                                    <div class="signbox form-control" id="signaturePreview"
+                                        style="width:70%; min-height: 150px; display: flex; align-items: center; justify-content: center;">
+                                        <% if (document.signature) { %>
+                                            <img src="<%= document.signature.fileUrl %>" alt="Signature"
+                                                style="max-height: 140px; max-width: 100%; object-fit: contain;">
+                                            <% } else { %>
+                                                <div class="text-muted">No signature uploaded</div>
+                                                <% } %>
+                                    </div>
+                                    <div class="signupld d-flex gap-2 mt-2">
+                                        <input type="file" class="form-control d-none" id="fileSign"
+                                            name="signatureFile" accept="image/*">
+                                        <button type="button" class="btn btn-primary rounded-pill" id="uploadSignBtn">
+                                            <%= document.signature ? 'Update Signature' : 'Browse from system' %>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary rounded-pill" id="drawSignBtn">
+                                            Draw Signature
+                                        </button>
+                                        <% if (document.signature) { %>
+                                            <button type="button" class="btn btn-warning rounded-pill"
+                                                id="clearSignBtn">
+                                                Clear Signature
+                                            </button>
+                                            <% } %>
+                                    </div>
+                                    <input type="hidden" name="signature" id="signatureData"
+                                        value="<%= document.signature ? document.signature.fileUrl : '' %>">
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <button type="button" class="btn btn-secondary rounded-pill" onclick="window.history.back()">
+                            Cancel
+                        </button>
+                        <button class="btn btn-primary rounded-pill" type="submit" id="submitBtn">
+                            Update Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                    Technology</a></p>
+        </div>
+    </div>
+    <!-- /Page Wrapper -->
+    <%- include('../../modals/document-modals') %>
+        <script>
+            // Initialize data for JavaScript
+            try {
+                window.isEdit = true;
+                window.documentId = "<%= document._id %>";
+                window.documentData = <% - JSON.stringify(document) %>;
+            } catch (e) {
+                console.error('EJS Variables Failed:', e);
+                // Fallback to DOM elements
+                window.documentId = document.getElementById('hiddenDocumentId')?.value;
+                const hiddenData = document.getElementById('hiddenDocumentData')?.getAttribute('data-document');
+                if (hiddenData) {
+                    window.documentData = JSON.parse(decodeURIComponent(hiddenData));
+                }
+                window.isEdit = true;
+            }
+
+            // Final verification
+            if (!window.documentId || window.documentId === 'undefined' || !window.documentData) {
+                console.error(' ALL METHODS FAILED - Document Data:', {
+                    documentId: window.documentId,
+                    documentData: window.documentData
+                });
+                document.getElementById('debugInfo').className = 'alert alert-danger';
+                document.getElementById('debugInfo').innerHTML = `
+            <h6>Configuration Error</h6>
+            <p>Failed to load document data. Please refresh the page.</p>
+            <button onclick="window.location.reload()" class="btn btn-sm btn-warning">Refresh Page</button>
+        `;
+            }
+        </script>
+
+        <!-- Include modals and scripts -->
+        <%- include('../../partials/footer') %>
+        <script src="/js/pages/documents/document-utils.js"></script>
+        <script src="/js/pages/documents/edit-document.js"></script>

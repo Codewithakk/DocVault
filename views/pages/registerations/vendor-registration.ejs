@@ -1,0 +1,196 @@
+<%- include('../../partials/header') %>
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Vendor Registration Form</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Vendor Registration Form
+							</li>
+						</ol>
+					</nav>
+				</div>
+
+				<div>
+					<a class="btn btn-primary btn-w-lg rounded-pill" href="/vendors/list">List</a>
+				</div>
+
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="add-info-fieldset">
+				<form id="vendorForm" enctype="multipart/form-data">
+					<% if (isEdit && vendor && vendor._id) { %>
+						<input type="hidden" name="id" value="<%= vendor._id %>">
+						<% } %>
+							<div class="modal-body">
+								<div class="row">
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Full Name</label>
+											<input type="text" class="form-control" id="vendor_name" name="vendor_name"
+												required placeholder="Enter your full name"
+												value="<%= (isEdit && vendor && vendor.name) ? vendor.name : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Email Address</label>
+											<input type="email" class="form-control" id="vendor_email"
+												name="vendor_email" required placeholder="Enter your email address"
+												value="<%= (isEdit && vendor && vendor.email) ? vendor.email : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Phone Number</label>
+											<input type="tel" class="form-control" id="vendor_mobile"
+												name="vendor_mobile" required maxlength="10"
+												placeholder="Enter your phone number"
+												value="<%= (isEdit && vendor && vendor.phone_number) ? vendor.phone_number : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Company Name</label>
+											<input type="text" class="form-control" id="company_name"
+												name="company_name" required placeholder="Enter company name"
+												value="<%= (isEdit && vendor && vendor.vendorDetails && vendor.vendorDetails.company_name) ? vendor.vendorDetails.company_name : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">GST/tax ID</label>
+											<input type="text" class="form-control" id="gst_number" name="gst_number"
+												required placeholder="22ABCDE1234F1Z5"
+												value="<%= (isEdit && vendor && vendor.vendorDetails && vendor.vendorDetails.gst_number) ? vendor.vendorDetails.gst_number : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Contact Person Name</label>
+											<input type="text" class="form-control" id="contact_person"
+												name="contact_person" required placeholder="Enter contact person name"
+												value="<%= (isEdit && vendor && vendor.vendorDetails && vendor.vendorDetails.contact_person) ? vendor.vendorDetails.contact_person : '' %>">
+										</div>
+									</div>
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">Services / Products Offered</label>
+											<input type="text" class="form-control" id="services_offered"
+												name="services_offered" required
+												placeholder="Enter services or products offered"
+												value="<%= (isEdit && vendor && vendor.vendorDetails && Array.isArray(vendor.vendorDetails.services_offered)) ? vendor.vendorDetails.services_offered.join(', ') : ((isEdit && vendor && vendor.vendorDetails && vendor.vendorDetails.services_offered) ? vendor.vendorDetails.services_offered : '') %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Address <span
+													class="optnl_lbl">(Optional)</span></label>
+											<textarea class="d-block simpletxtarea form-control" id="vendor_address"
+												name="vendor_address"
+												placeholder="Enter company address (street, city, state, country)"><%= (isEdit && vendor && vendor.address) ? vendor.address : '' %></textarea>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">Profile Image <span
+												class="optnl_lbl">(Optional)</span></label>
+										<div class="upload-profilebox form-control mb-3" id="uploadprofileBox">
+											<input type="file" class="form-control d-none" id="fileInput"
+												name="profile_image" accept="image/*">
+											<div class="preview" id="preview">
+												<% if (isEdit && vendor) { %>
+													<% const existingImageUrl=(vendor && ( vendor.profile_image_url ||
+														vendor.profile_image || (vendor.vendorDetails &&
+														(vendor.vendorDetails.profile_image_url ||
+														vendor.vendorDetails.profile_image)) || vendor.imageUrl ||
+														vendor.image )) || '' ; %>
+														<% if (existingImageUrl) { %>
+															<img src="/uploads/<%= existingImageUrl %>"
+																alt="Profile Image">
+															<% } %>
+																<% } %>
+											</div>
+											<div class="upload-icon"><i class="ti ti-plus fa-2x mb-2"></i></div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="d-flex align-items-center justify-content-end mt-4">
+								<button class="btn btn-primary btn-w-lg rounded-pill" type="submit"
+									id="vendorSubmitBtn">
+									<span class="btn-text">
+										<%= isEdit ? 'Update' : 'Register' %>
+									</span>
+								</button>
+							</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+
+	</div>
+	<!-- /Page Wrapper -->
+
+	<%- include('../../partials/footer') %>
+
+
+		<div id="data-success-register" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modalw620">
+				<div class="modal-content p-4">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<div class="modal-body">
+						<div class="success_mdltxt text-center">
+							<div class="imgscs mb-3"><img src="/img/icons/success.png"></div>
+							<h4 class="fs-24 text-dark fw-medium mb-4">
+								<% if (isEdit) { %>
+									Your record has been <br> updated successfully
+									<% } else { %>
+										Your Registration has been <br> done successfully
+										<% } %>
+							</h4>
+							<div class="mb-3 text-center">
+								<a class="btn btn-primary btn-w-lg rounded-pill" href="/vendors/list">View List</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- /Modal -->
+
+		<script defer type="text/javascript" src="/js/pages/vendor-registration.js"></script>
+
+		<script>
+			const fileInput = document.getElementById('fileInput');
+			const preview = document.getElementById('preview');
+			const uploadprofileBox = document.getElementById('uploadprofileBox');
+
+			uploadprofileBox.addEventListener('click', () => {
+				fileInput.click();
+			});
+
+			fileInput.addEventListener('change', (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					const reader = new FileReader();
+					reader.onload = function (e) {
+						preview.innerHTML = `<img src="${e.target.result}" alt="Profile Image">`;
+					}
+					reader.readAsDataURL(file);
+				}
+			});
+		</script>

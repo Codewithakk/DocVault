@@ -1,0 +1,87 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Documents List</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item">Documents List</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Documents Table -->
+            <div class="row">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive" id="documentsTableWrapper">
+                            <table class="table table-hover datatable" id="documents_table_new">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Owner Name</th>
+                                        <th>Owner Email</th>
+                                        <th>Department</th>
+                                        <th>Project</th>
+                                        <th>Tags</th>
+                                        <th>Status</th>
+                                        <th>Created On</th>
+                                        <th>Last Modified</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="documents_table_body_new"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+        <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+        <script>
+            $(document).ready(function () {
+
+                const folderId = window.location.pathname.split('/')[1];
+
+                $('#documents_table_new').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: `${baseUrl}/api/documents/folder/${folderId}`,
+                        type: "GET",
+                        dataSrc: function (json) {
+                            return json.data;
+                        }
+                    },
+                    columns: [
+                        { data: "metadata.fileName", defaultContent: "-" },
+                        { data: "owner.name", defaultContent: "-" },
+                        { data: "owner.email", defaultContent: "-" },
+                        { data: "department.name", defaultContent: "-" },
+                        { data: "project.projectName", defaultContent: "-" },
+                        { data: "tags", render: d => d?.join(", ") || "-" },
+                        {
+                            data: "status", render: function (status) {
+                                return `<span class="badge bg-soft-info">${status}</span>`
+                            }
+                        },
+                        { data: "createdAt", render: d => formatDateTime(d) },
+                        { data: "updatedAt", render: d => formatDateTime(d) }
+                    ],
+                    order: [[7, "desc"]]
+                });
+
+            });
+        </script>

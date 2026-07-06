@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Dynamic Title -->
+    <title>
+        <%= pageTitle ? pageTitle + " | " : "" %>
+            <%= companyName ? companyName + " | " : "" %>
+                <%= metaTitle ? metaTitle : "" %>
+    </title>
+
+    <!-- Dynamic Meta Description -->
+    <meta name="description" content="<%= pageDescription || metaDescription %>">
+
+    <!-- Meta Keywords -->
+    <meta name="keywords" content="<%= metaKeywords || '' %>">
+
+    <!-- Author / Company -->
+    <meta name="author" content="<%= companyName || '' %>">
+
+    <!-- Robots -->
+    <meta name="robots" content="<%= process.env.NODE_ENV === 'production' ? 'index, follow' : 'noindex, nofollow' %>">
+
+    <!-- Favicon -->
+    <link rel="icon" href="<%= favicon || '/favicon.ico' %>" type="image/x-icon">
+
+    <link rel="shortcut icon" href="<%= favicon %>" type="image/x-icon">
+
+    <!-- OpenGraph Tags (Facebook / WhatsApp / LinkedIn) -->
+    <meta property="og:title" content="<%= pageTitle || metaTitle %>">
+    <meta property="og:description" content="<%= pageDescription || metaDescription %>">
+    <meta property="og:image" content="<%= logo %>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<%= companyName %>">
+    <meta property="og:url" content="<%= canonicalUrl %>">
+
+    <!-- Twitter Card (Twitter/X SEO) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= pageTitle || metaTitle %>">
+    <meta name="twitter:description" content="<%= pageDescription || metaDescription %>">
+    <meta name="twitter:image" content="<%= logo %>">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= logo %>">
+
+    <!-- Preconnect & Fonts -->
+    <!-- Theme Script js -->
+    <script src="/js/theme-script.js"></script>
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/highcharts.js"></script>
+    <script src="/js/accessibility.js"></script>
+    <!-- Feather CSS -->
+    <link rel="stylesheet" href="/plugins/icons/feather/feather.css">
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <!-- Tabler Icon CSS -->
+    <link rel="stylesheet" href="/plugins/tabler-icons/tabler-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="/plugins/select2/css/select2.min.css">
+
+    <!-- Fontawesome CSS -->
+    <link rel="stylesheet" href="/plugins/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/plugins/fontawesome/css/all.min.css">
+
+    <!-- Datetimepicker CSS -->
+    <link rel="stylesheet" href="/css/bootstrap-datetimepicker.min.css">
+
+    <!-- Bootstrap Tagsinput CSS -->
+    <link rel="stylesheet" href="/plugins/bootstrap-tagsinput/bootstrap-tagsinput.css">
+
+    <!-- Summernote CSS -->
+    <link rel="stylesheet" href="/plugins/summernote/summernote-lite.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Color Picker Css -->
+    <link rel="stylesheet" href="/plugins/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="/plugins/%40simonwep/pickr/themes/nano.min.css">
+
+    <!-- Material Symbols (same icon family as in your Figma) -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;600" rel="stylesheet">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mystyle.css">
+    <link rel="stylesheet" href="/css/extra.css">
+    <!-- <link rel="stylesheet" href="/css/custom-datable.css"> -->
+</head>
+
+<body>
+
+    <div id="global-loader">
+        <div class="page-loader"></div>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="main-header">
+                <div class="header-left">
+                    <a href="/" class="logo">
+                        <img src="<%= logo %>" alt="<%= companyName %> Logo">
+                    </a>
+                    <a href="/" class="dark-logo">
+                        <img src="<%= logo %>" alt="<%= companyName %> Logo">
+                    </a>
+                </div>
+
+                <a id="mobile_btn" class="mobile_btn" href="#">
+                    <span class="bar-icon">
+                        <span></span><span></span><span></span>
+                    </span>
+                </a>
+
+                <div class="header-user">
+                    <div class="nav user-menu nav-list">
+
+                        <!-- Search -->
+                        <div class="me-auto d-flex align-items-center" id="header-search">
+                            <a id="toggle_btn" href="javascript:void(0);" class="btn btn-menubar me-1">
+                                <i class="ti ti-arrow-bar-to-left"></i>
+                            </a>
+                            <form action="/documents/list" method="get" class="input-group d-inline-flex me-1"
+                                id="globalSearchForm">
+                                <div class="position-relative">
+                                    <input type="text" name="q" id="globalSearchInput" class="form-control"
+                                        placeholder="Search by doc, tag, metadata.."
+                                        value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+                                    <input type="hidden" name="status" id="searchStatus"
+                                        value="<%= typeof status !== 'undefined' ? status : 'all' %>">
+                                    <!-- <span class="input-icon-addon">
+                                        <i class="ti ti-search"></i>
+                                    </span> -->
+                                    <!-- Clear button (global) -->
+                                    <button type="button"
+                                        class="btn btn-sm btn-icon clear-search-global position-absolute end-0 top-50 translate-middle-y me-2"
+                                        style="display: none; z-index: 10;">
+                                        <i class="ti ti-x"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- /Search -->
+
+                        <div class="d-flex align-items-center">
+                            <!-- Year Selection -->
+                            <div class="d-inline-flex me-2" >
+                                <select id="selectHeaderYear" class="form-select select2" style="width:120px;">
+                                    <!-- Years will be populated dynamically -->
+                                </select>
+                            </div>
+                            <!-- /Year Selection -->
+
+                            <!-- Project Select -->
+                            <div class="input-group d-inline-flex me-1">
+                                <select id="selectHeaderProject" class="form-select select2" style="width:200px;">
+                                    <option></option>
+                                </select>
+                                <span class="input-icon-addon"><i class="ti ti-search"></i></span>
+                            </div>
+                            <!-- /Project Select -->
+                            <!-- Upload Dropdown -->
+                            <div class="dropdown me-1">
+                                <a href="#" id="uploadBtn" class="btn sm_btnsite" data-bs-toggle="dropdown">
+                                    Upload <i class="ti ti-chevron-down"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <div class="card mb-0 border-0 shadow-none">
+                                        <div class="card-body">
+                                            <a href="/upload-folder" class="d-block pb-2">
+                                                <span class="avatar avatar-md bg-transparent-dark me-2">
+                                                    <i class="ti ti-folder-filled text-gray-9"></i>
+                                                </span>
+                                                New Folder
+                                            </a>
+                                            <a href="/documents/add" class="d-block py-2">
+                                                <span class="avatar avatar-md bg-transparent-dark me-2">
+                                                    <i class="ti ti-file-filled text-gray-9"></i>
+                                                </span>
+                                                New File
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Upload Dropdown -->
+                            <!-- Notifications -->
+                            <div class="me-1 notification_item">
+                                <a href="notifications" class="btn btn-menubar position-relative me-1"
+                                    id="notification_popup" data-bs-toggle="dropdown">
+                                    <i class="ti ti-bell"></i>
+                                    <span class="notification-status-dot"></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end notification-dropdown p-4">
+                                    <div
+                                        class="d-flex align-items-center justify-content-between border-bottom p-0 pb-3 mb-3">
+                                        <h4 class="notification-title">Notifications (0)</h4>
+                                        <a href="/all/notifications" class="fs-16">View All</a>
+                                    </div>
+                                    <div class="noti-content">
+                                        <div class="d-flex flex-column">
+                                            <!-- Notifications will be inserted dynamically here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- /Notifications -->
+                            <!-- Profile Dropdown -->
+                            <div class="dropdown profile-dropdown">
+                                <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center"
+                                    data-bs-toggle="dropdown">
+                                    <span class="avatar avatar-sm online">
+                                        <img src="<%= user.profile_image || '' %>" alt="<%= name || 'User' %>"
+                                            width="50" height="50" style="object-fit: cover; border-radius: 50%;">
+
+                                    </span>
+                                    <span>
+                                        <h5 class="mb-0">
+                                            <%= user.name || "User" %>
+                                        </h5>
+                                        <p class="subtxt">
+                                            <%= designation?.name || user.profile_type || "" %>
+                                        </p>
+                                    </span>
+                                </a>
+                                <div class="dropdown-menu shadow-none">
+                                    <div class="card mb-0">
+                                        <div class="card-header">
+                                            <div class="d-flex align-items-center">
+                                                <span class="avatar avatar-lg me-2 avatar-rounded">
+                                                    <img src="<%= user?.profile_image || ''%>"
+                                                        alt="<%= name || 'User' %>" width="50" height="50"
+                                                        style="object-fit: cover; border-radius: 50%;">
+
+                                                </span>
+                                                <span>
+                                                    <h5 class="mb-0">
+                                                        <%= user.name || "User" %>
+                                                    </h5>
+                                                    <p class="subtxt">
+                                                        <%= designation?.name || user?.profile_type|| "Guest" %>
+                                                    </p>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <a class="dropdown-item d-inline-flex align-items-center p-0 py-2"
+                                                href="/my-profile">
+                                                <i class="ti ti-user-circle me-1"></i>My Profile
+                                            </a>
+                                            <a class="dropdown-item d-inline-flex align-items-center p-0 py-2"
+                                                href="/reset-password">
+                                                <i class="ti ti-lock-open me-1"></i>Reset Password
+                                            </a>
+                                            <% if (user.profile_type==='superadmin' ) { %>
+                                                <a class="dropdown-item d-inline-flex align-items-center p-0 py-2"
+                                                    href="/setting">
+                                                    <i class="ti ti-settings me-1"></i>Setting
+                                                </a>
+                                                <% } %>
+                                        </div>
+                                        <div class="card-footer">
+                                            <a id="logoutLink" href="/logout"
+                                                class="dropdown-item d-inline-flex align-items-center p-0 py-2">
+                                                <i class="ti ti-login me-2"></i>Logout
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Profile Dropdown -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu -->
+                <div class="dropdown mobile-user-menu">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fa fa-ellipsis-v"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a class="dropdown-item" href="/my-profile">My Profile</a>
+                        <a class="dropdown-item" href="/reset-password">Reset Password</a>
+                        <% if (user.profile_type==='superadmin' ) { %>
+                            <a class="dropdown-item" href="/setting">Setting
+                            </a>
+                            <% } %>
+                                <a href="/logout" class="dropdown-item" id="mobileLogoutLink">Logout</a>
+                    </div>
+                </div>
+                <!-- /Mobile Menu -->
+                <div id="network-status-banner" style="display:none; background:#ff3b3b; color:white; 
+            padding:8px; text-align:center; position:fixed; top:0; width:100%; z-index:10000;">
+                    You are offline, or the connection is too slow…
+                </div>
+
+                <div id="network-overlay"
+                    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; font-size:22px; color:white;">
+                    Reconnecting… Please wait
+                </div>
+            </div>
+        </div>
+        <!-- /Header -->
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <a href="#" class="logo logo-normal">
+                    <img src="<%= logo %>" alt="<%= companyName %> Logo">
+                </a>
+                <a href="#" class="logo-small">
+                    <img src="<%= logo %>" alt="<%= companyName %> Logo">
+                </a>
+                <a href="#" class="dark-logo">
+                    <img src="<%= logo %>" alt="<%= companyName %> Logo">
+                </a>
+            </div>
+
+            <div class=" sidebar-inner slimscroll">
+                <div id="sidebar-menu" class="sidebar-menu">
+                    <ul id="menu-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- /Sidebar -->
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/plugins/select2/js/select2.min.js"></script>
+</body>
+
+</html>

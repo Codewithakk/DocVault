@@ -1,0 +1,184 @@
+<%- include('../../partials/header') %>
+
+<div class="page-wrapper">
+    <div class="content">
+
+        <!-- Breadcrumb -->
+        <div class="dflexbtwn page-breadcrumb mb-3">
+            <div class="my-auto mb-2">
+                <h2 class="mb-1">State List</h2>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                        <li class="breadcrumb-item active">State List</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <a href="#" id="addStateBtn" class="btn btn-primary">
+                    <i class="ti ti-plus me-1"></i> Add State
+                </a>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table datatable" id="stateTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Sr No.</th>
+                                <th>Name</th>
+                                <th>Country</th>
+                                <th>Created At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stateTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="stateModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 id="modalTitle">Add State</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="stateId">
+                <select id="countrySelect" class="form-control"></select>
+                <input type="text" id="stateName" class="form-control mt-2" placeholder="State Name">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="saveState">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../modals/deleteModal') %>
+<%- include('../../partials/footer') %>
+
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(function () {
+
+    let deleteId = null, editMode = false;
+
+    function loadCountriesDropdown(selected = '') {
+        $.get(`${baseUrl}/api/country`, res => {
+            let opt = '<option value="">Select Country</option>';
+            res.data.forEach(c => {
+                opt += `<option value="${c._id}" ${c._id === selected ? 'selected' : ''}>${c.name}</option>`;
+            });
+            $('#countrySelect').html(opt);
+        });
+    }
+
+    function loadStates() {
+
+$('#stateTable').DataTable({
+    processing: true,
+    serverSide: true,
+    destroy: true,
+
+    ajax: function (data, callback) {
+
+        let page = (data.start / data.length) + 1;
+        let search = data.search.value;
+
+        $.get(`${baseUrl}/api/state`, {
+            page: page,
+            limit: data.length,
+            search: search
+        }, function (res) {
+
+            let rows = [];
+
+            res.data.forEach((s, i) => {
+                rows.push([
+                    data.start + i + 1,
+                    s.name,
+                    s.country?.name || '-',
+                    formatDateTime(s.createdAt),
+                    `
+                    <a href="#" class="text-primary btn-edit" data-item='${encodeURIComponent(JSON.stringify(s))}'><i class="ti ti-edit"></i></a>
+                    <a href="#" class="text-danger btn-delete" data-id="${s._id}"><i class="ti ti-trash"></i></a>
+                    `
+                ]);
+            });
+
+            callback({
+                draw: data.draw,
+                recordsTotal: res.total,
+                recordsFiltered: res.total,
+                data: rows
+            });
+
+        });
+    }
+});
+}
+
+    loadStates();
+
+    $('#addStateBtn').click(() => {
+        editMode = false;
+        $('#stateId').val('');
+        $('#stateName').val('');
+        loadCountriesDropdown();
+        $('#stateModal').modal('show');
+    });
+
+    $('#saveState').click(() => {
+        let id = $('#stateId').val();
+        let data = {
+            name: $('#stateName').val(),
+            country: $('#countrySelect').val()
+        };
+
+        let url = `${baseUrl}/api/state`;
+        let method = editMode ? 'PUT' : 'POST';
+        if (editMode) url += `/${id}`;
+
+        $.ajax({ url, method, data, success: () => {
+            $('#stateModal').modal('hide');
+            loadStates();
+        }});
+    });
+
+    $(document).on('click', '.btn-edit', function () {
+        editMode = true;
+        let d = JSON.parse(decodeURIComponent($(this).data('item')));
+        $('#stateId').val(d._id);
+        $('#stateName').val(d.name);
+        loadCountriesDropdown(d.country?._id);
+        $('#stateModal').modal('show');
+    });
+
+    $(document).on('click', '.btn-delete', function () {
+        deleteId = $(this).data('id');
+        $('#confirmDeleteModal').modal('show');
+    });
+
+    $('#confirmDeleteBtn').click(() => {
+        $.ajax({
+            url: `${baseUrl}/api/state/${deleteId}`,
+            method: 'DELETE',
+            success: () => { loadStates(); $('#confirmDeleteModal').modal('hide'); }
+        });
+    });
+
+});
+</script>

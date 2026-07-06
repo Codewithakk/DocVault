@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approve - <%= document.metadata?.fileName || 'Document' %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <style>
+        body {
+            background: #f8f9fa;
+            padding: 30px 15px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .main-header {
+            font-size: 2.1rem;
+            font-weight: 300;
+            color: #1a1a1a;
+        }
+
+        .file-card {
+            width: 160px;
+            padding: 16px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            margin: 0 15px 15px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s;
+        }
+
+        .file-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .file-icon-box {
+            width: 56px;
+            height: 68px;
+            background: #e0f0ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+        }
+
+        .file-icon-box img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .flxtblleft {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .flxtbltxt p {
+            margin: 0;
+        }
+
+        #approveBtn.active {
+            background: #d4f8d4 !important;
+            /* green */
+        }
+
+        #declineBtn.active {
+            background: #ffd4d4 !important;
+            /* red */
+        }
+
+        #needDiscussionBtn.active {
+            background: #fff2c6 !important;
+            /* yellow */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <div class="text-start mb-3">
+                    <img src="<%= logo %>" alt="Company Logo" style="height: 60px;">
+                </div>
+                <h2 class="main-header">
+                    <%= document.metadata?.fileName || 'Untitled Document' %>
+                </h2>
+                <div class="text-muted">Version <%= document.currentVersionLabel || '1.0' %>
+                </div>
+            </div>
+            <button type="button" class="btn btn-success btn-lg rounded-pill px-5 shadow" data-bs-toggle="modal"
+                data-bs-target="#approvalModal">
+                <i class="bi bi-check-circle me-2"></i>Approve Document
+            </button>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Files Grid -->
+        <div class="d-flex flex-wrap">
+            <% if (versionData?.files?.length> 0) { %>
+                <% versionData.files.forEach(file=> { %>
+                    <% const ext=file.originalName.split('.').pop().toLowerCase(); let icon='/img/icons/fn1.png' ; if
+                        (['doc','docx'].includes(ext)) icon='/img/icons/fn2.png' ; else if
+                        (['xls','xlsx'].includes(ext)) icon='/img/icons/fn3.png' ; else if (ext==='pdf' )
+                        icon='/img/icons/fn4.png' ; %>
+                        <div class="file-card">
+                            <div class="text-center">
+                                <div class="file-icon-box">
+                                    <img src="<%= icon %>" alt="<%= ext %>">
+                                </div>
+                                <p class="file-name" title="<%= file.originalName %>">
+                                    <%= file.originalName.length> 20 ? file.originalName.substring(0,20)+'...' :
+                                        file.originalName %>
+                                </p>
+                                <p class="text-muted small">
+                                    <%= file.fileSize ? (file.fileSize / 1024).toFixed(1) + ' KB' : '—' %>
+                                </p>
+                            </div>
+                            <div class="dropdown position-absolute top-0 end-0 mt-2 me-2">
+                                <button class="btn btn-sm" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/api/download/file/<%= file._id %>"><i
+                                                class="bi bi-download me-2"></i>Download</a></li>
+                                    <li><a class="dropdown-item" href="/folders/view/<%= file._id %>" target="_blank"><i
+                                                class="bi bi-eye me-2"></i>View</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <% }) %>
+                            <% } else { %>
+                                <p class="text-muted">No files attached.</p>
+                                <% } %>
+        </div>
+    </div>
+
+    <!-- YOUR EXACT MODAL (unchanged structure, just dynamic data) -->
+    <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow">
+                <div class="modal-header border-0 pt-4 pb-0">
+                    <h5 class="modal-title fw-bold" id="approvalModalLabel">Action Approval Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="modalLoading" class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Loading approval details...</p>
+                    </div>
+
+                    <div id="modalContent" style="display: none;">
+                        <p class="fs-16">
+                            <i class="ti ti-user"></i>
+                            <strong id="modalOwnerName">
+                                <%= document.owner?.name || 'User' %>
+                            </strong> has requested document approval
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="flxtblleft">
+                                <span class="avatar rounded bg-light mb-2">
+                                    <img id="modalFileIcon" src="/img/icons/fn4.png" alt="File" width="40">
+                                </span>
+                                <div class="flxtbltxt">
+                                    <p class="fs-14 mb-1 fw-normal text-neutral" id="modalFileName">
+                                        <%= document.metadata?.fileName %>
+                                    </p>
+                                    <span class="fs-11 fw-light text-black" id="modalFileSize">Version <%=
+                                            document.currentVersionLabel || '1.0' %></span>
+                                </div>
+                            </div>
+                            <% if (versionData?.files?.[0]) { %>
+                                <a id="modalViewFile" href="/folders/view/<%= versionData.files[0]._id %>"
+                                    class="text-primary fs-16" target="_blank">View File</a>
+                                <% } %>
+                        </div>
+
+                        <p class="fs-16 small mb-1">Approval Request on <strong id="modalRequestDate">
+                                <%= new Date(document.updatedAt || document.createdAt).toLocaleDateString('en-US', {
+                                    weekday: 'long' , year: 'numeric' , month: 'long' , day: 'numeric' }) %>
+                            </strong></p>
+
+                        <div class="mb-3">
+                            <label class="form-label fs-16 fw-semibold">Description</label>
+                            <textarea class="form-control text-left rounded" rows="2" readonly
+                                id="modalDescription"><%= document.description || 'No description provided.' %></textarea>
+                        </div>
+
+                        <div class="approval-switch d-flex mb-3" id="approvalToggle">
+                            <button type="button" class="btn flex-fill border-0 py-2 active" id="approveBtn"
+                                data-action="approve">
+                                Approve
+                            </button>
+                            <button type="button" class="btn flex-fill border-0 py-2" id="declineBtn"
+                                data-action="reject">
+                                Decline
+                            </button>
+                            <button type="button" class="btn flex-fill border-0 py-2" id="needDiscussionBtn"
+                                data-action="need_discussion">
+                                Need Discussion
+                            </button>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col">
+                                <p class="mb-1 fs-16">Compliance and Retention File</p>
+                                <p id="modalCompliance">
+                                    <%= document.compliance?.isCompliance ? 'Yes' : 'No' %>
+                                </p>
+                            </div>
+                            <div class="col">
+                                <p class="mb-1 fs-16">Expiry Date</p>
+                                <p id="modalExpiryDate">
+                                    <%= document.compliance?.expiryDate ? new
+                                        Date(document.compliance.expiryDate).toLocaleDateString() : 'None' %>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fs-16 mb-2">Leave a comment <span
+                                    id="commentOptional">(optional)</span></label>
+                            <textarea class="form-control" rows="2" id="modalComment"
+                                placeholder="Enter your comment here..."></textarea>
+                        </div>
+
+                        <p class="text-muted fs-16" id="modalNotifyText">
+                            The document owner will be notified of your decision.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pb-4" id="modalFooter">
+                    <button type="button" class="btn btn-lg btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-lg btn-success rounded-pill px-4" id="submitApprovalBtn">
+                        Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Toast Container -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div id="toastBox"></div>
+    </div>
+
+    <!-- Toast Template -->
+    <div id="toastTemplate" class="toast align-items-center text-bg-primary border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const modal = document.getElementById('approvalModal');
+        const submitBtn = document.getElementById('submitApprovalBtn');
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const documentId = '<%= document._id %>';
+
+        modal.addEventListener('shown.bs.modal', () => {
+            document.getElementById('modalLoading').style.display = 'none';
+            document.getElementById('modalContent').style.display = 'block';
+        });
+        function showToast(message, type = "primary") {
+            const template = document.getElementById("toastTemplate").cloneNode(true);
+            template.id = "";
+            template.classList.add("show");
+            template.classList.remove("text-bg-primary");
+            template.classList.add(`text-bg-${type}`);
+            template.querySelector(".toast-body").textContent = message;
+
+            document.getElementById("toastBox").appendChild(template);
+
+            const bsToast = new bootstrap.Toast(template);
+            bsToast.show();
+
+            setTimeout(() => template.remove(), 5000);
+        }
+        document.querySelectorAll('#approvalToggle button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('#approvalToggle button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                submitBtn.textContent = this.textContent.trim();
+                submitBtn.className = 'btn btn-lg rounded-pill px-4 ' +
+                    (this.id === 'declineBtn' ? 'btn-danger' :
+                        this.id === 'needDiscussionBtn' ? 'btn-warning' : 'btn-success');
+            });
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            const activeBtn = document.querySelector('#approvalToggle .active');
+            if (!activeBtn) return showToast("Please select an action", "warning");
+
+            const action = activeBtn.getAttribute('data-action');
+            const comment = document.getElementById('modalComment').value.trim();
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+                const res = await fetch('/api/approval/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, documentId, action, comment: comment || undefined })
+                });
+
+                const data = await res.json();
+                showToast(data.message || "Action submitted!", data.success ? "success" : "danger");
+                if (data.success) {
+                    document.body.innerHTML = `<div class="text-center py-5"><h2 class="text-success">Thank You!</h2><p>Your response has been recorded.</p></div>`;
+                }
+            } catch (err) {
+                showToast("Submission failed. Please try again.", "danger");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = submitBtn.textContent.trim();
+                bootstrap.Modal.getInstance(modal).hide();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,437 @@
+<%- include('../../partials/header') %>
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+
+			<!-- Breadcrumb -->
+			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">
+						<%= isEdit ? "Edit Document" : "Add Document" %>
+					</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+							<li class="breadcrumb-item">
+								<%= isEdit ? "Edit Document" : "Add Document" %>
+							</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="add-info-fieldset">
+				<form id="documentForm" enctype="multipart/form-data">
+					<% if (isEdit) { %>
+						<input type="hidden" name="_method" value="PATCH">
+						<% } %>
+							<div class="modal-body">
+								<div class="row">
+									<!-- Project Name -->
+									<div class="col-md-4">
+										<div class="mb-3">
+											<label class="form-label">Project Name</label>
+											<select id="projectName" name="project" class="form-select select2"
+												required>
+												<% if (!isEdit && selectedProject) { %>
+													<option value="<%= selectedProject._id %>" selected>
+														<%= selectedProject.projectName %>
+													</option>
+													<% } %>
+
+												<% if (isEdit && document.project) { %>
+													<option value="<%= document.project._id %>" selected>
+														<%= document.project.projectName %>
+													</option>
+												<% } %>
+
+											</select>
+										</div>
+									</div>
+
+
+									<!-- Department -->
+									<div class="col-md-4">
+										<div class="mb-3">
+											<label class="form-label">Select Department </label>
+											<select id="department" name="department" class="form-select select2"
+												required>
+
+											</select>
+
+										</div>
+									</div>
+
+
+									<!-- Project Manager -->
+									<!-- <div class="col-md-4">
+										<div class="mb-3">
+											<label class="form-label">Project Manager</label>
+											<select id="projectManager" name="projectManager"
+												class="form-select select2" required>
+
+											</select>
+										</div>
+									</div> -->
+
+									<!-- Document Date -->
+									<!-- <div class="col-md-4">
+										<div class="mb-3">
+											<label class="form-label">Add Date</label>
+											<div class="input-icon-end position-relative">
+												<input type="text"
+													name="documentDate"
+													class="form-control datetimepicker"
+													placeholder="Create Date"
+													value="<%= isEdit && document.documentDate
+														? new Date(document.documentDate).toLocaleDateString('en-GB')
+														: new Date().toLocaleDateString('en-GB') %>"
+													<%= !(isEdit && document.documentDate) ? 'readonly' : '' %>
+													required>
+												<span class="input-icon-addon"><i
+														class="ti ti-calendar text-gray-7"></i></span>
+											</div>
+										</div>
+									</div> -->
+									<!-- Donor Name -->
+									<div class="col-md-4">
+										<div class="mb-3">
+											<label class="form-label">Donor Name</label>
+											<select id="documentDonor" name="documentDonor" class="form-select select2">
+												<option value="">-- Select Donor Name --</option>
+											</select>
+										</div>
+									</div>
+
+									<!-- <div class="row"> -->
+										<!-- Vendor Name -->
+										<div class="col-md-4">
+											<div class="mb-3">
+												<label class="form-label">Vendor Name</label>
+												<select id="documentVendor" name="documentVendor"
+													class="form-select select2">
+													<option value="">-- Select Vendor Name --</option>
+												</select>
+											</div>
+										</div>
+									
+										<!-- Tags -->
+										<div class="col-md-4">
+											<div class="mb-3">
+												<label class="form-label">Add Tags</label>
+												<input type="text" name="tags" class="form-control"
+													placeholder="tag1, tag2, tag3"
+													value="<%= isEdit && document.tags ? document.tags.join(', ') : '' %>">
+											</div>
+										</div>
+									
+										<!-- Metadata -->
+										<div class="col-md-4">
+											<div class="mb-3">
+												<label class="form-label">Meta Data - File Name</label>
+												<input class="form-control" type="text"
+													name="metadata[fileName]"
+													placeholder="File Name"
+													value="<%= isEdit && document.metadata && document.metadata.fileName ? document.metadata.fileName : '' %>">
+											</div>
+										</div>
+									<!-- </div> -->
+									<!-- Description -->
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">File Contains Description</label>
+											<textarea id="summernote" name="description"
+												style="display: none;"><%= isEdit && document.description ? document.description : '' %></textarea>
+											<div class="summernote">
+												<%- isEdit && document.description ? document.description : '' %>
+											</div>
+										</div>
+									</div>
+
+									<!-- Compliance -->
+									<div class="col-md-6">
+										<div class="mb-3">
+											<div class="d-flex align-items-center gap-5">
+												<label class="form-label mb-0">Compliance and Retention Document</label>
+									
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="compliance"
+														value="yes" id="complianceYes"
+														<%= isEdit && document.compliance?.isCompliance ? 'checked' : '' %>>
+													<label class="form-check-label" for="complianceYes">Yes</label>
+												</div>
+									
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="compliance"
+														value="no" id="complianceNo"
+														<%= (!isEdit || !document.compliance?.isCompliance) ? 'checked' : '' %>>
+													<label class="form-check-label" for="complianceNo">No</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- Expiry Date (only show if compliance is enabled) -->
+									<div class="col-md-6" id="expiryDateContainer"
+										style="display: <%= isEdit && document.compliance?.isCompliance ? 'block' : 'none' %>;">
+										<div class="mb-3">
+											<div class="d-flex align-items-center gap-5">
+												<label class="form-label mb-0">Enter Expiry Date</label>
+												<div class="input-icon-end position-relative">
+													<input type="text" class="form-control datetimepicker"
+														name="expiryDate" placeholder="dd/mm/yyyy"
+														value="<%= isEdit && document.compliance?.expiryDate ? new Date(document.compliance.expiryDate).toLocaleDateString('en-GB') : '' %>"
+														<%=isEdit && document.compliance?.isCompliance ? 'required' : ''
+														%>>
+													<span class="input-icon-addon"><i
+															class="ti ti-calendar text-gray-7"></i></span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- Approver Authority -->
+									<div class="col-md-12">
+										<div class="mb-3">
+											<div class="d-flex align-items-center gap-5">
+												<label class="form-label mb-0">File Access grant Required</label>
+									
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="wantApprovers"
+														value="true" id="wantApproversYes"
+														<%= isEdit && document.wantApprovers === true ? 'checked' : '' %>>
+													<label class="form-check-label" for="wantApproversYes">Yes</label>
+												</div>
+									
+												<div class="form-check">
+													<input class="form-check-input" type="radio" name="wantApprovers"
+														value="false" id="wantApproversNo"
+														<%= (!isEdit || document.wantApprovers === false) ? 'checked' : '' %>>
+													<label class="form-check-label" for="wantApproversNo">No</label>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<!-- Comment -->
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">Leave a comment (Optional)</label>
+											<input type="text" class="form-control" name="comment"
+												value="<%= isEdit && document.comment ? document.comment : '' %>">
+										</div>
+									</div>
+
+									<!-- Display Directory Path -->
+									<div class="mb-2" id="uploadDirectoryWrapper">
+										<h6 class="mb-1" style="font-weight: 600; color: #333;">File Directory</h6>
+										<div id="uploadDirectoryPath" class="text-truncate"
+											style="font-size: 0.9rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+											<!-- will be filled dynamically -->
+										</div>
+									</div>
+									<!-- Folders List -->
+									<!-- Folders List -->
+									<div class="col-md-12 mb-3">
+										<label class="form-label mb-2">Select Folder</label>
+									
+										<div id="folderContainer" class="d-flex flex-wrap gap-2">
+											<!-- Folder buttons will be injected here -->
+									
+											<!-- Loader (hidden by default) -->
+											<div id="folderLoader"
+												class="position-absolute top-50 start-50 translate-middle d-none">
+												<div class="spinner-border text-primary" role="status">
+													<span class="visually-hidden">Loading folders...</span>
+												</div>
+											</div>
+										</div>
+									
+										<input type="hidden" name="folderId" id="selectedFolderId">
+									</div>
+
+									<!-- File Upload -->
+									<div class="col-md-12">
+										<label class="form-label">File Uploads</label>
+										<div class="upload-box mb-3" id="uploadBox">
+											<i class="ti ti-cloud-upload fa-2x text-primary mb-2"></i>
+											<p class="mb-1"><strong>Click to upload file</strong> or drag and drop</p>
+											<small class="text-muted">Max 10GB total storage. DOCX / PPTX / CSV /
+												PDF</small>
+											<!-- REMOVE required attribute here -->
+											<input type="file" class="form-control d-none" id="fileInput" name="files"
+												multiple>
+										</div>
+												<div id="fileList">
+													<!-- existing file list code -->
+												</div>
+									</div>
+									<!-- Signature -->
+									<!-- <div class="col-md-12">
+										<label class="form-label">Add Your Signature</label>
+										<div class="signtrboxwrp mb-3">
+											<div class="signbox form-control" id="signaturePreview" style="width:70%;">
+												<% if (isEdit && document.signature?.fileUrl) { %>
+													<img src="<%= document.signature.fileUrl %>" alt="Signature"
+														style="max-height:100%; max-width:100%; object-fit:contain;">
+													<% } %>
+
+											</div>
+											<div class="signupld d-flex gap-2">
+												
+												<input type="file" class="form-control d-none" id="fileSign"
+													name="signatureFile" accept="image/*">
+												<button type="button" class="btn btn-primary rounded-pill"
+													id="uploadSignBtn">
+													<%= isEdit && document.signature ? 'Update Signature'
+														: 'Browse from system' %>
+												</button>
+
+												
+												<button type="button" class="btn btn-secondary rounded-pill"
+													id="drawSignBtn">
+													Draw Signature
+												</button>
+											</div>
+											<input type="hidden" name="signature" id="signatureData">
+										</div>
+									</div> -->
+
+									<!-- Link -->
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">Add Link (if any)</label>
+											<input type="url" class="form-control" name="link"
+												placeholder="https://example.com"
+												value="<%= isEdit && document.link ? document.link : '' %>">
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="d-flex align-items-center justify-content-end">
+								<button class="btn btn-primary rounded-pill" type="submit" id="submitBtn">
+									<%= isEdit ? "Update Document" : "Add Document" %>
+								</button>
+							</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Footer -->
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+	<!-- <script>
+		// EJS variables exposed to JS
+		const isEdit = <%= isEdit ? 'true' : 'false' %>;
+		const documentId = "<%= isEdit && document ? document._id : '' %>";
+		const documentData = <%= isEdit && document ? JSON.stringify(document) : 'null' %>;
+	</script> -->
+	<!-- Metadata Modal -->
+	<div id="metadata-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Add Meta Data</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<form id="metadataForm">
+						<div class="mb-3">
+							<label class="form-label">File Name</label>
+							<input class="form-control" type="text" name="fileName" required placeholder="File Name"
+								value="<%= isEdit && document.metadata && document.metadata.fileName ? document.metadata.fileName : '' %>">
+						</div>
+						<div class="mb-3">
+							<label class="form-label">File Description</label>
+							<input class="form-control" type="text" name="fileDescription" required
+								placeholder="File Description"
+								value="<%= isEdit && document.metadata && document.metadata.fileDescription ? document.metadata.fileDescription : '' %>">
+						</div>
+						<div class="mb-3">
+							<label class="form-label">File Main Heading</label>
+							<input type="text" class="form-control" name="mainHeading" placeholder="Main Heading"
+								value="<%= isEdit && document.metadata && document.metadata.mainHeading ? document.metadata.mainHeading : '' %>">
+						</div>
+						<div class="mb-3 text-center">
+							<button class="btn btn-primary rounded-pill" type="submit">Save Metadata</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /Metadata Modal -->
+
+	<!-- Signature Canvas Modal -->
+	<div class="modal fade" id="signatureModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content p-3">
+				<div class="modal-header">
+					<h5 class="modal-title">Draw Your Signature</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="canvas-wrap"
+						style="border:1px solid #ccc; border-radius:8px; height:200px; position:relative;">
+						<canvas id="sigCanvas" style="width:100%; height:100%; touch-action:none;"></canvas>
+					</div>
+					<div class="mt-2 text-end">
+						<button type="button" id="undoSignBtn" class="btn btn-secondary btn-sm">Undo</button>
+						<button type="button" id="clearSignBtn" class="btn btn-secondary btn-sm">Clear</button>
+						<button type="button" id="saveSignBtn" class="btn btn-primary btn-sm">Save</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Add these hidden fields for data backup -->
+	<input type="hidden" id="hiddenDocumentId" value="<%= isEdit && document ? document._id : '' %>">
+	<div id="hiddenDocumentData"
+		data-document="<%= isEdit && document ? encodeURIComponent(JSON.stringify(document)) : '{}' %>"></div>
+
+	<script>
+		// EJS variables exposed to JS - FIXED VERSION
+		window.isEdit = <%= isEdit ? 'true' : 'false' %>;
+		window.documentId = "<%= isEdit && document ? document._id : '' %>";
+		window.documentData = <%= isEdit && document ? JSON.stringify(document) : 'null' %>;
+		// Expose selectedProject from session for pre-selection
+		<% if (!isEdit && selectedProject && selectedProject._id) { %>
+		window.selectedProject = { id: "<%= selectedProject._id %>", name: "<%= selectedProject.projectName %>" };
+		<% } %>
+	</script>
+	<!-- Success Modal -->
+	<div id="data-success-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modalw620">
+			<div class="modal-content">
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<div class="modal-body">
+					<div class="success_mdltxt text-center">
+						<div class="imgscs mb-3"><img src="/img/icons/success.png"></div>
+						<div class="d-flex align-items-center justify-content-center mb-2">
+							<span class="avatar rounded bg-light mb-2">
+								<img src="/img/icons/fn1.png">
+							</span>
+							<div class="ms-2">
+								<p class="fs-14 mb-1 fw-normal" id="successFileName">Project Proposal v1</p>
+							</div>
+						</div>
+						<h4 class="fs-24 text-dark fw-medium mb-4">Your File <%= isEdit ? "Updated" : "Added" %>
+								Successfully</h4>
+						<p class="fs-20 fw-normal mb-4">You will be notified soon as your file gets approved</p>
+						<div class="mb-3 text-center">
+							<button class="btn btn-primary rounded-pill minw80" type="button" id="success-ok-btn"
+								data-bs-dismiss="modal">Ok</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<%- include('../../partials/footer') %>
+		<script defer src="/js/pages/documents/addEditDocument.js"></script>

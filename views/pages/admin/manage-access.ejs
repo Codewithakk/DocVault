@@ -1,0 +1,85 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Manage Access</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                            <li class="breadcrumb-item">Manage Access</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="content container my-5">
+                <!-- Removed card wrapper -->
+                <h5 class="mb-4">Grant Folder Access</h5>
+                <form id="grantAccessForm" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="userEmail" class="form-label">User Email</label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="Enter user email"
+                            value="<%= userEmail || '' %>" required readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="access" class="form-label">Access Level</label>
+                        <select id="access" class="form-select">
+                            <option value="view">View</option>
+                            <option value="edit">Edit</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="duration" class="form-label">Duration</label>
+                        <select id="duration" class="form-select">
+                            <option value="oneday">1 Day</option>
+                            <option value="oneweek">1 Week</option>
+                            <option value="onemonth">1 Month</option>
+                            <option value="lifetime" selected>Lifetime</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="button" id="grantBtn" class="btn btn-primary">Grant Access</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            const folderId = "<%= folder._id %>";
+
+            document.getElementById('userEmail').addEventListener('blur', async (e) => {
+                const email = e.target.value;
+                if (!email) return;
+
+                const res = await fetch(`/api/folders/${folderId}/access`);
+                const data = await res.json();
+                if (data.success) {
+                    const user = data.accessList.find(u => u.email === email);
+                    if (user) {
+                        document.getElementById('access').value = user.access[0] || 'view';
+                        document.getElementById('duration').value = user.duration || 'lifetime';
+                    }
+                }
+            });
+
+            document.getElementById('grantBtn').addEventListener('click', async () => {
+                const payload = {
+                    userEmail: document.getElementById('userEmail').value,
+                    access: document.getElementById('access').value,
+                    duration: document.getElementById('duration').value
+                };
+
+                const res = await fetch(`/api/folders/${folderId}/grant-access`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                showToast(data.message, 'success');
+            });
+        </script>
+        <%- include('../../partials/footer') %>

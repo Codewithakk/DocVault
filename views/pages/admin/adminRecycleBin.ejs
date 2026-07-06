@@ -1,0 +1,359 @@
+<%- include('../../partials/header') %>
+
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Recycle Bin</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Recycle Bin
+							</li>
+						</ol>
+					</nav>
+				</div>
+				<div class="rtbtn">
+					<a href="#" data-bs-toggle="modal" data-bs-target="#emptybin-modal"
+						class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+						Empty Trash
+					</a>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="filter-container mb-3">
+				<div class="d-flex flex-wrap gap-2 mb-2">
+					<div class="mb-0">
+						<select id="department" class="form-select select2" style="width: 200px;">
+							<option value="">-- Select Department --</option>
+						</select>
+					</div>
+				</div>
+			</div>
+
+			<!-- Documents Table -->
+			<div class="card">
+				<div class="card-body">
+					<div class="table-responsive" id="recyclinbindocumentsTableWrapper">
+						<table class="table table-hover datatable" id="recyclinbindocuments_table">
+							<thead class="thead-light">
+								<tr>
+									<th></th>
+									<th>File Name</th>
+									<th>Created On</th>
+									<th>Department</th>
+									<th>Deleted On</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody id="recyclinbindocuments_table_body"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Footer -->
+	<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+		<p class="mb-0">2025 &copy; HLFPPT.</p>
+		<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services & Technology</a>
+		</p>
+	</div>
+	<%- include('../../modals/successModal') %>
+		<%- include('../../partials/footer') %>
+
+			<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+			<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+			<script>
+				$(document).ready(function () {
+					function formatBytesToMB(kb) {
+						return (kb / 1024).toFixed(2) + ' MB';
+					}
+
+					function showSuccessModal(fileName, operationType, fileIconSrc = '/img/icons/fn1.png') {
+						const modal = $('#data-success-modal');
+						const operationText = operationType.charAt(0).toUpperCase() + operationType.slice(1);
+						const title = `Your File ${operationText} Successfully`;
+
+						modal.find('#successFileName').text(fileName);
+						modal.find('#successFileIcon').attr('src', fileIconSrc);
+						modal.find('#successMessageTitle').text(title);
+						modal.modal('show');
+					}
+
+					function debounce(fn, delay) {
+						let timer;
+						return function (...args) {
+							clearTimeout(timer);
+							timer = setTimeout(() => fn.apply(this, args), delay);
+						};
+					}
+					function initSelect2(selector, url, textKey) {
+						$(selector).select2({
+							placeholder: `-- Select ${textKey} --`,
+							allowClear: true,
+							ajax: {
+								url,
+								dataType: 'json',
+								delay: 250,
+								data: params => ({ search: params.term }),
+								processResults: data => {
+									const results = [
+										{ id: '', text: `-- Select ${textKey} --` },
+										...data.data.map(item => ({ id: item._id, text: item[textKey] }))
+									];
+									return { results };
+								}
+							}
+						});
+
+						$(selector).on('select2:select', function (e) {
+							if (!e.params.data.id) {
+								$(this).val(null).trigger('change');
+							}
+						});
+					}
+					$('#department').select2({
+						placeholder: "Select Department",
+						allowClear: true,
+						ajax: {
+							url: `${baseUrl}/api/departments/search`,
+							dataType: 'json',
+							delay: 250,
+							data: params => ({ search: params.term }),
+							processResults: data => ({
+								results: data.data.map(item => ({
+									id: item._id,
+									text: item.name
+								}))
+							})
+						}
+					});
+
+					// Initialize DataTable
+					const table = $('#recyclinbindocuments_table').DataTable({
+						serverSide: true,
+						processing: true,
+						searching: false, // we handle search manually
+						pageLength: 10,
+						lengthMenu: [10, 25, 50, 100],
+						order: [[2, 'desc']], // default sort by Created On
+						ajax: {
+							url: '/api/documents/recyclebin',
+							type: 'GET',
+							data: function (d) {
+								// Convert DataTable params to your API query
+								return {
+									page: Math.floor(d.start / d.length) + 1,
+									limit: d.length,
+									search: $('#search_input').val(),
+									department: $('#department').val()
+								};
+							},
+							dataSrc: function (json) {
+								// Update pagination info
+								json.recordsTotal = json.total;
+								json.recordsFiltered = json.total;
+								return (json.data || []).map(doc => renderRow(doc));
+							}
+						},
+						columns: [
+							{ title: "Select", orderable: false },
+							{ title: "Files" },
+							{ title: "Created On" },
+							{ title: "Department" },
+							{ title: "Deleted On" },
+							{ title: "Actions", orderable: false }
+						]
+					});
+
+					// Render each row
+					function renderRow(doc) {
+						const file = doc.files?.[0];
+						const fileName = doc.metadata?.fileName || file?.originalName || 'Unnamed';
+						const fileSizeKB = file ? (file.fileSize / 1024).toFixed(2) + ' KB' : '-';
+
+						const filesInfo = `
+    <div class="flxtblleft mb-1">
+      <span class="avatar rounded bg-light me-2">
+        <img src="/img/icons/fn1.png" alt="File Icon">
+      </span>
+      <div class="flxtbltxt">
+        <p class="fs-14 mb-1 fw-normal text-neutral">${fileName}</p>
+        <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
+      </div>
+    </div>
+  `;
+
+						const createdOn = new Date(doc.createdAt).toLocaleString();
+						const deletedOn = new Date(doc.deletedAt).toLocaleString();
+						const departmentName = doc.department?.name || '-';
+
+						const checkbox = `<div class="form-check form-check-md">
+    <input class="form-check-input select-document" type="checkbox" data-document-id="${doc._id}">
+  </div>`;
+
+						const actions = `
+    <div class="action-icon d-inline-flex">
+      <a href="#" data-document-id="${doc._id}" class="restore-btn me-2" data-bs-toggle="modal" data-bs-target="#restore-modal">
+        <i class="ti ti-restore"></i>
+      </a>
+      <a href="#" class="delete-permanent-btn" data-document-id="${doc._id}" data-document-name="${fileName}"  data-document-size="${fileSizeKB}" data-bs-toggle="modal" data-bs-target="#fileDelete-modal">
+        <i class="ti ti-trash"></i>
+      </a>
+    </div>
+  `;
+
+						return [checkbox, filesInfo, createdOn, departmentName, deletedOn, actions];
+					}
+
+					// Debounced reload for search and filters
+					const reloadTable = debounce(() => table.ajax.reload(), 500);
+
+					$('#department').on('change', reloadTable);
+					$('#search_input').on('keyup', reloadTable);
+					$('#recyclinbindocuments_table_length select').on('change', reloadTable);
+
+					// Restore document (Updated Success Handler)
+					$(document).on('click', '.restore-btn', function () {
+						const row = $(this).closest('tr');
+						const documentId = $(this).data('document-id');
+						const restoreConfirmModal = $('#restore-modal');
+
+						// Extract file information from the table cell HTML
+						const filesInfoDiv = row.find('td:eq(1) .flxtblleft');
+						const fileName = filesInfoDiv.find('p').text().trim();
+						const fileSize = filesInfoDiv.find('span.fs-11').text().trim();
+						const fileIconSrc = filesInfoDiv.find('.avatar img').attr('src');
+
+						// ... (Existing logic to update the #restore-modal content)
+						const filesCount = 1;
+						const fileCountText = filesCount > 1 ? `<span class="text-success">+${filesCount - 1}</span>` : '';
+						restoreConfirmModal.find('#restore-file-name').text(fileName);
+						restoreConfirmModal.find('#restore-file-size').text(fileSize);
+						restoreConfirmModal.find('#restore-file-count').html(fileCountText);
+						restoreConfirmModal.find('.avatar img').attr('src', fileIconSrc || '/img/icons/fn1.png');
+
+						// Show modal
+						restoreConfirmModal.modal('show');
+
+						// Confirm restore action
+						restoreConfirmModal.find('#confirm-restore').off('click').on('click', function () {
+							$.ajax({
+								url: `/api/documents/${documentId}/restore`,
+								method: 'PATCH',
+								success: function () {
+									table.row(row).remove().draw();
+									restoreConfirmModal.modal('hide');
+									showSuccessModal(fileName, 'Restored', fileIconSrc);
+									// showToast('Document restored successfully.', 'success'); // Comment out or remove toast if using modal
+								},
+								error: function () {
+									showToast('Failed to restore document.', 'error');
+								}
+							});
+						});
+					});
+
+					// Permanent delete
+					$(document).on('click', '.delete-permanent-btn', function () {
+
+						const row = $(this).closest('tr');
+						const documentId = $(this).data('document-id');
+						const documentName = $(this).data('document-name');
+						const documentSize = $(this).data('document-size');   // << here
+						const documentCount = $(this).data('document-count'); // optional
+						const modal = $('#fileDelete-modal');
+						const fileIconSrc = row.find('td:eq(1) .avatar img').attr('src');
+
+						// ---- Update modal content ----
+						modal.find('.flxtbltxt p').html(`${documentName}`);
+						modal.find('.flxtbltxt span.fs-11').text(documentSize || '');
+						modal.find('.avatar img').attr('src', fileIconSrc || '/img/icons/fn1.png');
+
+						// Show modal
+						modal.modal('show');
+
+						// ---- Delete action ----
+						modal.find('button.btn-primary')
+							.off('click')
+							.on('click', function () {
+
+								$.ajax({
+									url: '/api/documents/permanent',
+									method: 'DELETE',
+									contentType: 'application/json',
+									data: JSON.stringify({ ids: [documentId] }),
+
+									success: function () {
+										table.row(row).remove().draw();
+										modal.modal('hide');
+
+										showSuccessModal(documentName, 'Deleted', '/img/icons/fn1.png');
+									},
+
+									error: function () {
+										showToast('Failed to delete document.', 'error');
+									}
+								});
+
+							});
+					});
+
+					// Empty recycle bin for selected documents
+					$('[data-bs-target="#emptybin-modal"]').on('click', function () {
+						const modal = $('#emptybin-modal');
+						const confirmBtn = modal.find('button.btn-primary');
+
+						const selectedDocs = $('.select-document:checked');
+						if (selectedDocs.length === 0) {
+							showToast('No documents selected.', 'error');
+							return;
+						}
+
+						const docIds = [];
+						let totalSizeKB = 0;
+
+						selectedDocs.each(function () {
+							const row = $(this).closest('tr');
+							docIds.push($(this).data('document-id'));
+							const sizeText = row.find('td:nth-child(2) span').text().replace('KB', '').trim();
+							totalSizeKB += parseFloat(sizeText) || 0;
+						});
+
+						const totalSizeMB = formatBytesToMB(totalSizeKB);
+
+						modal.find('.modal-body').html(`
+            Are you sure you want to permanently delete 
+            <span class="txtblue">selected files</span> (${totalSizeMB})? This action cannot be undone.
+        `);
+
+						confirmBtn.off('click').on('click', function () {
+							$.ajax({
+								url: '/api/documents/permanent',
+								method: 'DELETE',
+								contentType: 'application/json',
+								data: JSON.stringify({ ids: docIds }),
+								success: function (res) {
+									modal.modal('hide');
+									table.ajax.reload();
+									showToast(res.message || 'Selected documents deleted successfully.', 'success');
+								},
+								error: function () {
+									showToast('Failed to delete selected documents.', 'error');
+								}
+							});
+						});
+
+						modal.modal('show');
+					});
+
+				});
+			</script>

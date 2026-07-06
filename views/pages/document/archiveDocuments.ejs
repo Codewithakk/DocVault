@@ -1,0 +1,318 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Archive</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                Archive
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="rtbtn">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#emptybin-modal"
+                        class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+                        Empty Archive
+                    </a>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-4">
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="mb-0">
+                            <select id="department" class="form-select select2" style="width: 200px;">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="custom-datatable-filter table-responsive">
+                                <table class="table datatable" id="archived_documents_table">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>File Name</th>
+                                            <th>Created on</th>
+                                            <th>Department</th>
+                                            <th>Deleted on</th>
+                                            <th>Tags</th>
+                                            <th>Meta data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="archived_documents_table_body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Table -->
+            </div>
+        </div>
+
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex Services &
+                    Technology</a></p>
+        </div>
+    </div>
+    <!-- /Page Wrapper -->
+
+    <%- include('../../partials/footer') %>
+
+        <!-- DataTables Scripts -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- Archived Folders Logic -->
+        <script>
+            $(document).ready(function () {
+
+                // Initialize Select2 for Department filter
+                function initSelect2(selector, url, placeholderText) {
+                    $(selector).select2({
+                        placeholder: `-- Select ${placeholderText} --`,
+                        allowClear: true,
+                        ajax: {
+                            url,
+                            dataType: 'json',
+                            delay: 250,
+                            data: params => ({ search: params.term }),
+                            processResults: data => ({
+                                results: [
+                                    { id: '', text: `-- Select ${placeholderText} --` },
+                                    ...data.data.map(item => ({ id: item._id, text: item.name }))
+                                ]
+                            })
+                        }
+                    });
+
+                    $(selector).on('select2:select', function (e) {
+                        if (!e.params.data.id) $(this).val(null).trigger('change');
+                    });
+                }
+
+                initSelect2('#department', `${baseUrl}/api/departments/search`, 'Department');
+
+                const columnMap = [
+                    null,
+                    null, // fileName (not sortable)
+                    'createdAt',
+                    'department.name',
+                    'updatedAt',
+                    'tags',
+                    null
+                ];
+
+                const dataTable = $('#archived_documents_table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    deferRender: true,
+                    pageLength: 25,
+                    lengthMenu: [10, 25, 50, 100],
+                    ajax: {
+                        url: `${baseUrl}/api/documents/archive`,
+                        type: 'GET',
+                        timeout: 30000,
+                        data: function (d) {
+                            d.page = Math.floor(d.start / d.length) + 1;
+                            d.limit = d.length;
+                            d.search = d.search.value;
+                            d.orderColumn = columnMap[d.order[0].column] || 'updatedAt';
+                            d.orderDir = d.order[0].dir;
+                            d.department = $('#department').val() || 'all';
+                            // -----------------------------------------
+                            return d;
+                        },
+                        dataSrc: function (res) {
+                            if (!res || !Array.isArray(res.data)) return [];
+                            return res.data.map(doc => {
+                                const file = doc.file || {};
+                                const ext = file.originalName?.split('.').pop()?.toLowerCase() || 'default';
+                                const fileSizeKB = file.fileSize ? (file.fileSize / 1024).toFixed(2) + ' KB' : '-';
+                                const icon = fileIcons[ext] || fileIcons.default;
+
+                                return {
+                                    actions: `
+                                <div class="action-icon d-inline-flex">
+                                    <a href="#" class="restore-folder me-2" data-folder-id="${doc._id}">
+                                        <i class="ti ti-restore"></i>
+                                    </a>
+                                    <a href="#" class="trash-folder" data-folder-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal">
+                                        <i class="ti ti-trash"></i>
+                                    </a>
+                                </div>`,
+                                    fileName: `
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar rounded bg-light me-2">
+                                        <img src="${icon}" style="height:30px;">
+                                    </span>
+                                    <div>
+                                        <p class="mb-0 text-dark">${doc.metadata?.fileName || file?.originalName || '-'}</p>
+                                        <small class="text-muted">${fileSizeKB}</small>
+                                    </div>
+                                </div>`,
+                                    createdAt: new Date(doc.createdAt).toLocaleDateString(),
+                                    department: doc.department?.name || "-",
+                                    deletedOn: new Date(doc.updatedAt).toLocaleDateString(),
+                                    tags: doc.tags?.join(", ") || "-",
+                                    metaData: `<strong>Description:</strong> ${doc.metadata?.fileDescription || "-"}<br>
+                                       <strong>Heading:</strong> ${doc.metadata?.mainHeading || "-"}`
+                                };
+                            });
+                        },
+                        error: function (xhr, status, err) {
+                            let msg = "Failed to load data.";
+                            if (status === "timeout") msg = "Request timed out. Try filtering.";
+                            else if (xhr.responseJSON?.message) msg = xhr.responseJSON.message;
+
+                            showToast(msg, "error");
+                            dataTable.clear().draw();
+                        }
+                    },
+                    columns: [
+                        { data: 'actions', orderable: false, searchable: false },
+                        { data: 'fileName', orderable: false },
+                        { data: 'createdAt' },
+                        { data: 'department' },
+                        { data: 'deletedOn' },
+                        { data: 'tags' },
+                        { data: 'metaData', orderable: false }
+                    ],
+                    order: [[2, 'desc']]
+                });
+
+                // Refresh DataTable
+                function refreshArchivedTable() {
+                    dataTable.ajax.reload(null, false);
+                }
+
+                // Filter by Department
+                $('#department').on('change', refreshArchivedTable);
+
+                // Debounced search
+                let searchTimer;
+                $('.dataTables_filter input').off().on('keyup', function () {
+                    clearTimeout(searchTimer);
+                    const value = this.value;
+                    searchTimer = setTimeout(() => dataTable.search(value).draw(), 500);
+                });
+
+                // Trash Folder
+                $(document).on('click', '.trash-folder', function (e) {
+                    e.preventDefault();
+                    const documentId = $(this).data('folder-id');
+                    $('#confirm-trash-folder').off('click').on('click', function () {
+                        $.ajax({
+                            url: `${baseUrl}/api/documents/permanent`,
+                            type: 'DELETE',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ ids: [documentId] }),
+                            success: res => {
+                                showToast(res.success ? 'File deleted permanently' : res.message || 'Failed', res.success ? 'success' : 'error');
+                                if (res.success) {
+                                    refreshArchivedTable();
+                                    $('#trashdoc-modal').modal('hide');
+                                }
+                            },
+                            error: () => showToast('Something went wrong!', 'error')
+                        });
+                    });
+                });
+
+                // Restore Folder (Dynamic Modal)
+                $(document).on('click', '.restore-folder', function (e) {
+                    e.preventDefault();
+                    const documentId = $(this).data('folder-id');
+                    const rowData = dataTable.row($(this).closest('tr')).data();
+                    if (!rowData) return;
+
+                    const fileName = $(rowData.fileName).find('p').text() || 'Unknown file';
+                    const fileSize = $(rowData.fileName).find('small').text() || '-';
+                    const fileIcon = $(rowData.fileName).find('img').attr('src') || '/img/icons/fn1.png';
+
+                    // Update modal content dynamically
+                    $('#restore-file-name').text(fileName);
+                    $('#restore-file-size').text(fileSize);
+                    $('#restore-modal .avatar img').attr('src', fileIcon);
+                    $('#restore-file-count').hide();
+
+                    $('#restore-modal').modal('show');
+
+                    $('#confirm-restore').off('click').on('click', function () {
+                        const $btn = $(this).prop('disabled', true).text('Restoring...');
+                        $.ajax({
+                            url: `${baseUrl}/api/documents/${documentId}/archive?isArchived=false`,
+                            type: 'PATCH',
+                            success: res => {
+                                showToast(res.success ? 'File restored successfully' : 'Failed to restore file',
+                                    res.success ? 'success' : 'error');
+                                if (res.success) {
+                                    $('#restore-modal').modal('hide');
+                                    refreshArchivedTable();
+                                }
+                            },
+                            error: () => showToast('Something went wrong!', 'error'),
+                            complete: () => $btn.prop('disabled', false).text('Yes, Restore')
+                        });
+                    });
+                });
+
+                // Empty Archive (Bulk Delete)
+                $('#emptybin-modal .btn-primary').on('click', function () {
+                    const $btn = $(this).prop('disabled', true).text('Deleting...');
+                    $.ajax({
+                        url: `${baseUrl}/api/documents/archive`,
+                        type: 'GET',
+                        data: { page: 1, limit: 10000 },
+                        success: res => {
+                            const allIds = res.data.map(doc => doc._id);
+                            if (!allIds.length) {
+                                showToast('No documents to delete', 'info');
+                                $btn.prop('disabled', false).text('Yes, Delete');
+                                $('#emptybin-modal').modal('hide');
+                                return;
+                            }
+
+                            $.ajax({
+                                url: `${baseUrl}/api/documents/permanent`,
+                                type: 'DELETE',
+                                contentType: 'application/json',
+                                data: JSON.stringify({ ids: allIds }),
+                                success: res => {
+                                    showToast(res.success ? res.message : res.message || 'Failed',
+                                        res.success ? 'success' : 'error');
+                                    if (res.success) {
+                                        refreshArchivedTable();
+                                        $('#emptybin-modal').modal('hide');
+                                    }
+                                },
+                                error: () => showToast('Something went wrong!', 'error'),
+                                complete: () => $btn.prop('disabled', false).text('Yes, Delete')
+                            });
+                        },
+                        error: () => {
+                            showToast('Failed to fetch archived documents', 'error');
+                            $btn.prop('disabled', false).text('Yes, Delete');
+                        }
+                    });
+                });
+
+                // Optional: auto-refresh every 60s
+                // setInterval(refreshArchivedTable, 60000);
+            });
+        </script>

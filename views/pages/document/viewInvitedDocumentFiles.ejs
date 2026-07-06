@@ -1,0 +1,160 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+            <div class="text-start mb-3">
+                <img src="<%= logo %>" alt="Company Logo" style="height: 60px;">
+            </div>
+            <h2 class="main-header">
+                <%= documentTitle %>
+            </h2>
+            <hr class="mb-4">
+
+            <% if (expiredMessage) { %>
+
+                <div class="card p-4 shadow-sm" style="max-width: 520px;">
+                    <h3 class="h4 text-danger mb-3">Access Restricted</h3>
+
+                    <div class="alert alert-warning">
+                        <%= expiredMessage %>
+                    </div>
+
+                    <p class="text-muted">
+                        You do not have permission to view this document.
+                        Click below to send a request.
+                    </p>
+
+                    <button id="requestAccessBtn" class="btn btn-primary btn-lg" onclick="requestAccess()">
+                        <i class="bi bi-person-fill-lock me-2"></i> Request Access
+                    </button>
+
+                    <div class="d-flex align-items-center mt-3">
+                        <div id="loader" class="spinner-border text-primary me-2" style="display:none;"></div>
+                        <div id="responseMessage" class="flex-grow-1"></div>
+                    </div>
+                </div>
+
+                <% } else { %>
+
+                    <h3 class="h5 text-secondary mb-3">Attached Files:</h3>
+
+                    <div id="files-list" class="row g-4">
+
+                        <% if (files && files.length> 0) { %>
+
+                            <% for (var i=0; i < files.length; i++) { var file=files[i]; var
+                                parts=file.originalName.split('.'); var ext=parts[parts.length - 1].toLowerCase(); var
+                                imageExt=["jpg","jpeg","png","gif","webp"]; var isImage=imageExt.indexOf(ext) !==-1; var
+                                iconPath="" ; if (isImage) { iconPath=file.fileUrl; } else if
+                                (["ppt","pptx"].indexOf(ext) !==-1) { iconPath="/img/icons/fn1.png" ; } else if
+                                (["doc","docx"].indexOf(ext) !==-1) { iconPath="/img/icons/fn2.png" ; } else if
+                                (["xls","xlsx"].indexOf(ext) !==-1) { iconPath="/img/icons/fn3.png" ; } else if
+                                (ext==="pdf" ) { iconPath="/img/icons/fn4.png" ; } else {
+                                iconPath="/img/icons/default.png" ; } %>
+
+                                <div class="col-sm-6 col-md-4 col-lg-3">
+                                    <div
+                                        class="file-card border p-3 rounded shadow-sm position-relative d-flex flex-column align-items-center text-center h-100">
+
+                                        <div class="file-icon-box mb-2" style="max-width: 64px;">
+                                            <img src="<%= iconPath %>" class="img-fluid" alt="file icon"
+                                                style="<% if (isImage) { %>border-radius:6px; object-fit:cover; width:64px; height:64px;<% } %>">
+                                        </div>
+
+                                        <p class="file-name fw-bold text-truncate w-100 mb-1"
+                                            title="<%= file.originalName %>">
+                                            <%= file.originalName %>
+                                        </p>
+
+                                        <p class="file-size text-muted small mb-0">
+                                            <%= file.formattedSize %>
+                                        </p>
+
+                                        <div class="dropdown position-absolute top-0 end-0 m-1">
+                                            <button type="button"
+                                                class="btn btn-sm dropdown-toggle dropdown-toggle-icon"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+    
+    <!-- VIEW (always allowed) -->
+    <li>
+        <a class="dropdown-item" href="/folders/view/<%= file._id %>" target="_blank">
+            <i class="bi bi-eye me-2"></i> View
+        </a>
+    </li>
+
+    <!-- DOWNLOAD (only if edit access) -->
+    <% if (sharedAccess && sharedAccess.accessLevel === "edit") { %>
+        <li>
+            <a class="dropdown-item" href="/api/download/file/<%= file._id %>">
+                <i class="bi bi-download me-2"></i> Download
+            </a>
+        </li>
+    <% } %>
+
+</ul>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <% } %> <!-- END LOOP -->
+
+                                    <% } else { %>
+
+                                        <div class="col-12">
+                                            <div class="alert alert-info w-100">
+                                                <i class="bi bi-info-circle me-2"></i> No files available.
+                                            </div>
+                                        </div>
+
+                                        <% } %>
+
+                    </div>
+
+                    <% } %>
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+
+        <script>
+            async function requestAccess() {
+                var btn = document.getElementById("requestAccessBtn");
+                var loader = document.getElementById("loader");
+                var msg = document.getElementById("responseMessage");
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+                var documentId = "<%= documentId %>";
+                var email = "<%= email || '' %>";
+
+                try {
+                    var res = await fetch('/api/documents/' + documentId + '/request-access', {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: email })
+                    });
+
+                    var data = await res.json();
+
+                    if (res.ok) {
+                        msg.innerHTML = '<div class="alert alert-success mt-2">' + data.message + '</div>';
+                        btn.innerHTML = "Request Sent";
+                    } else {
+                        msg.innerHTML = '<div class="alert alert-danger mt-2">' + data.message + '</div>';
+                        btn.disabled = false;
+                        btn.innerHTML = "Try Again";
+                    }
+
+                } catch (err) {
+                    msg.innerHTML = '<div class="alert alert-danger mt-2">Server error. Please try again.</div>';
+                    btn.disabled = false;
+                    btn.innerHTML = "Try Again";
+                }
+            }
+        </script>

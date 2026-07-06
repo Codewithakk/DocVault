@@ -1,0 +1,434 @@
+<%- include('../../partials/header') %>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Analytics</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                Dashboard
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="col-xxl-12">
+                    <div class="row flex-fill">
+                        <!-- Total Documents -->
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill anlytc_linkbx" data-documenttype="all">
+                                <div class="card-body">
+                                    <h3 id="total-documents" class="fs-32 fw-medium mb-2">0</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Total Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success">
+                                            <i class="ti ti-trending-up"></i>
+                                        </span>
+                                        +0%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-primary mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Uploaded This Month -->
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill anlytc_linkbx" data-documenttype="uploaded">
+                                <div class="card-body">
+                                    <h3 id="uploaded-this-month" class="fs-32 fw-medium mb-2">0</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Uploaded This Month</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success">
+                                            <i class="ti ti-trending-up"></i>
+                                        </span>
+                                        +0%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-success mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modified Documents -->
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill anlytc_linkbx" data-documenttype="modified">
+                                <div class="card-body">
+                                    <h3 id="modified-documents" class="fs-32 fw-medium mb-2">0</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Modified Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success">
+                                            <i class="ti ti-trending-up"></i>
+                                        </span>
+                                        +0%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-warning mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deleted/Archive -->
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill anlytc_linkbx" data-documenttype="deletedarchive">
+                                <div class="card-body">
+                                    <h3 id="deleted-archive" class="fs-32 fw-medium mb-2">0</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Deleted / Archive</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success">
+                                            <i class="ti ti-trending-up"></i>
+                                        </span>
+                                        +0%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-danger mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row seprate_crdhdr" id="approval-status">
+                <div class="dflexbtwn mb-3">
+                    <h3 class="fs-20 fw-normal">Approval Status</h3>
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="dropdown">
+                            <div class="input-group">
+                                <select class="form-select border text-black" id="filterRange">
+                                    <option value="today" selected>Today</option>
+                                    <option value="week">Last Week</option>
+                                    <option value="month">Last Month</option>
+                                    <option value="year">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending -->
+                <div class="col-sm-6">
+                    <div class="anlytc_linkbx bgcream" data-status="Pending">
+                        <a href="#">
+                            <div class="w-100 dflexbtwn">
+                                <div class="tctlft">
+                                    <h6 class="fs-18 fw-normal text-default mb-4">Pending Approval</h6>
+                                    <h3 class="fs-32 fw-medium" id="pendingCount">0</h3>
+                                </div>
+                                <span class="link_chevron"><i class="ti ti-chevron-right"></i></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Approved -->
+                <div class="col-sm-6">
+                    <div class="anlytc_linkbx bgltgreen" data-status="Approved">
+                        <a href="#">
+                            <div class="w-100 dflexbtwn">
+                                <div class="tctlft">
+                                    <h6 class="fs-18 fw-normal text-default mb-4">Approved Document</h6>
+                                    <h3 class="fs-32 fw-medium" id="approvedCount">0</h3>
+                                </div>
+                                <span class="link_chevron"><i class="ti ti-chevron-right"></i></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Rejected -->
+                <div class="col-sm-6">
+                    <div class="anlytc_linkbx bgltred" data-status="Rejected">
+                        <a href="#">
+                            <div class="w-100 dflexbtwn">
+                                <div class="tctlft">
+                                    <h6 class="fs-18 fw-normal text-default mb-4">Rejected Document</h6>
+                                    <h3 class="fs-32 fw-medium" id="rejectedCount">0</h3>
+                                </div>
+                                <span class="link_chevron"><i class="ti ti-chevron-right"></i></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Tracking -->
+                <div class="col-sm-6">
+                    <div class="anlytc_linkbx bgltblue">
+                        <a href="/employee/approval">
+                            <div class="w-100 dflexbtwn">
+                                <div class="tctlft">
+                                    <h6 class="fs-18 fw-normal text-default">Approval stage Tracking</h6>
+                                </div>
+                                <span class="link_chevron"><i class="ti ti-chevron-right"></i></span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="seprate_crdhdr">
+                    <div class="dflexbtwn">
+                        <h3 class="fs-20 fw-normal">Access and Permission Logs</h3>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="d-flex gap-2 align-items-center">
+                                <div class="position-relative mb-0">
+                                    <input type="text" class="form-control datetimepicker" placeholder="Select date">
+                                    <span class="input-icon-addon">
+                                        <i class="ti ti-calendar text-gray-7"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="/permissionslogs" class="fs-16 ms-4 fw-normal text-primary">View All</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-nowrap mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Document</th>
+                                            <th>Date</th>
+                                            <th>Action by User</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fileStatusTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-3 text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header border-0">
+                            <div class="card-title">Document Classification</div>
+                        </div>
+                        <div class="card-body">
+                            <div id="fileUsageChart" style="height:400px;"></div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header border-0">
+                            <div class="card-title">Storage Details</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chartjs-wrapper-demo">
+                                <div id="storageChart" style="height:300px;"></div>
+
+                            </div>
+                            <div class="storage-info my-3">
+                                <span class="text-default fs-20 fw-medium">120 GB Storage</span>
+                            </div>
+                            <div class="progress mb-2 progress-animate" role="progressbar" aria-valuenow="75"
+                                aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar bg-info-gradient" style="width: 75%"></div>
+                            </div>
+                            <div class="storage-labels dflexbtwn">
+                                <span>75% Used</span>
+                                <span>15% Remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="seprate_crdhdr">
+                    <div class="dflexbtwn">
+                        <h3 class="fs-20 fw-normal">Recent Activity</h3>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="me-2">
+                                <select id="analyticsDepartment" class="form-select fs-13 select2">
+                                    <option value="">-- Select Department --</option>
+                                </select>
+                            </div>
+                            <div class="dropdown">
+                                <div class="input-group">
+                                    <span class="input-group-text border">Sort by:</span>
+                                    <select class="form-select border text-black" id="sortBySelect">
+                                        <option value="" disabled selected>Doc type</option>
+                                        <option value="date">Date</option>
+                                        <option value="name">Name</option>
+                                        <option value="status">Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <a href="/compilance-retention" class="fs-16 ms-4 fw-normal text-primary">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-nowrap mb-0" id="documentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>File Name</th>
+                                            <th>Department</th>
+                                            <th>Compliance</th>
+                                            <th>Retention</th>
+                                            <th>Expiry Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Projects -->
+            </div>
+
+
+
+        </div>
+
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                    Technology</a></p>
+        </div>
+
+    </div>
+    <!-- /Page Wrapper -->
+    <script>
+        Highcharts.chart('storageChart', {
+            chart: { type: 'areaspline' },
+            title: null,
+            xAxis: { visible: false },
+            yAxis: { visible: false },
+            legend: { enabled: false },
+            series: [{
+                data: [90, 60, 80, 70, 100, 65, 85],
+                color: '#00aaff',
+                fillOpacity: 0.3
+            }],
+            credits: false
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusCards = document.querySelectorAll('.anlytc_linkbx[data-status]');
+            // -------------------------
+            // Initialize Select2 with Clear Option
+            // -------------------------
+            function initSelect2(selector, url, placeholder, textKey) {
+                $(selector).select2({
+                    placeholder: placeholder,
+                    allowClear: true,
+                    ajax: {
+                        url,
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({ search: params.term }),
+                        processResults: data => {
+                            const results = data.data.map(item => ({
+                                id: item._id,
+                                text: item[textKey]
+                            }));
+                            return { results };
+                        }
+                    }
+                });
+
+                // Reset selection when clearing
+                $(selector).on('select2:select', function (e) {
+                    if (!e.params.data.id) {
+                        $(this).val(null).trigger('change');
+                    }
+                });
+            }
+
+            // Initialize Select2
+            initSelect2('#analyticsDepartment', `${baseUrl}/api/departments/search`, 'Select Department', 'name');
+            // initSelect2('#projectName', `${baseUrl}/api/projects`, 'Select Project', 'projectName');
+            statusCards.forEach(card => {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function (e) {
+                    e.preventDefault(); // Prevent default <a> navigation
+                    const status = this.getAttribute('data-status');
+                    redirectToDocumentsWithStatus(status);
+                });
+            });
+        });
+
+        function redirectToDocumentsWithStatus(status) {
+            const baseUrl = window.location.origin;
+            let url = `${baseUrl}/documents/list`;
+
+            if (status && status !== 'all') {
+                url += `?status=${encodeURIComponent(status)}`;
+            }
+
+            window.location.href = url;
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusCards = document.querySelectorAll('.anlytc_linkbx[data-documenttype]');
+
+            statusCards.forEach(card => {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const documentType = this.getAttribute('data-documenttype');
+                    redirectToDocumentsWithDocumentType(documentType);
+                });
+            });
+        });
+
+        function redirectToDocumentsWithDocumentType(documentType) {
+            const baseUrl = window.location.origin;
+            let url = `${baseUrl}/documents/list`;
+
+            if (documentType && documentType !== 'all') {
+                url += `?status=${encodeURIComponent(documentType)}`;
+            }
+
+            window.location.href = url;
+        }
+    </script>
+    <script src="/js/pages/analytics/Analytics.js"></script>
+    <%- include('../../partials/footer') %>
+        <script src="/js/components/shareDocument.js"></script>

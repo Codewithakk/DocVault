@@ -1,0 +1,786 @@
+<%- include('../../partials/header') %>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Dashboard Overview</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                Dashboard
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Admin</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <!-- Welcome Wrap -->
+            <div class="card">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap pb-1">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="avatar avatar-xl flex-shrink-0">
+                            <img src="/img/profiles/avatar-31.jpg" class="rounded-circle" alt="img">
+                        </span>
+                        <div class="ms-3">
+                            <h3 class="mb-2">Welcome Ashish</h3>
+                            <p>You have <span class="text-primary text-decoration-underline">21</span> Pending Approvals
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap mb-1">
+                        <a href="#" class="btn btn-primary btn-md me-2 mb-2" data-bs-toggle="modal"
+                            data-bs-target="#add_project">
+                            <i class="ti ti-plus me-1"></i>Add New Document</a>
+                    </div>
+                </div>
+            </div>
+            <!-- /Welcome Wrap -->
+
+            <div class="row">
+                <div class="col-xxl-12">
+                    <div class="row flex-fill">
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill">
+                                <div class="card-body">
+                                    <h3 class="fs-32 fw-medium mb-2">160</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Total Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success"><i
+                                                class="ti ti-trending-up"></i> </span> +10%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-primary mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill">
+                                <div class="card-body">
+                                    <h3 class="fs-32 fw-medium mb-2">70</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Approved Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success"><i
+                                                class="ti ti-trending-up"></i> </span> +10%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-success mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill">
+                                <div class="card-body">
+                                    <h3 class="fs-32 fw-medium mb-2">50</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Pending Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success"><i
+                                                class="ti ti-trending-up"></i> </span> +10%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-warning mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex">
+                            <div class="card flex-fill">
+                                <div class="card-body">
+                                    <h3 class="fs-32 fw-medium mb-2">40</h3>
+                                    <h6 class="fs-16 fw-light text-default mb-3">Rejected Documents</h6>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="sm-avatar avatar rounded bg-soft-success"><i
+                                                class="ti ti-trending-up"></i> </span> +10%
+                                    </span>
+                                    <div class="card_avtr_right">
+                                        <span class="avatar rounded bg-danger mb-2">
+                                            <i class="ti ti-calendar-share fs-24"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xxl-12">
+                    <div class="row flex-fill">
+                        <div class="col-md-7">
+                            <div class="seprate_crdhdr">
+                                <div class="dflexbtwn">
+                                    <h3 class="fs-20 fw-normal">File Status</h3>
+                                    <a href="#" class="fs-16 fw-normal text-primary">View All</a>
+                                </div>
+                            </div>
+                            <div class="card flex-fill">
+                                <div class="card-body p-0">
+                                    <div class="flextable">
+                                        <div class="flxtblhdr dflexbtwn">
+                                            <h4 class="fs-16 fw-normal">File Name</h4>
+                                            <h4 class="fs-16 fw-normal">File Status</h4>
+                                        </div>
+                                        <div class="flxtblbody">
+                                            <div class="dflexbtwn mb-2">
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Dev Presentation </p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flxtblright">
+                                                    <p class="fs-12 fw-light text-black">Opened the file</p>
+                                                </div>
+                                            </div>
+                                            <div class="dflexbtwn mb-2">
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn2.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal </p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flxtblright">
+                                                    <p class="fs-12 fw-light text-black">Seen the file</p>
+                                                </div>
+                                            </div>
+                                            <div class="dflexbtwn mb-2">
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn3.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Team Management </p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flxtblright">
+                                                    <p class="fs-12 fw-light text-black">Modified the file</p>
+                                                </div>
+                                            </div>
+                                            <div class="dflexbtwn mb-2">
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn4.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Work Flow File </p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flxtblright">
+                                                    <p class="fs-12 fw-light text-black">Closed the file</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="seprate_crdhdr">
+                                <div class="dflexbtwn">
+                                    <h3 class="fs-20 fw-normal">Recent Activity</h3>
+                                </div>
+                            </div>
+                            <div class="card flex-fill">
+                                <div class="card-body">
+                                    <div class="dflexbtwn mb-2">
+                                        <div class="flxtblleft">
+                                            <span class="mb-2">
+                                                <img src="/img/icons/usrround.png">
+                                            </span>
+                                            <div class="flxtbltxt ms-3">
+                                                <p class="fs-16 mb-1 fw-normal">Atul have edited the document for DMS
+                                                    Project</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dflexbtwn mb-2">
+                                        <div class="flxtblleft">
+                                            <span class="mb-2">
+                                                <img src="/img/icons/usrround.png">
+                                            </span>
+                                            <div class="flxtbltxt ms-3">
+                                                <p class="fs-16 mb-1 fw-normal">Shikha have added a new document</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dflexbtwn mb-2">
+                                        <div class="flxtblleft">
+                                            <span class="mb-2">
+                                                <img src="/img/icons/usrround.png">
+                                            </span>
+                                            <div class="flxtbltxt ms-3">
+                                                <p class="fs-16 mb-1 fw-normal">Atul have edited your the document</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dflexbtwn mb-2">
+                                        <div class="flxtblleft">
+                                            <span class="mb-2">
+                                                <img src="/img/icons/usrround.png">
+                                            </span>
+                                            <div class="flxtbltxt ms-3">
+                                                <p class="fs-16 mb-1 fw-normal">Shweta have edited the document for DMS
+                                                    Project</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="card flex-fill">
+                                <div
+                                    class="card-header border-0 pb-2 d-flex align-items-center justify-content-between flex-wrap">
+                                    <h5 class="fs-20 mb-2 mxw-70">Department Document Uploads type</h5>
+                                    <div class="dropdown mb-2">
+                                        <a href="javascript:void(0);"
+                                            class="btn btn-white border btn-sm d-inline-flex align-items-center"
+                                            data-bs-toggle="dropdown">
+                                            <i class="ti ti-calendar me-1"></i>Today
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end p-3">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded-1">This
+                                                    Month</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded-1">This
+                                                    Week</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded-1">Today</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chartjs-wrapper-demo position-relative mb-4">
+                                        <canvas id="department" height="400"></canvas>
+                                        <div class="position-absolute text-center attendance-canvas">
+                                            <p class="fs-13 mb-1">Top Management</p>
+                                            <h3>22%</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Sales Overview -->
+                <div class="col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-header pb-2 border-0">
+                            <div class="dflexbtwn">
+                                <h5 class="mb-2">Department Document Uploads</h5>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <p class="fs-13  me-3 mb-0"><i
+                                                class="ti ti-square-filled text-lblue me-2"></i>Pending Approvals</p>
+                                        <p class="fs-13  me-3 mb-0"><i
+                                                class="ti ti-square-filled text-lgreen me-2"></i>Approved</p>
+                                        <p class="fs-13  mb-0"><i
+                                                class="ti ti-square-filled me-2 text-lorange"></i>Rejected</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body pb-0">
+                            <div class="d-flex align-items-center justify-content-end">
+                                <div class="dropdown mb-2">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle border text-black btn btn-outline-secondary fs-13 me-2"
+                                        data-bs-toggle="dropdown">
+                                        All Departments
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">UI/UX
+                                                Designer</a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">HR Manager</a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">Junior
+                                                Tester</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown mb-2">
+                                    <a href="javascript:void(0);"
+                                        class="btn btn-white border text-black btn btn-outline-secondary"
+                                        data-bs-toggle="dropdown">
+                                        <i class="ti ti-calendar me-1"></i>Today
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">This Month</a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">This Week</a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item rounded-1">Today</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div id="sales-income"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Sales Overview -->
+            </div>
+
+            <div class="row">
+                <div class="seprate_crdhdr">
+                    <div class="dflexbtwn">
+                        <h3 class="fs-20 fw-normal">Recent Activity</h3>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="dropdown">
+                                <a href="javascript:void(0);"
+                                    class="dropdown-toggle border text-black btn btn-outline-secondary fs-13 me-2"
+                                    data-bs-toggle="dropdown">
+                                    Select Department
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end p-3">
+                                    <li>
+                                        <a href="javascript:void(0);" class="dropdown-item rounded-1">UI/UX Designer</a>
+                                    </li>
+                                    <li>
+                                        <a href="javascript:void(0);" class="dropdown-item rounded-1">HR Manager</a>
+                                    </li>
+                                    <li>
+                                        <a href="javascript:void(0);" class="dropdown-item rounded-1">Junior Tester</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="dropdown">
+                                <div class="input-group">
+                                    <span class="input-group-text border">Sort by:</span>
+                                    <select class="form-select select2 text-black">
+                                        <option selected>Doc type</option>
+                                        <option value="1">Date</option>
+                                        <option value="2">Name</option>
+                                        <option value="3">Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <a href="#" class="fs-16 ms-4 fw-normal text-primary">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-nowrap mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>File Name</th>
+                                            <th>Last Modified on</th>
+                                            <th>Owner</th>
+                                            <th>Department</th>
+                                            <th>Project</th>
+                                            <th>Shared with</th>
+                                            <th>Tags</th>
+                                            <th>Meta data</th>
+                                            <th>Created on</th>
+                                            <th>Description</th>
+                                            <th>Remark</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal v1 <span
+                                                                class="text-success">+2</span></p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Ashish</p>
+                                            </td>
+                                            <td>
+                                                <p>Operation Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-success">Approved</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn2.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Dev Presentation</p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Rekha</p>
+                                            </td>
+                                            <td>
+                                                <p>Designing Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-warning">Pending</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal v1 <span
+                                                                class="text-success">+2</span></p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Ashish</p>
+                                            </td>
+                                            <td>
+                                                <p>Operation Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-danger">Rejected</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal v1 <span
+                                                                class="text-success">+2</span></p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Ashish</p>
+                                            </td>
+                                            <td>
+                                                <p>Operation Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-danger">Rejected</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal v1 <span
+                                                                class="text-success">+2</span></p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Ashish</p>
+                                            </td>
+                                            <td>
+                                                <p>Operation Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-info">Draft</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        <i class="ti ti-settings"></i> </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                        <li><a class="dropdown-item" href="#">Dropdown link</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="flxtblleft">
+                                                    <span class="avatar rounded bg-light mb-2">
+                                                        <img src="/img/icons/fn1.png">
+                                                    </span>
+                                                    <div class="flxtbltxt">
+                                                        <p class="fs-14 mb-1 fw-normal">Project Proposal v1 <span
+                                                                class="text-success">+2</span></p>
+                                                        <span class="fs-11 fw-light text-black">190KB</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>Ashish</p>
+                                            </td>
+                                            <td>
+                                                <p>Operation Team</p>
+                                            </td>
+                                            <td>
+                                                <p>KVP</p>
+                                            </td>
+                                            <td>
+                                                <p>Nikhil, Akshara <span class="text-success">+2</span></p>
+                                            </td>
+                                            <td>
+                                                <p>Tag 1, Tag 2, Tag 3</p>
+                                            </td>
+                                            <td>
+                                                <p> Document, Proposal</p>
+                                            </td>
+                                            <td>
+                                                <p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+                                            </td>
+                                            <td>
+                                                <p>DMS project Files..</p>
+                                            </td>
+                                            <td>
+                                                <p>Pls see the Doc</p>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-md bg-soft-success">Approved</span>
+                                            </td>
+                                        </tr>
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Projects -->
+            </div>
+        </div>
+        <div class="footer d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                    Technology</a></p>
+        </div>
+
+    </div>
+    <!-- /Page Wrapper -->
+    <%- include('../../partials/footer') %>

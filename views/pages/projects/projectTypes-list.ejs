@@ -1,0 +1,166 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="dflexbtwn page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">
+                        <%= title %>
+                    </h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active">Project Types List</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="/projectTypes" class="btn btn-primary">
+                        <i class="ti ti-plus me-1"></i> Add Project Type
+                    </a>
+                </div>
+            </div>
+            <!-- Project Types Table -->
+            <div class="card" id="userListCard">
+                <div class="card-body p-0" id="userListBody">
+                    <div class="custom-datatable-filter table-responsive" id="userTableWrapper">
+                        <table class="table datatable" id="projectTypesTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Sr No.</th>
+                                    <th>Name</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Added By</th>
+                                    <th>Updated By</th>
+                                    <th>Created At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectTypesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by
+                    <a href="javascript:void(0);" id="devLink" class="text-primary">Duplex Services & Technology</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <%- include('../../modals/deleteModal') %>
+        <%- include('../../partials/footer') %>
+
+            <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+            <script>
+                $(document).ready(function () {
+
+                    let deleteId = null;
+                    let table;
+
+                    $.ajax({
+                        url: `${baseUrl}/api/projectTypes`,
+                        method: 'GET',
+
+                        success: function (res) {
+                            if (!res.success) {
+                                return showToast('Failed to fetch project types', 'danger');
+                            }
+
+                            let tbody = '';
+
+                            res.data.forEach((pt, index) => {
+                                tbody += `
+<tr>
+    <td>${index + 1}</td>
+    <td>${pt.name || '-'}</td>
+    <td>${pt.priority ?? '-'}</td>
+    <td>
+        <span class="badge ${pt.status === "Active" ? "bg-success" : "bg-danger"}">
+            ${pt.status}
+        </span>
+    </td>
+   <td>${pt.addedBy?.name || pt.addedBy?.email || '-'}</td>
+      <td>${pt.updatedBy?.name || pt.updatedBy?.email || '-'}</td>
+    <td>${formatDateTime(pt.createdAt)}</td>
+    <td>
+        <a href="/projectTypes/${pt._id}" class="text-primary me-2" title="Edit">
+            <i class="ti ti-edit"></i>
+        </a>
+
+        <a href="#" class="text-danger btn-delete" data-id="${pt._id}" title="Delete">
+            <i class="ti ti-trash"></i>
+        </a>
+    </td>
+</tr>`;
+                            });
+
+                            $("#projectTypesTableBody").html(tbody);
+
+                            // Initialize DataTable
+                            table = $('#projectTypesTable').DataTable({
+                                columnDefs: [
+                                    { orderable: false, targets: [0, 6] },
+                                    { orderable: true, targets: [1, 2, 3, 4, 5] }
+                                ],
+                                order: []
+                            });
+                        },
+
+                        error: function () {
+                            showToast('Unable to load project types', 'danger');
+                        }
+                    });
+
+                    // DELETE - Open Modal
+                    $(document).on('click', '.btn-delete', function (e) {
+                        e.preventDefault();
+                        deleteId = $(this).data('id');
+                        $('#confirmDeleteModal').modal('show');
+                    });
+
+                    // DELETE - Confirm
+                    $('#confirmDeleteBtn').on('click', function () {
+
+                        if (!deleteId) return;
+
+                        $.ajax({
+                            url: `${baseUrl}/api/projectTypes/${deleteId}`,
+                            method: 'DELETE',
+
+                            success: function (res) {
+                                $('#confirmDeleteModal').modal('hide');
+
+                                if (res.success) {
+                                    showToast(res.message || "Project type deleted!", "success");
+
+                                    const row = $(`.btn-delete[data-id="${deleteId}"]`).closest('tr');
+                                    table.row(row).remove().draw(false);
+
+                                    deleteId = null;
+                                } else {
+                                    showToast(res.message || "Delete failed", "danger");
+                                }
+                            },
+
+                            error: function (err) {
+                                $('#confirmDeleteModal').modal('hide');
+                                showToast(err.responseJSON?.message || "Something went wrong", "danger");
+                            }
+                        });
+                    });
+
+                });
+            </script>

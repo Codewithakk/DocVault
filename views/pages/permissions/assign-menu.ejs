@@ -1,0 +1,184 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Assign Menu</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="assignMenuForm" novalidate>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label for="designation_id" class="form-label">Designation</label>
+                                        <select class="form-select" id="designation_id" name="designation_id" required>
+                                            <option value="">-- Select Designation --</option>
+                                            <% if (Array.isArray(designations) && designations.length> 0) { %>
+                                                <% designations.forEach(designation=> {
+                                                    const name = designation.name;
+                                                    const capitalizedName = name.charAt(0).toUpperCase() +
+                                                    name.slice(1);
+                                                    %>
+                                                    <option value="<%= designation._id %>">
+                                                        <%= capitalizedName %>
+                                                    </option>
+                                                    <% }) %>
+                                                        <% } %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="button" id="btnSelectAll" class="btn btn-outline-primary me-2">
+                                            <i class="fas fa-check-square"></i> Select All
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Permissions modules</th>
+                                            <th class="text-center">All</th>
+                                            <th class="text-center">Read</th>
+                                            <th class="text-center">Write</th>
+                                            <th class="text-center">Delete</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (Array.isArray(masterMenus) && masterMenus.length> 0) { %>
+                                            <% let menuCounter=0; %>
+                                                <% masterMenus.forEach(master=> { %>
+                                                    <!-- Master Menu -->
+                                                    <tr class="table-primary">
+                                                        <td><strong>
+                                                                <%= master.name %> (Menu)
+                                                            </strong></td>
+                                                        <td class="text-center"></td>
+                                                        <td class="text-center"></td>
+                                                        <td class="text-center"></td>
+                                                        <td class="text-center"></td>
+                                                    </tr>
+
+                                                    <!-- Second-level menus -->
+                                                    <% if (Array.isArray(master.children) && master.children.length> 0)
+                                                        { %>
+                                                        <% master.children.forEach(menu=> { %>
+                                                            <% menuCounter++; %>
+                                                                <tr>
+                                                                    <td class="ps-5">
+                                                                        <div class="form-check">
+                                                                            <input
+                                                                                class="form-check-input menu-checkbox"
+                                                                                type="checkbox"
+                                                                                name="menus[<%= menuCounter %>][menu_id]"
+                                                                                value="<%= menu._id %>"
+                                                                                id="menu_<%= menu._id %>">
+                                                                            <label class="form-check-label"
+                                                                                for="menu_<%= menu._id %>">
+                                                                                <%= menu.name %> (SubMenu)
+                                                                            </label>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <input type="checkbox"
+                                                                            class="form-check-input all-checkbox"
+                                                                            data-menu-id="<%= menu._id %>">
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <input type="checkbox"
+                                                                            class="form-check-input perm-read"
+                                                                            name="menus[<%= menuCounter %>][permissions][read]"
+                                                                            id="read_<%= menu._id %>">
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <input type="checkbox"
+                                                                            class="form-check-input perm-write"
+                                                                            name="menus[<%= menuCounter %>][permissions][write]"
+                                                                            id="write_<%= menu._id %>">
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <input type="checkbox"
+                                                                            class="form-check-input perm-delete"
+                                                                            name="menus[<%= menuCounter %>][permissions][delete]"
+                                                                            id="delete_<%= menu._id %>">
+                                                                    </td>
+                                                                </tr>
+
+                                                                <!-- Third-level submenus -->
+                                                                <% if (Array.isArray(menu.children) &&
+                                                                    menu.children.length> 0) { %>
+                                                                    <% menu.children.forEach(submenu=> { %>
+                                                                        <% menuCounter++; %>
+                                                                            <tr>
+                                                                                <td class="ps-5">
+                                                                                    <div class="form-check d-inline">
+                                                                                        <input
+                                                                                            class="form-check-input menu-checkbox"
+                                                                                            type="checkbox"
+                                                                                            name="menus[<%= menuCounter %>][menu_id]"
+                                                                                            value="<%= submenu._id %>"
+                                                                                            id="submenu_<%= submenu._id %>">
+                                                                                        <label class="form-check-label"
+                                                                                            for="submenu_<%= submenu._id %>">
+                                                                                            <i
+                                                                                                class="fas fa-file-alt me-1"></i>
+                                                                                            <%= submenu.name %>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td class="text-center">
+                                                                                    <input type="checkbox"
+                                                                                        class="form-check-input all-checkbox"
+                                                                                        data-menu-id="<%= submenu._id %>">
+                                                                                </td>
+                                                                                <td class="text-center">
+                                                                                    <input type="checkbox"
+                                                                                        class="form-check-input perm-read"
+                                                                                        name="menus[<%= menuCounter %>][permissions][read]"
+                                                                                        id="read_<%= submenu._id %>">
+                                                                                </td>
+                                                                                <td class="text-center">
+                                                                                    <input type="checkbox"
+                                                                                        class="form-check-input perm-write"
+                                                                                        name="menus[<%= menuCounter %>][permissions][write]"
+                                                                                        id="write_<%= submenu._id %>">
+                                                                                </td>
+                                                                                <td class="text-center">
+                                                                                    <input type="checkbox"
+                                                                                        class="form-check-input perm-delete"
+                                                                                        name="menus[<%= menuCounter %>][permissions][delete]"
+                                                                                        id="delete_<%= submenu._id %>">
+                                                                                </td>
+                                                                            </tr>
+                                                                            <% }) %>
+                                                                                <% } %>
+                                                                                    <% }) %>
+                                                                                        <% } %>
+                                                                                            <% }) %>
+                                                                                                <% } else { %>
+                                                                                                    <tr>
+                                                                                                        <td colspan="5"
+                                                                                                            class="text-center text-muted">
+                                                                                                            No menus
+                                                                                                            found.</td>
+                                                                                                    </tr>
+                                                                                                    <% } %>
+                                    </tbody>
+                                </table>
+
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i> Assign
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/pages/permissions/assign-menu.js"></script>
+    <%- include('../../partials/footer') %>

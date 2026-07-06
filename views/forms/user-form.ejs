@@ -1,0 +1,239 @@
+<input type="hidden" id="userId" value="<%= user?._id %>">
+
+<div class="row">
+    <!-- Full Name -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Full Name <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <input type="text" id="name" class="form-control" value="<%= user?.name || '' %>"
+                oninput="this.value = this.value.replace(/[^A-Za-z ]/g,'')" required>
+        <% } else { %>
+            <p id="name" class="form-control-plaintext">
+                <%= user?.name %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Email -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Email <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <input type="email" id="email" class="form-control" value="<%= user?.email %>" readonly>
+        <% } else { %>
+            <p id="email" class="form-control-plaintext">
+                <%= user?.email %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Phone Number -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <input type="tel" id="phone_number" class="form-control" value="<%= user?.phone_number || '' %>"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" required>
+        <% } else { %>
+            <p id="phone_number" class="form-control-plaintext">
+                <%= user?.phone_number || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Employee ID -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Employee ID <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <input type="text" id="employee_id" class="form-control" value="<%= user?.userDetails?.employee_id || '' %>"
+                oninput="this.value=this.value.toUpperCase()" required>
+        <% } else { %>
+            <p id="employee_id" class="form-control-plaintext">
+                <%= user?.userDetails?.employee_id || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Department -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Department <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="department" class="form-select select2" required>
+                <option value="">-- Select Department --</option>
+                <% departments.forEach(dep=> { %>
+                    <option value="<%= dep._id %>"
+                        <%=(user?.userDetails?.department?._id?.toString()===dep._id.toString()) ? 'selected' : '' %>>
+                        <%= dep.name %>
+                    </option>
+                <% }) %>
+            </select>
+        <% } else { %>
+            <p id="department" class="form-control-plaintext">
+                <%= user?.userDetails?.department?.name || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Designation -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Designation <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="designation_id" class="form-select select2" required>
+                <option value="">-- Select Designation --</option>
+                <% designations.forEach(des=> { %>
+                    <option value="<%= des._id %>"
+                        <%=(user?.userDetails?.designation?._id?.toString()===des._id.toString()) ? 'selected' : '' %>>
+                        <%= des.name %>
+                    </option>
+                <% }) %>
+            </select>
+        <% } else { %>
+            <p id="designation_id" class="form-control-plaintext">
+                <%= user?.userDetails?.designation?.name || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Country -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Country <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="country" class="form-select select2" required>
+                <option value="">-- Select Country --</option>
+                <% if (countries && countries.length > 0) { %>
+                    <% countries.forEach(country=> { %>
+                        <option value="<%= country._id %>"
+                            <%=(user?.location?.country?.toString()===country._id.toString()) ? 'selected' : '' %>>
+                            <%= country.name %>
+                        </option>
+                    <% }) %>
+                <% } else { %>
+                    <option value="">No countries available</option>
+                <% } %>
+            </select>
+        <% } else { %>
+            <p id="country" class="form-control-plaintext">
+                <%= user?.location?.country_name || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- State -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">State <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="state" class="form-select select2" required>
+                <option value="">-- Select State --</option>
+                <% if (states && states.length > 0) { %>
+                    <% states.forEach(state=> { %>
+                        <option value="<%= state._id %>"
+                            <%=(user?.location?.state?.toString()===state._id.toString()) ? 'selected' : '' %>>
+                            <%= state.name %>
+                        </option>
+                    <% }) %>
+                <% } else { %>
+                    <option value="">No states available</option>
+                <% } %>
+            </select>
+        <% } else { %>
+            <p id="state" class="form-control-plaintext">
+                <%= user?.location?.state_name || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- City -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">City <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="city" class="form-select select2" required>
+                <option value="">-- Select City --</option>
+                <% if (cities && cities.length > 0) { %>
+                    <% cities.forEach(city=> { %>
+                        <option value="<%= city._id %>"
+                            <%=(user?.location?.city?.toString()===city._id.toString()) ? 'selected' : '' %>>
+                            <%= city.name %>
+                        </option>
+                    <% }) %>
+                <% } else { %>
+                    <option value="">No cities available</option>
+                <% } %>
+            </select>
+        <% } else { %>
+            <p id="city" class="form-control-plaintext">
+                <%= user?.location?.city_name || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Pin Code -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Pin Code <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <input type="text" id="post_code" class="form-control" value="<%= user?.post_code || '' %>"
+                oninput="this.value = this.value.replace(/[^0-9]/g,'')" required>
+        <% } else { %>
+            <p id="post_code" class="form-control-plaintext">
+                <%= user?.post_code || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Address -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Address <span class="text-muted">(Optional)</span></label>
+        <% if (!viewOnly) { %>
+            <textarea id="address" class="form-control" rows="3" maxlength="250"><%= user?.address || '' %></textarea>
+        <% } else { %>
+            <p id="address" class="form-control-plaintext">
+                <%= user?.address || '-' %>
+            </p>
+        <% } %>
+    </div>
+
+    <!-- Profile Image -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Profile Image <span class="text-muted">(Optional)</span></label>
+        <% if (!viewOnly) { %>
+            <div class="upload-profilebox form-control p-2" id="uploadprofileBox">
+                <input type="file" name="profile_image" class="form-control d-none" id="fileInput" accept="image/*">
+                <div class="preview" id="preview">
+                    <% if (user?.profile_image) { %>
+                        <img src="<%= user.profile_image %>" style="max-width: 100px;" class="img-thumbnail">
+                    <% } %>
+                </div>
+                <div class="upload-icon text-center"><i class="ti ti-plus fa-2x mb-2"></i></div>
+            </div>
+        <% } else { %>
+            <div class="form-control-plaintext">
+                <% if (user?.profile_image) { %>
+                    <img src="<%= user.profile_image %>" style="max-width: 100px;" class="img-thumbnail">
+                <% } else { %>
+                    -
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Status -->
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Status <span class="text-danger">*</span></label>
+        <% if (!viewOnly) { %>
+            <select id="status" class="form-select" required>
+                <option value="Active" <%=user?.status==='Active' ? 'selected' : '' %>>Active</option>
+                <option value="Inactive" <%=user?.status==='Inactive' ? 'selected' : '' %>>Inactive</option>
+                <option value="Blocked" <%=user?.status==='Blocked' ? 'selected' : '' %>>Blocked</option>
+            </select>
+        <% } else { %>
+            <p id="status" class="form-control-plaintext">
+                <%= user?.status %>
+            </p>
+        <% } %>
+    </div>
+</div>
+
+<% if (!viewOnly) { %>
+    <div class="d-flex align-items-center justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary btn-w-lg rounded-pill">
+            <i class="ti ti-device-floppy me-2"></i>Update
+        </button>
+    </div>
+<% } %>

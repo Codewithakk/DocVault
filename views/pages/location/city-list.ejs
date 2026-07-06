@@ -1,0 +1,445 @@
+<%- include('../../partials/header') %>
+
+<div class="page-wrapper">
+    <div class="content">
+
+        <!-- Breadcrumb -->
+        <div class="dflexbtwn page-breadcrumb mb-3">
+            <div class="my-auto mb-2">
+                <h2 class="mb-1">City List</h2>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="#"><i class="ti ti-smart-home"></i></a>
+                        </li>
+                        <li class="breadcrumb-item active">City List</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <a href="#" id="addBtn" class="btn btn-primary">
+                    <i class="ti ti-plus me-1"></i> Add City
+                </a>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card" id="userListCard">
+            <div class="card-body p-0" id="userListBody">
+                <div class="custom-datatable-filter table-responsive" id="userTableWrapper">
+                    <table class="table datatable" id="cityTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Sr No.</th>
+                                <th>Name</th>
+                                <th>State</th>
+                                <th>Country</th>
+                                <th>Created At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cityTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-4 d-sm-flex justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by 
+                <a href="javascript:void(0);" class="text-primary">
+                    Duplex Services & Technology
+                </a>
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="cityModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">Add City</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <input type="hidden" id="cityId">
+                
+                <!-- Country -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Country <span class="text-danger">*</span></label>
+                    <select id="country" class="form-select"></select>
+                </div>
+            
+                <!-- State -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">State <span class="text-danger">*</span></label>
+                    <select id="state" class="form-select"></select>
+                </div>
+            
+                <!-- City Name -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">City Name <span class="text-danger">*</span></label>
+                    <input type="text" id="cityName" class="form-control" placeholder="Enter City Name">
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary px-4" id="saveCity">
+                    <i class="ti ti-device-floppy me-1"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../modals/deleteModal') %>
+<%- include('../../partials/footer') %>
+
+<!-- DataTables -->
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+let editMode = false;
+let deleteId = null;
+
+$(document).ready(function () {
+    // Initialize Select2 for Country - Clean version without tags
+    $('#country').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#cityModal'),
+        placeholder: 'Select Country',
+        allowClear: true,
+        width: '100%',
+        minimumResultsForSearch: 1, // Show search when more than 1 result
+        ajax: {
+            url: `${baseUrl}/api/country`,
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    search: params.term || ''
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data.data.map(function(item) {
+                        return {
+                            id: item._id,
+                            text: item.name
+                        };
+                    })
+                };
+            },
+            cache: true
+        }
+    });
+
+    // Initialize Select2 for State - Clean version without tags
+    $('#state').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#cityModal'),
+        placeholder: 'Select State',
+        allowClear: true,
+        width: '100%',
+        minimumResultsForSearch: 1, // Show search when more than 1 result
+        ajax: {
+            url: `${baseUrl}/api/state`,
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    search: params.term || '',
+                    countryId: $('#country').val() || ''
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data.data.map(function(item) {
+                        return {
+                            id: item._id,
+                            text: item.name
+                        };
+                    })
+                };
+            },
+            cache: true
+        }
+    });
+
+    // When country changes, reset state
+    $('#country').on('change', function() {
+        $('#state').val(null).trigger('change');
+        // Remove invalid state
+        $('.select2-container--bootstrap-5').removeClass('is-invalid');
+    });
+
+    // Load initial data
+    loadCities();
+
+    // Add Button Click
+    $('#addBtn').click(() => {
+        editMode = false;
+        resetCityForm();
+        $('#modalTitle').text('Add City');
+        $('#cityModal').modal('show');
+    });
+
+    // Reset form when modal closes
+    $('#cityModal').on('hidden.bs.modal', function() {
+        resetCityForm();
+        // Remove invalid states
+        $('.is-invalid').removeClass('is-invalid');
+        $('.select2-container--bootstrap-5').removeClass('is-invalid');
+    });
+
+    // Save City
+    $('#saveCity').click(saveCity);
+
+    // Edit City
+    $(document).on('click', '.edit', function () {
+        editMode = true;
+        let data = JSON.parse(decodeURIComponent($(this).attr('data-item')));
+        fillCityForm(data);
+        $('#modalTitle').text('Edit City');
+        $('#cityModal').modal('show');
+    });
+
+    // Delete City
+    $(document).on('click', '.delete', function () {
+        deleteId = $(this).data('id');
+        $('#confirmDeleteModal').modal('show');
+    });
+
+    $('#confirmDeleteBtn').click(function () {
+        if (!deleteId) return;
+
+        $.ajax({
+            url: `${baseUrl}/api/city/${deleteId}`,
+            method: 'DELETE',
+            success: function (res) {
+                $('#confirmDeleteModal').modal('hide');
+                deleteId = null;
+
+                if (res?.success !== false) {
+                    showToast(res?.message || 'Deleted successfully', 'success');
+                    loadCities();
+                } else {
+                    showToast(res?.message || 'Delete failed', 'danger');
+                }
+            },
+            error: function() {
+                showToast('Something went wrong', 'danger');
+            }
+        });
+    });
+
+});
+
+function resetCityForm() {
+    $('#cityId').val('');
+    $('#cityName').val('');
+    $('#country').val(null).trigger('change');
+    $('#state').val(null).trigger('change');
+    $('#saveCity').prop('disabled', false);
+    $('#saveCity').html('<i class="ti ti-device-floppy me-1"></i> Save');
+    $('.is-invalid').removeClass('is-invalid');
+    $('.select2-container--bootstrap-5').removeClass('is-invalid');
+}
+
+function fillCityForm(data) {
+    $('#cityId').val(data._id);
+    $('#cityName').val(data.name);
+    
+    if (data.state?.country) {
+        // Set country
+        const countryOption = new Option(data.state.country.name, data.state.country._id, true, true);
+        $('#country').append(countryOption).trigger('change');
+        
+        // Set state after country change
+        setTimeout(() => {
+            const stateOption = new Option(data.state.name, data.state._id, true, true);
+            $('#state').append(stateOption).trigger('change');
+        }, 300);
+    }
+}
+
+function saveCity() {
+    let id = $('#cityId').val();
+    let name = $('#cityName').val().trim();
+    let state = $('#state').val();
+
+    // Validation
+    let hasError = false;
+    
+    if (!name) {
+        $('#cityName').addClass('is-invalid');
+        hasError = true;
+    } else {
+        $('#cityName').removeClass('is-invalid');
+    }
+    
+    if (!state) {
+        $('.select2-container--bootstrap-5').addClass('is-invalid');
+        showToast('Please select a state', 'warning');
+        return;
+    } else {
+        $('.select2-container--bootstrap-5').removeClass('is-invalid');
+    }
+
+    if (hasError) {
+        showToast('Please enter city name', 'warning');
+        return;
+    }
+
+    let url = `${baseUrl}/api/city`;
+    let method = 'POST';
+
+    if (editMode) {
+        url += `/${id}`;
+        method = 'PUT';
+    }
+
+    $('#saveCity').prop('disabled', true);
+    $('#saveCity').html('<span class="spinner-border spinner-border-sm me-2"></span> Saving...');
+
+    $.ajax({
+        url,
+        method,
+        data: { name, state },
+        success: function (res) {
+            $('#saveCity').prop('disabled', false);
+            $('#saveCity').html('<i class="ti ti-device-floppy me-1"></i> Save');
+            $('#cityModal').modal('hide');
+            
+            if (res?.success !== false) {
+                showToast(res?.message || 'Saved successfully', 'success');
+                loadCities();
+            } else {
+                showToast(res?.message || 'Failed', 'danger');
+            }
+        },
+        error: function(xhr) {
+            $('#saveCity').prop('disabled', false);
+            $('#saveCity').html('<i class="ti ti-device-floppy me-1"></i> Save');
+            const message = xhr.responseJSON?.message || 'Something went wrong';
+            showToast(message, 'danger');
+        }
+    });
+}
+
+function loadCities() {
+    if ($.fn.DataTable.isDataTable('#cityTable')) {
+        $('#cityTable').DataTable().destroy();
+    }
+    
+    $('#cityTable').DataTable({
+        processing: true,
+        serverSide: true,
+        destroy: true,
+        searching: true,
+        ordering: false,
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        ajax: function (data, callback) {
+            let page = Math.floor(data.start / data.length) + 1;
+            let limit = data.length;
+            let search = data.search.value;
+
+            $.ajax({
+                url: `${baseUrl}/api/city`,
+                data: { page, limit, search },
+                success: function (res) {
+                    callback({
+                        recordsTotal: res.total,
+                        recordsFiltered: res.total,
+                        data: res.data.map((c, index) => ([
+                            data.start + index + 1,
+                            c.name,
+                            c.state?.name || '-',
+                            c.state?.country?.name || '-',
+                            formatDateTime(c.createdAt),
+                            `
+                            <a href="#" class="text-primary edit me-2"
+                               data-item='${encodeURIComponent(JSON.stringify(c))}'>
+                                <i class="ti ti-edit"></i>
+                            </a>
+                            <a href="#" class="text-danger delete"
+                               data-id="${c._id}">
+                                <i class="ti ti-trash"></i>
+                            </a>
+                            `
+                        ]))
+                    });
+                },
+                error: function() {
+                    showToast('Error loading cities', 'danger');
+                }
+            });
+        }
+    });
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function showToast(message, type = 'info') {
+    // Your toast implementation
+    console.log(`${type.toUpperCase()}: ${message}`);
+}
+</script>
+
+<style>
+/* Style Select2 to look cleaner - without tags display */
+.select2-container--bootstrap-5 .select2-selection--single {
+    height: 38px !important;
+    padding: 6px 12px !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    line-height: 24px !important;
+    padding-left: 0 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__clear {
+    position: absolute;
+    right: 30px !important;
+    font-size: 20px !important;
+    color: #999 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+}
+.select2-container--bootstrap-5 .select2-selection {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.375rem !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single {
+    height: 38px !important;
+    padding: 6px 12px !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection__rendered {
+    line-height: 24px !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection__arrow {
+    height: 36px !important;
+}
+</style>

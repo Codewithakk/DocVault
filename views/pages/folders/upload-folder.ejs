@@ -1,0 +1,951 @@
+<%- include('../../partials/header') %>
+
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Upload Folder</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Dashboard
+							</li>
+							<li class="breadcrumb-item">
+								Upload Folder
+							</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="filter-container mb-3">
+				<div class="row g-3">
+					<div class="col-md-4">
+						<select id="projectName" class="form-select select2">
+							<option value="">-- Select Project --</option>
+						</select>
+					</div>
+					<div class="col-md-4">
+						<select id="department" class="form-select select2">
+							<option value="">-- Select Department --</option>
+						</select>
+					</div>
+				</div>
+			</div>
+
+			<!-- Upload Box -->
+			<div class="my-4">
+				<div class="col-md-12">
+					<div class="upload-box mb-3" id="uploadBox">
+						<i class="ti ti-cloud-upload fa-2x text-primary mb-2"></i>
+						<p class="mb-1"><strong>Click to upload folder</strong> or drag and drop file here</p>
+						<small class="text-muted">*0 files and 0 folders (11.4 kB) in this location. 208.9 kB of 10.0 GB
+							total storage used.Export report</br> to XLSX / ODS / CSV / PDF</small>
+						<input type="file" class="form-control d-none" id="fileInput" multiple>
+						<input type="file" class="form-control d-none" id="folderInput" name="folder" webkitdirectory
+							directory multiple>
+					</div>
+					<div id="fileList" class="row g-2"></div>
+					<!-- after <div id="fileList" class="row g-2"></div> -->
+					<div id="globalProgress" class="mt-3 d-none">
+						<div class="d-flex align-items-center gap-2">
+							<div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+							<div class="progress flex-grow-1" style="height:10px;">
+								<div id="globalProgressBar" class="progress-bar bg-primary" style="width:0%">0%</div>
+							</div>
+							<small id="globalProgressText" class="ms-2">0 / 0</small>
+						</div>
+					</div>
+				</div>
+				<div id="breadcrumb" class="mb-2"></div>
+
+				<!-- Folder Display -->
+				<div class="mb-3 p-2 bg-light rounded" id="folderPathContainer">
+					<div id="folder-no-project" class="text-center py-2 d-none">
+						<h6 class="text-muted mb-0">Please select a project first</h6>
+					</div>
+					<div id="folder-container" class="row g-2"></div>
+					<div id="folder-loading" class="text-center py-3 d-none">
+						<div class="spinner-border spinner-border-sm text-primary"></div>
+						<p class="mt-1 text-muted small">Loading folders...</p>
+					</div>
+					<div id="folder-empty" class="text-center py-3 d-none">
+						<i class="ti ti-folder-off fs-3 text-muted"></i>
+						<p class="mt-1 text-muted small">No subfolders found</p>
+					</div>
+				</div>
+				<div class="col-md-12 ">
+					<div class="my-4">
+						<button id="uploadFilesBtn" class="btn btn-primary rounded-pill">Upload Folders</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+
+	<%- include('../../partials/footer') %>
+
+		<!-- Upload Choice Modal -->
+		<div class="modal fade" id="uploadChoiceModal" tabindex="-1" aria-labelledby="uploadChoiceModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="uploadChoiceModalLabel">Upload Type</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body text-center">
+						<p>Select what you want to upload:</p>
+						<div class="d-flex justify-content-around mt-3">
+							<button type="button" class="btn btn-primary" id="uploadFilesModalBtn">Files</button>
+							<button type="button" class="btn btn-success" id="uploadFolderModalBtn">Folder</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Delete Confirmation Modal -->
+		<%- include('../../modals/deleteModal') %>
+			<script>
+				// ---------------- GLOBAL STATE ----------------
+				const folderState = { selectedFolders: [], currentFolderId: null ,  selectedFolderCardId: null};
+				let pendingUploads = [];
+				const storageInfoEl = document.getElementById("storageInfo");
+				const folderInput = document.getElementById("folderInput");
+				const fileInput = document.getElementById("fileInput");
+				let uploadChoiceModal = null;
+				function removePendingItem(uploadId) {
+					const div = document.querySelector(`[data-upload-id="${uploadId}"]`);
+					if (div) div.remove();
+				}
+
+				// FIXED: Properly handle the session selected project ID
+				const sessionSelectedProjectId = "<%= typeof selectedProjectId !== 'undefined' ? selectedProjectId : '' %>";
+				const selectedProjectName = "<%= selectedProjectName %>";
+				const globalProgress = {
+					el: document.getElementById('globalProgress'),
+					bar: document.getElementById('globalProgressBar'),
+					txt: document.getElementById('globalProgressText'),
+
+					show() { this.el.classList.remove('d-none'); },
+					hide() { this.el.classList.add('d-none'); },
+
+					set(total, done, percent) {
+						this.bar.style.width = `${percent}%`;
+						this.bar.textContent = `${percent}%`;
+						this.txt.textContent = `${done} / ${total}`;
+					}
+				};
+				// Initialize modal only when needed
+				function getUploadChoiceModal() {
+					if (!uploadChoiceModal) {
+						const modalElement = document.getElementById('uploadChoiceModal');
+						if (modalElement) {
+							uploadChoiceModal = new bootstrap.Modal(modalElement);
+						}
+					}
+					return uploadChoiceModal;
+				}
+
+				function getFileIcon(fileName) {
+					const ext = fileName.split('.').pop().toLowerCase();
+					return fileIcons[ext] || fileIcons.default;
+				}
+
+				const elements = {
+					container: document.getElementById('folder-container'),
+					loading: document.getElementById('folder-loading'),
+					empty: document.getElementById('folder-empty'),
+					noProject: document.getElementById('folder-no-project')
+				};
+
+				// -------------------------
+				// Initialize Select2 with Clear Option
+				// -------------------------
+				function initSelect2(selector, url, textKey, placeholder) {
+					$(selector).select2({
+						placeholder: placeholder || `-- Select ${textKey} --`,
+						allowClear: true,
+						width: '100%',
+						ajax: {
+							url: url,
+							dataType: 'json',
+							delay: 250,
+							data: function (params) {
+								return {
+									search: params.term
+								};
+							},
+							processResults: function (data) {
+								const results = [
+									{ id: '', text: `-- Select ${textKey} --` },
+									...data.data.map(item => ({
+										id: item._id,
+										text: item[textKey]
+									}))
+								];
+								return {
+									results: results
+								};
+							},
+							cache: true
+						}
+					});
+
+					$(selector).on('select2:select', function (e) {
+						if (!e.params.data.id) {
+							$(this).val(null).trigger('change');
+						}
+					});
+
+					$(selector).on('select2:unselect', function (e) {
+						$(this).val(null).trigger('change');
+					});
+				}
+
+				// ---------------- FOLDER STATES ----------------
+				const setLoadingState = (loading) => {
+					if (elements.loading) elements.loading.classList.toggle('d-none', !loading);
+					if (elements.container) elements.container.classList.toggle('d-none', loading);
+					if (elements.empty) elements.empty.classList.add('d-none');
+				};
+
+				const setEmptyState = (empty) => {
+					if (elements.empty) elements.empty.classList.toggle('d-none', !empty);
+					if (elements.container) elements.container.classList.toggle('d-none', empty);
+					if (elements.loading) elements.loading.classList.add('d-none');
+				};
+
+				const showNoProject = (show) => {
+					if (elements.noProject) elements.noProject.classList.toggle('d-none', !show);
+				};
+
+				// ---------------- FETCH FOLDERS ----------------
+				const fetchFolders = async (projectId) => {
+					if (!projectId) return [];
+					const departmentId = $('#department').val() || 'all';
+					try {
+						const res = await fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${departmentId}`, { credentials: 'include' });
+						if (res.ok) {
+							const data = await res.json();
+							return data.success ? data.tree || [] : [];
+						}
+						return [];
+					} catch (err) {
+						console.error("Error fetching folders:", err);
+						return [];
+					}
+				};
+
+				function getSubfolders(folders, parentId) {
+					if (!folders) return [];
+					if (!parentId) return folders;  // top-level folders
+
+					const parentFolder = findFolderById(folders, parentId);
+					return parentFolder ? (parentFolder.children || []) : [];
+				}
+
+				function normalizeFolders(folders) {
+					if (!folders || !Array.isArray(folders)) return [];
+					return folders.map(f => ({
+						...f,
+						children: normalizeFolders(f.children)  // recursively normalize
+					}));
+				}
+
+				function renderFolderCard(item, type = 'folder') {
+					const div = document.createElement('div');
+					div.className = "col-6 col-md-4 col-lg-3 mb-3";
+
+					if (type === 'folder') {
+    div.dataset.id = item._id;
+
+    div.innerHTML = `
+        <div class="folder-card p-3 bg-white rounded shadow-sm hover-shadow cursor-pointer d-flex flex-column justify-content-between position-relative">
+            
+            <!-- CHECK MARK -->
+            <div class="check-icon position-absolute top-0 end-0 m-2 d-none">
+                <i class="ti ti-check text-success" style="font-size: 20px;"></i>
+            </div>
+
+            <div class="d-flex align-items-center mb-2">
+                <img src="/img/icons/folder.png" style="width:40px; height:40px;" />
+                <h6 class="mb-0 ms-2 text-truncate" title="${item.name}">${item.name}</h6>
+            </div>
+            <div class="folder-footer text-muted small">
+                ${item.files?.length || 0} files
+            </div>
+        </div>
+    `;
+
+    const card = div.querySelector('.folder-card');
+
+    // SINGLE CLICK
+    card.addEventListener('click', () => {
+
+        document.querySelectorAll('.folder-card').forEach(c => {
+            c.classList.remove('border-primary');
+            const icon = c.querySelector('.check-icon');
+            if (icon) icon.classList.add('d-none');
+        });
+
+        // mark current
+        card.classList.add('border', 'border-primary');
+        const icon = card.querySelector('.check-icon');
+        if (icon) icon.classList.remove('d-none');
+
+        // set selected folder
+        folderState.currentFolderId = item._id;
+        folderState.selectedFolderCardId = item._id;
+
+        updateUploadState();
+    });
+
+    // double click
+    card.addEventListener('dblclick', () => {
+        loadFolders(
+            item._id,
+            [...folderState.selectedFolders, { id: item._id, name: item.name }],
+            window.selectedProjectId
+        );
+    });
+}
+					else if (type === 'file') {
+						div.innerHTML = `
+    <div class="folder-card p-3 bg-white rounded shadow-sm hover-shadow position-relative d-flex flex-column justify-content-between">
+        <div class="d-flex align-items-center gap-2 mb-2">
+                        <img src="${getFileIcon(item.originalName)}" alt="icon" style="width:24px;height:24px">
+            <span class="text-truncate" style="max-width:120px" title="${item.originalName}">
+                ${item.originalName}
+            </span>
+                    </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">${(item.size / 1024).toFixed(1)} KB</small>
+            <button class="btn btn-sm btn-link text-danger p-0 delete-file-btn" data-id="${item._id}" title="Delete file">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+                </div>
+            `;
+
+						// File double-click → open in new tab
+						div.querySelector('.folder-card').addEventListener('dblclick', () => {
+							window.open(`/folders/view/${item._id}`, '_blank');
+						});
+
+						// Attach delete button logic
+						div.querySelector('.delete-file-btn').addEventListener('click', (e) => {
+							e.stopPropagation();
+							const fileId = e.currentTarget.dataset.id;
+							const fileName = item.originalName;
+							showDeleteModal(fileId, fileName);
+						});
+					}
+					return div;
+				}
+
+				async function loadFolders(parentId = null, parentPath = [], projectId = null) {
+					projectId = projectId || window.selectedProjectId;
+					if (!projectId) return showNoProject(true);
+
+					showNoProject(false);
+					setLoadingState(true);
+
+					try {
+						// Fetch folder tree from server
+						const res = await fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${$('#department').val() || 'all'}`, { credentials: 'include' });
+						const data = await res.json();
+						if (!data.success) return setEmptyState(true);
+
+						let allFolders = normalizeFolders(data.tree || []);
+						const subfolders = getSubfolders(allFolders, parentId);
+						const currentFolder = parentId ? findFolderById(allFolders, parentId) : null;
+						const files = currentFolder?.files || [];
+
+						setLoadingState(false);
+
+						if (!subfolders.length && !files.length) {
+							setEmptyState(true);
+						} else {
+							setEmptyState(false);
+							elements.container.innerHTML = '';
+
+							// Render folders
+							subfolders.forEach(f => elements.container.appendChild(renderFolderCard(f, 'folder')));
+							// Render files
+							files.forEach(f => elements.container.appendChild(renderFolderCard(f, 'file')));
+						}
+
+						folderState.selectedFolders = parentPath;
+						folderState.currentFolderId = parentId;
+
+						// Track folder visit if this is an actual folder
+						if (parentId) {
+							trackFolderVisit(parentId);
+						}
+
+						renderBreadcrumb(parentPath);
+
+					} catch (err) {
+						console.error("Error loading folders:", err);
+						setLoadingState(false);
+					}
+				}
+
+				// Helper function to track folder visit via API
+				async function trackFolderVisit(folderId) {
+					if (!folderId) return;
+
+					const projectId = window.selectedProjectId || '';
+					const departmentId = $('#department').val() || '';
+
+					try {
+						const res = await fetch('/api/session/track-folder-visit', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'include',
+							body: JSON.stringify({ folderId, projectId, departmentId })
+						});
+
+						const data = await res.json();
+						if (!data.success) console.warn('Failed to track folder visit:', data.message);
+					} catch (err) {
+						console.error('Error tracking folder visit:', err);
+					}
+				}
+
+
+				// Helper to find folder anywhere in tree
+				function findFolderById(folders, id) {
+					if (!folders || !id) return null;
+
+					for (const f of folders) {
+						if (f._id === id) return f;
+						const childResult = findFolderById(f.children, id);
+						if (childResult) return childResult;
+					}
+					return null;
+				}
+
+
+				function renderBreadcrumb(parentPath) {
+					const breadcrumbEl = document.getElementById("breadcrumb");
+					if (!breadcrumbEl) return;
+
+					breadcrumbEl.innerHTML = '';
+
+					// --- 1. Project ---
+					if (window.selectedProjectName) {
+						const projectLink = document.createElement('a');
+						projectLink.href = "javascript:void(0);";
+						projectLink.dataset.id = 'PROJECT'; // special ID for project
+						projectLink.textContent = window.selectedProjectName;
+						breadcrumbEl.appendChild(projectLink);
+					}
+
+					// // --- 2. Department ---
+					const deptData = $('#department').select2('data')[0];
+					if (deptData && deptData.text && deptData.text !== '-- Select Department --') {
+						const separator1 = document.createElement('span');
+						separator1.textContent = ' / ';
+						breadcrumbEl.appendChild(separator1);
+
+						const deptLink = document.createElement('a');
+						deptLink.href = "javascript:void(0);";
+						deptLink.dataset.id = 'DEPARTMENT'; // special ID for department
+						deptLink.textContent = deptData.text;
+						breadcrumbEl.appendChild(deptLink);
+					}
+
+					// --- 3. Folder hierarchy ---
+					parentPath.forEach((item, index) => {
+						const separator = document.createElement('span');
+						separator.textContent = ' / ';
+						breadcrumbEl.appendChild(separator);
+
+						const link = document.createElement('a');
+						link.href = "javascript:void(0);";
+						link.dataset.id = item.id;
+						link.textContent = item.name;
+						breadcrumbEl.appendChild(link);
+					});
+
+					// --- Highlight current folder ---
+					if (folderState.currentFolderId) {
+						const selectedItem = breadcrumbEl.querySelector(`a[data-id="${folderState.currentFolderId}"]`);
+						if (selectedItem) selectedItem.style.fontWeight = 'bold';
+					}
+
+					// --- Click navigation ---
+					breadcrumbEl.querySelectorAll('a').forEach(link => {
+						link.addEventListener('click', (e) => {
+							e.preventDefault();
+							const id = e.target.dataset.id;
+
+							if (id === 'PROJECT') {
+								// Reload top-level folders for project
+								folderState.currentFolderId = null;
+								loadFolders(null, [], window.selectedProjectId);
+							} else if (id === 'DEPARTMENT') {
+								// Reload top-level folders for selected department
+								folderState.currentFolderId = null;
+								loadFolders(null, [], window.selectedProjectId);
+							} else {
+								// Folder click
+								const idx = parentPath.findIndex(p => p.id === id);
+								const newParentPath = idx >= 0 ? parentPath.slice(0, idx + 1) : [];
+								folderState.currentFolderId = id;
+								loadFolders(id, newParentPath, window.selectedProjectId);
+							}
+						});
+					});
+				}
+
+
+				const updateUploadState = () => {
+					const uploadBox = document.getElementById("uploadBox");
+					if (uploadBox) uploadBox.classList.toggle('disabled', !folderState.currentFolderId);
+				};
+
+				// ---------------- UPLOAD BOX ----------------
+				function initializeUploadBox() {
+					const uploadBox = document.getElementById("uploadBox");
+
+					if (!uploadBox) return;
+
+					const uploadFilesModalBtn = document.getElementById("uploadFilesModalBtn");
+					const uploadFolderModalBtn = document.getElementById("uploadFolderModalBtn");
+
+					if (uploadFilesModalBtn) uploadFilesModalBtn.addEventListener("click", () => { getUploadChoiceModal().hide(); fileInput.click(); });
+					if (uploadFolderModalBtn) uploadFolderModalBtn.addEventListener("click", () => { getUploadChoiceModal().hide(); folderInput.click(); });
+
+					uploadBox.addEventListener("click", () => {
+						const projectId = $('#projectName').val();
+						const departmentId = $('#department').val();
+						if (!projectId || !departmentId) return showToast("Please select both Project and Department first.", 'warning');
+						if (!folderState.currentFolderId) return showToast("Please select a folder first.", 'warning');
+						getUploadChoiceModal().show();
+					});
+
+
+					uploadBox.addEventListener("dragover", (e) => { e.preventDefault(); if (!folderState.currentFolderId) return; uploadBox.classList.add("dragover"); });
+					uploadBox.addEventListener("dragleave", () => uploadBox.classList.remove("dragover"));
+					uploadBox.addEventListener("drop", (e) => { e.preventDefault(); uploadBox.classList.remove("dragover"); if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+
+					folderInput.addEventListener("change", () => { if (folderInput.files) handleFolderFiles(folderInput.files); folderInput.value = ""; });
+					fileInput.addEventListener("change", () => { if (fileInput.files) handleFiles(fileInput.files); fileInput.value = ""; });
+				}
+
+				function renderPendingFile(item) {
+					const fileList = document.getElementById("fileList");
+					if (!fileList) return null;
+
+					const div = document.createElement('div');
+					div.className = 'col-6 mb-3 pending-item';
+
+					const isFolder = !!item.relativePath;
+					const displayName = isFolder ? item.relativePath : item.file.name;
+					const sizeMB = ((item.file.size || 0) / 1024 / 1024).toFixed(2);
+
+					div.innerHTML = `
+            <div class="d-flex align-items-center border rounded p-2 bg-white gap-3">
+                <div style="width: 35px; flex-shrink:0;">
+                    <img src="${isFolder ? '/img/icons/folder.png' : getFileIcon(displayName)}" style="width:32px; height:32px;">
+                </div>
+                <div class="flex-grow-1 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-truncate" style="font-size: 13px; font-weight: 500; max-width: 160px;" title="${displayName}">
+                            ${displayName}
+                        </div>
+                        <button class="btn btn-sm btn-link text-danger p-0 remove-btn" title="Remove">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center mt-1" style="gap: 10px;">
+                        <small class="text-muted ms-2">${sizeMB} MB</small>
+                        <div class="progress flex-grow-1" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+					// Remove functionality
+					div.querySelector('.remove-btn').addEventListener('click', () => {
+						fileList.removeChild(div);
+						const index = pendingUploads.indexOf(item);
+						if (index > -1) pendingUploads.splice(index, 1);
+					});
+					const uniqueId = Date.now() + '_' + Math.random().toString(36).slice(2);
+					div.dataset.uploadId = uniqueId;
+					item.uploadId = uniqueId;
+
+					fileList.appendChild(div);
+					return div;
+				}
+
+				function handleFiles(files) {
+					if (!folderState.currentFolderId) {
+						return showToast("Please select a folder first.", "warning");
+					}
+
+					Array.from(files).forEach(async (file) => {
+						const item = { file, folderId: folderState.currentFolderId };
+						pendingUploads.push(item);
+						const div = renderPendingFile(item);
+						const progressBar = div.querySelector('.progress-bar');
+						const updateProgress = (p, failed = false) => {
+							progressBar.style.width = `${p}%`;
+							progressBar.textContent = failed ? 'Failed' : `${p}%`;
+							progressBar.classList.toggle('bg-success', !failed);
+							progressBar.classList.toggle('bg-danger', failed);
+						};
+
+						uploadFileToServer(item, updateProgress).then(ok => {
+							updateProgress(100, !ok);
+							item.uploadSuccess = ok;
+						});
+					});
+				}
+
+
+				// Handle full folder uploads
+				function handleFolderFiles(files) {
+					if (!folderState.currentFolderId) {
+						return showToast("Please select a folder first.", "warning");
+					}
+
+					const folderItems = Array.from(files).map(file => ({
+						file,
+						folderId: folderState.currentFolderId,
+						relativePath: file.webkitRelativePath,
+					}));
+
+					// Render all pending files
+					folderItems.forEach((item) => renderPendingFile(item));
+
+					// Automatically start uploading the folder
+					uploadFolderToServer(folderItems);
+				}
+
+				// ---------------- FILE UPLOAD TO SERVER ----------------
+				async function uploadFileToServer(fileItem, progressCallback) {
+					return new Promise((resolve) => {
+						const formData = new FormData();
+						formData.append("file", fileItem.file);
+
+						const xhr = new XMLHttpRequest();
+						xhr.open("POST", `/api/files/upload/${fileItem.folderId}`, true);
+						xhr.withCredentials = true;
+
+						xhr.upload.onprogress = function (event) {
+							if (event.lengthComputable) {
+								let percent = Math.round((event.loaded / event.total) * 100);
+								progressCallback(percent);
+							}
+						};
+
+						xhr.onload = async function () {
+							if (xhr.status >= 200 && xhr.status < 300) {
+								progressCallback(100);
+								resolve(true);
+
+								// 🟢 REMOVE FILE FROM PENDING LIST
+								removePendingItem(fileItem.uploadId);
+
+								// 🟢 REFRESH FOLDER VIEW
+								await loadFolders(
+									folderState.currentFolderId,
+									folderState.selectedFolders,
+									window.selectedProjectId
+								);
+
+							} else {
+								progressCallback(100, true);
+								resolve(false);
+							}
+						};
+
+						xhr.onerror = function () {
+							progressCallback(0, true);
+							resolve(false);
+						};
+
+						xhr.send(formData);
+					});
+				}
+
+
+
+				// ---------------- FOLDER UPLOAD ----------------
+				async function uploadFolderToServer(folderItems) {
+					if (!folderItems.length) return;
+
+					const topLevelFolder = folderItems[0].relativePath.split('/')[0];
+					const folderId = folderItems[0].folderId;
+
+					const formData = new FormData();
+					folderItems.forEach(item => {
+						const fileWithPath = new File([item.file], item.relativePath, { type: item.file.type });
+						formData.append("file", fileWithPath);
+					});
+
+					try {
+						const xhr = new XMLHttpRequest();
+						xhr.open("POST", `/api/files/upload-folder/${folderId}?folderName=${encodeURIComponent(topLevelFolder)}`, true);
+						xhr.withCredentials = true;
+
+						xhr.upload.onprogress = function (event) {
+							if (event.lengthComputable) {
+								const percent = Math.round((event.loaded / event.total) * 100);
+								folderItems.forEach(item => {
+									const div = document.querySelector(`[data-upload-id="${item.uploadId}"]`);
+									if (div) {
+										const progressBar = div.querySelector('.progress-bar');
+										progressBar.style.width = percent + '%';
+										progressBar.textContent = percent + '%';
+									}
+								});
+							}
+						};
+
+						xhr.onload = function () {
+							try {
+								const res = JSON.parse(xhr.responseText);
+
+								if (xhr.status >= 200 && xhr.status < 300 && res.success) {
+									folderItems.forEach(item => {
+										const div = document.querySelector(`[data-upload-id="${item.uploadId}"]`);
+										if (div) {
+											const progressBar = div.querySelector('.progress-bar');
+											progressBar.style.width = '100%';
+											progressBar.textContent = '100%';
+										}
+									});
+
+									showToast(res.message || "Folder uploaded successfully!", 'success');
+									loadFolders(folderState.currentFolderId, folderState.selectedFolders, window.selectedProjectId);
+								} else {
+									console.error("Upload failed:", res);
+									showToast(res.message || "Folder upload failed.", "danger");
+								}
+							} catch (err) {
+								console.error("Invalid response:", xhr.responseText);
+								showToast("Folder upload failed (invalid response).", "danger");
+							}
+						};
+						xhr.send(formData);
+					} catch (err) {
+						console.error("Upload error:", err);
+					}
+				}
+				// ---- NEW WRAPPER (add after uploadFolderToServer) ----
+				async function uploadWithGlobalProgress(items, isFolder = false) {
+					if (!items.length) return true;
+
+					globalProgress.show();
+					globalProgress.set(items.length, 0, 0);
+
+					let done = 0;
+					const update = () => globalProgress.set(items.length, done, Math.round((done / items.length) * 100));
+
+					const results = await Promise.all(items.map(async item => {
+						const ok = isFolder
+							? await uploadFolderToServer([item])          // reuse existing folder logic (single item)
+							: await uploadFileToServer(item, p => { });    // per-file progress already handled inside
+
+						if (ok) done++;
+						update();
+						return ok;
+					}));
+
+					globalProgress.hide();
+					return results.every(r => r);
+				}
+
+				async function uploadPendingFiles() {
+					if (!pendingUploads.length) return showToast("No files to upload.", "warning");
+					if (!folderState.currentFolderId) return showToast("Please select a folder first.", "warning");
+
+					toggleUploadSpinner(true); // show spinner
+
+					try {
+						const singleFiles = pendingUploads.filter(i => !i.relativePath);
+						const folderFiles = pendingUploads.filter(i => i.relativePath);
+
+						// Upload single files
+						const ok1 = singleFiles.length
+							? await uploadWithGlobalProgress(singleFiles, false)
+							: true;
+
+						// Upload folder(s) in one batch
+						const ok2 = folderFiles.length
+							? await uploadWithGlobalProgress(folderFiles, true)
+							: true;
+
+						// Only refresh if at least one upload succeeded
+						if (ok1 || ok2) {
+							await loadFolders(
+								folderState.currentFolderId,
+								folderState.selectedFolders,
+								window.selectedProjectId
+							);
+						}
+
+						showToast("Upload completed successfully!", "success");
+
+					} catch (err) {
+						console.error("Upload error:", err);
+						showToast("Error uploading files. Please try again.", "danger");
+					} finally {
+						toggleUploadSpinner(false);
+						// Clear pending uploads from UI & memory
+						pendingUploads = [];
+						const fileList = document.getElementById('fileList');
+						if (fileList) fileList.innerHTML = '';
+					}
+				}
+				// ---------------- FILE DELETE ----------------
+				function deleteFile(fileId, fileName) {
+					fetch(`/api/files/${fileId}`, {
+						method: 'DELETE',
+						headers: { 'Content-Type': 'application/json' }
+					})
+						.then(async response => {
+							const res = await response.json();
+							if (response.ok && res.success) {
+								showToast(res.message || "File deleted successfully.", "success");
+								loadFolders(folderState.currentFolderId, folderState.selectedFolders, window.selectedProjectId);
+							} else {
+								showToast(res.message || "File deletion failed.", "danger");
+							}
+						})
+						.catch(err => {
+							console.error("Error deleting file:", err);
+							showToast("File deletion failed due to a network error.", "danger");
+						});
+				}
+
+
+				// ---------------- DELETE CONFIRMATION MODAL ----------------
+				let deleteTarget = { id: null, name: null };
+				const deleteModalEl = document.getElementById('confirmDeleteModal');
+				const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+				const deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl) : null;
+
+				function showDeleteModal(fileId, fileName) {
+					deleteTarget.id = fileId;
+					deleteTarget.name = fileName;
+
+					// Update modal text dynamically
+					const modalBody = deleteModalEl.querySelector('.modal-body');
+					modalBody.textContent = `Are you sure you want to delete "${fileName}"? This action cannot be undone.`;
+
+					deleteModal.show();
+				}
+
+				// When confirm delete button is clicked
+				if (confirmDeleteBtn) {
+					confirmDeleteBtn.addEventListener('click', async () => {
+						if (!deleteTarget.id) return;
+
+						confirmDeleteBtn.disabled = true;
+						confirmDeleteBtn.textContent = 'Deleting...';
+
+						await deleteFile(deleteTarget.id, deleteTarget.name);
+
+						confirmDeleteBtn.disabled = false;
+						confirmDeleteBtn.textContent = 'Delete';
+
+						deleteModal.hide();
+						deleteTarget = { id: null, name: null };
+					});
+				}
+
+
+				// ---------------- INITIAL LOAD ----------------
+				document.addEventListener("DOMContentLoaded", function () {
+					initializeUploadBox();
+
+					// Preselection from session
+					if (sessionSelectedProjectId && sessionSelectedProjectId !== '') {
+						// Add session project as option manually
+						const projectSelect = document.getElementById('projectName');
+						const optionExists = Array.from(projectSelect.options).some(opt => opt.value === sessionSelectedProjectId);
+
+						if (!optionExists) {
+							const newOption = new Option(selectedProjectName, sessionSelectedProjectId, true, true);
+							projectSelect.add(newOption);
+						}
+
+						window.selectedProjectId = sessionSelectedProjectId;
+					}
+
+					// Initialize Select2
+					initSelect2('#projectName', `${baseUrl}/api/projects`, 'projectName', '-- Select Project --');
+					initSelect2('#department', `${baseUrl}/api/departments/search`, 'name', '-- Select Department --');
+
+					// Force Select2 to pick the session value
+					if (sessionSelectedProjectId && sessionSelectedProjectId !== '') {
+						$('#projectName').val(sessionSelectedProjectId).trigger('change');
+
+						// Fetch folders for preselected project
+						loadFolders(null, [], sessionSelectedProjectId);
+					}
+
+					// Event listeners
+					$('#projectName').on('select2:select', function (e) {
+						const selectedId = e.params.data.id;
+						if (selectedId) {
+							window.selectedProjectId = selectedId;
+							loadFolders(null, [], selectedId);
+						}
+					});
+
+					$('#department').on('change', async function () {
+						const projectId = window.selectedProjectId;
+						const departmentId = $('#department').val();
+
+						if (!projectId || !departmentId) return;
+
+						const res = await fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${departmentId}`, {
+							credentials: 'include'
+						});
+						const data = await res.json();
+
+						// If no folder found, create default one
+						if (!data.tree || data.tree.length === 0) {
+							const ensureRes = await fetch(`/api/folders/automatic`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								credentials: 'include',
+								body: JSON.stringify({ projectId, departmentId })
+							});
+							const ensureData = await ensureRes.json();
+
+							if (ensureData.success && ensureData.created) {
+								showToast(`Default folder created: ${ensureData.folder.name}`, "success");
+							}
+						}
+
+						// Reload folder view
+						loadFolders(null, [], projectId);
+					});
+
+
+					const uploadFilesBtn = document.getElementById("uploadFilesBtn");
+					if (uploadFilesBtn) uploadFilesBtn.addEventListener("click", uploadPendingFiles);
+				});
+
+			</script>

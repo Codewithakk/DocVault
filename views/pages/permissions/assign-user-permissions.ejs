@@ -1,0 +1,223 @@
+<%- include('../../partials/header') %>
+
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Assign User Permissions</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">Assign User Permissions</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-12">
+					<!-- User Info & Save Button -->
+					<div class="card mb-3 p-3">
+						<div class="d-flex justify-content-between align-items-center">
+							<div class="d-flex gap-4">
+								<div>
+									<h6 class="fs-18 fw-medium text-neutral">
+										<%= targetUser.name %>
+									</h6>
+									<p class="fs-16 text-gray">User Name</p>
+								</div>
+								<div>
+									<h6 class="fs-18 fw-medium text-neutral">
+										<%= targetUser.userDetails && targetUser.userDetails.designation ?
+											targetUser.userDetails.designation.name.charAt(0).toUpperCase() +
+											targetUser.userDetails.designation.name.slice(1) : 'Not assigned' %>
+									</h6>
+									<p class="fs-16 text-gray">Designation</p>
+								</div>
+							</div>
+							<div>
+								<button type="submit" form="userPermissionsForm" class="site-btnmd">Save</button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Permissions Table -->
+					<div class="card">
+						<div class="card-body p-0">
+							<form id="userPermissionsForm" novalidate>
+								<input type="hidden" name="user_id" value="<%= targetUser._id %>">
+								<div class="table-responsive">
+									<table class="table table-bordered table-hover mb-0">
+										<thead class="table-light">
+											<tr>
+												<th>Module</th>
+												<th class="text-center">All</th>
+												<th class="text-center">Read</th>
+												<th class="text-center">Write</th>
+												<th class="text-center">Delete</th>
+											</tr>
+										</thead>
+										<tbody>
+											<% if (Array.isArray(masterMenus) && masterMenus.length> 0) { %>
+												<% let menuCounter=0; %>
+													<% masterMenus.forEach(master=> { %>
+														<!-- Main Menu -->
+														<tr class="table-primary">
+															<td colspan="5"><strong>
+																	<%= master.name %> (Menu)
+																</strong></td>
+														</tr>
+
+														<% if (Array.isArray(master.children) && master.children.length>
+															0) { %>
+															<% master.children.forEach(menu=> { %>
+																<!-- Submenu -->
+																<tr>
+																	<td class="ps-5">
+																		<div class="form-check">
+																			<input
+																				class="form-check-input menu-checkbox"
+																				type="checkbox"
+																				name="menus[<%= menuCounter %>][menu_id]"
+																				value="<%= menu._id %>"
+																				id="menu_<%= menu._id %>"
+																				<%=permissionMap[menu._id]?.read
+																				? 'checked' : '' %>>
+																			<label class="form-check-label"
+																				for="menu_<%= menu._id %>">
+																				<%= menu.name %> (SubMenu)
+																			</label>
+																		</div>
+																	</td>
+																	<td class="text-center">
+																		<input type="checkbox"
+																			class="form-check-input menu-all"
+																			data-menu-id="<%= menu._id %>">
+																	</td>
+																	<td class="text-center">
+																		<input type="checkbox"
+																			class="form-check-input menu-read"
+																			name="permissions[<%= menu._id %>][read]"
+																			data-menu-id="<%= menu._id %>"
+																			<%=permissionMap[menu._id]?.read ? 'checked'
+																			: '' %>>
+																	</td>
+																	<td class="text-center">
+																		<input type="checkbox"
+																			class="form-check-input menu-write"
+																			name="permissions[<%= menu._id %>][write]"
+																			data-menu-id="<%= menu._id %>"
+																			<%=permissionMap[menu._id]?.write
+																			? 'checked' : '' %>>
+																	</td>
+																	<td class="text-center">
+																		<input type="checkbox"
+																			class="form-check-input menu-delete"
+																			name="permissions[<%= menu._id %>][delete]"
+																			data-menu-id="<%= menu._id %>"
+																			<%=permissionMap[menu._id]?.delete
+																			? 'checked' : '' %>>
+																	</td>
+																</tr>
+
+																<% if (Array.isArray(menu.children) &&
+																	menu.children.length> 0) { %>
+																	<% menu.children.forEach(submenu=> { %>
+																		<!-- Sub-submenu -->
+																		<tr>
+																			<td class="ps-5">
+																				<div class="form-check">
+																					<input
+																						class="form-check-input menu-checkbox"
+																						type="checkbox"
+																						name="menus[<%= menuCounter %>][menu_id]"
+																						value="<%= submenu._id %>"
+																						id="menu_<%= submenu._id %>"
+																						<%=permissionMap[submenu._id]?.read
+																						? 'checked' : '' %>>
+																					<label class="form-check-label"
+																						for="menu_<%= submenu._id %>">
+																						<%= submenu.name %>
+																					</label>
+																				</div>
+																			</td>
+																			<td class="text-center">
+																				<input type="checkbox"
+																					class="form-check-input menu-all"
+																					data-menu-id="<%= submenu._id %>">
+																			</td>
+																			<td class="text-center">
+																				<input type="checkbox"
+																					class="form-check-input menu-read"
+																					name="permissions[<%= submenu._id %>][read]"
+																					data-menu-id="<%= submenu._id %>"
+																					<%=permissionMap[submenu._id]?.read
+																					? 'checked' : '' %>>
+																			</td>
+																			<td class="text-center">
+																				<input type="checkbox"
+																					class="form-check-input menu-write"
+																					name="permissions[<%= submenu._id %>][write]"
+																					data-menu-id="<%= submenu._id %>"
+																					<%=permissionMap[submenu._id]?.write
+																					? 'checked' : '' %>>
+																			</td>
+																			<td class="text-center">
+																				<input type="checkbox"
+																					class="form-check-input menu-delete"
+																					name="permissions[<%= submenu._id %>][delete]"
+																					data-menu-id="<%= submenu._id %>"
+																					<%=permissionMap[submenu._id]?.delete
+																					? 'checked' : '' %>>
+																			</td>
+																		</tr>
+																		<% }) %>
+																			<% } %>
+
+																				<% menuCounter++; %>
+																					<% }) %>
+																						<% } else { %>
+																							<tr>
+																								<td colspan="5"
+																									class="text-center text-muted">
+																									No menus found.</td>
+																							</tr>
+																							<% } %>
+																								<% }) %>
+																									<% } else { %>
+																										<tr>
+																											<td colspan="5"
+																												class="text-center text-muted">
+																												No
+																												modules
+																												found.
+																											</td>
+																										</tr>
+																										<% } %>
+										</tbody>
+									</table>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+				<p class="mb-0">2025 &copy; HLFPPT.</p>
+				<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex Services &
+						Technology</a></p>
+			</div>
+
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+
+	<script src="/js/pages/permissions/assign-user-permissions.js"></script>
+	<%- include('../../partials/footer') %>

@@ -1,0 +1,151 @@
+<%- include('../../partials/header') %>
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Assign Permissions</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">Assign Permissions</li>
+						</ol>
+					</nav>
+				</div>
+				<div class="rtbtn">
+					<a href="/users/register" class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+						<i class="ti ti-plus me-1"></i>Add User
+					</a>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="seprate_crdhdr mb-4">
+					<div class="d-flex gap-2 align-items-center">
+						<div>
+							<select id="roleFilter" class="form-select">
+								<option value="">-- Select Role --</option>
+								<% profile_type.forEach(type=> { %>
+									<option value="<%= type %>">
+										<%= type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() %>
+									</option>
+									<% }) %>
+							</select>
+						</div>
+
+						<div class="input-icon-end position-relative">
+							<input type="text" id="createdDate" class="form-control datetimepicker"
+								placeholder="Select Date" autocomplete="off" />
+							<span class="input-icon-addon">
+								<i class="ti ti-calendar text-gray-7"></i>
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="card" id="userListCard">
+					<div class="card-body p-0" id="userListBody">
+						<div class="custom-datatable-filter table-responsive" id="userTableWrapper">
+							<table id="usersTable" class="table datatable">
+								<thead>
+									<tr>
+										<th></th> <!-- Settings column -->
+										<th>Name</th>
+										<th>Email</th>
+										<th>Department</th>
+										<th>Created on</th>
+										<th>Assign Permission</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+	</div>
+
+	<%- include('../../partials/footer') %>
+		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+		<script>$(document).ready(function () {
+				// Default role = "user"
+				let selectedRole = "user";
+				$("#roleFilter").val(selectedRole);
+
+				const table = $('#usersTable').DataTable({
+					processing: true,
+					serverSide: true,
+					ajax: {
+						url: `${baseUrl}/api/user`,
+						type: "GET",
+						xhrFields: { withCredentials: true },
+						data: function (d) {
+							return {
+								page: (d.start / d.length) + 1,
+								limit: d.length,
+								search: d.search.value,
+								sortBy: d.columns[d.order[0].column].data,
+								sortOrder: d.order[0].dir,
+								profile_type: $("#roleFilter").val() || "user",
+								createdDate: $("#createdDate").val() || ""
+							};
+						},
+						dataSrc: function (json) {
+							json.recordsTotal = json.total;
+							json.recordsFiltered = json.total;
+							return json.users;
+						}
+					},
+					columns: [
+						{
+							data: "_id",
+							orderable: false,
+							render: id => `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn border-0" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="ti ti-settings"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/users/view/${id}"><i class="ti ti-eye"></i> View</a></li>
+                            <li><a class="dropdown-item" href="/users/edit/${id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
+                        </ul>
+                    </div>`
+						},
+						{ data: "name" },
+						{ data: "email" },
+						{ data: "userDetails", render: ud => ud?.department?.name || "-" },
+						{
+							data: "createdAt",
+							render: data => data ? formatDateTime(data) : "-"
+						},
+						{
+							data: "_id",
+							orderable: false,
+							render: id => `<a href="/user-permissions/${id}" class="btn btn-primary" style="border-radius: 50px;">Assign</a>`
+						}
+					]
+				});
+
+				// Role filter change event
+				$("#roleFilter").on("change", function () {
+					table.ajax.reload();
+				});
+
+				//Date picker initialization
+
+				$("#createdDate").on("change", function () {
+					table.ajax.reload();
+				});
+			});
+		</script>

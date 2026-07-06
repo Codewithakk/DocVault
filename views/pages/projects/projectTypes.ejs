@@ -1,0 +1,143 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">
+                        <%= projectType ? 'Edit' : 'Add' %> Project Type
+                    </h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                <%= projectType ? 'Edit' : 'Add' %> Project-type
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a class="btn btn-primary btn-w-lg rounded-pill" href="/projectTypes/list">List</a>
+                </div>
+            </div>
+
+            <!-- Toast container -->
+            <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+            <!-- Form -->
+            <div class="add-info-fieldset">
+                <form id="departmentForm"
+                    action="<%= projectType ? '/api/projectTypes/' + projectType._id + '?_method=PATCH' : '/api/projectTypes' %>"
+                    method="POST" novalidate>
+
+                    <div class="row">
+                        <!-- Name -->
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Project Type<span class="text-danger">*</span></label>
+                            <input type="text" id="name" name="name" class="form-control"
+                                placeholder="Enter Project Type name" value="<%= projectType ? projectType.name : '' %>"
+                                required>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="col-md-3 mb-3">
+                            <label for="priority" class="form-label">Priority <span
+                                    class="optnl_lbl">(Optional)</span></label>
+                            <input type="text" id="priority" name="priority" class="form-control"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Enter priority"
+                                value="<%= projectType ? projectType.priority : 0 %>">
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-3 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select id="status" name="status" class="form-select select2">
+                                <option value="Active" <%=projectType && projectType.status==='Active' ? 'selected' : ''
+                                    %>>
+                                    Active
+                                </option>
+                                <option value="Inactive" <%=projectType && projectType.status==='Inactive' ? 'selected'
+                                    : '' %>>
+                                    Inactive
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-flex align-items-center justify-content-end mt-4">
+                        <button id="submitBtn" class="btn btn-primary btn-w-lg rounded-pill" type="submit">
+                            <%= projectType ? 'Edit' : 'Add' %>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by
+                <a href="https://duplexservices.com" target="_blank" rel="noopener" class="text-primary">Duplex Services
+                    & Technology</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('departmentForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const originalBtnText = submitBtn.innerHTML;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Processing...
+    `;
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            const url = form.action;
+            const method = form.getAttribute('method').toUpperCase();
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    showToast(result.message || 'Project Type saved successfully!', 'success');
+                    setTimeout(() => { window.location.href = '/projectTypes/list'; }, 1000);
+                } else {
+                    // Handle backend validation errors
+                    if (result.errors && Array.isArray(result.errors)) {
+                        result.errors.forEach(err => showToast(err.message, 'danger'));
+                    } else {
+                        showToast(result.message || 'Failed to save department', 'danger');
+                    }
+                    console.error('Backend error:', result);
+                }
+            } catch (err) {
+                showToast(err.message || 'Something went wrong!', 'danger');
+                console.error('Fetch error:', err);
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+
+
+    <%- include('../../partials/footer') %>

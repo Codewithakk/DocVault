@@ -1,0 +1,215 @@
+<%- include('../../partials/header') %>
+
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Recycle Bin</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Recycle Bin
+							</li>
+						</ol>
+					</nav>
+				</div>
+				<div class="rtbtn">
+					<a href="#" data-bs-toggle="modal" data-bs-target="#emptybin-modal"
+						class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+						Empty Trash
+					</a>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<!-- Documents Table -->
+			<div class="card">
+				<div class="card-body">
+					<div class="table-responsive" id="recyclinbindocumentsTableWrapper">
+						<table class="table table-hover datatable" id="recyclinbindocuments_table">
+							<thead class="thead-light">
+								<tr>
+									<th></th>
+									<th>File Name</th>
+									<th>Created On</th>
+									<th>Department</th>
+									<th>Deleted On</th>
+								</tr>
+							</thead>
+							<tbody id="recyclinbindocuments_table_body"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Footer -->
+	<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+		<p class="mb-0">2025 &copy; HLFPPT.</p>
+		<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services & Technology</a>
+		</p>
+	</div>
+
+	<%- include('../../partials/footer') %>
+
+		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+		<script>
+			$(document).ready(function () {
+
+				// Format KB to MB
+				function formatBytesToMB(kb) {
+					return (kb / 1024).toFixed(2) + ' MB';
+				}
+
+				// Initialize DataTable with server-side processing
+				const table = $('#recyclinbindocuments_table').DataTable({
+					serverSide: true,
+					processing: true,
+					ajax: {
+						url: '/api/documents/recyclebin',
+						type: 'GET',
+						data: function (d) {
+							return {
+								page: Math.floor(d.start / d.length) + 1,
+								limit: d.length
+							};
+						},
+						dataSrc: function (json) {
+							// Map API data to rows
+							json.recordsTotal = json.total;
+							json.recordsFiltered = json.total;
+							return (json.data || []).map(doc => renderRow(doc));
+						}
+					},
+					columns: [
+						{ title: "Actions", orderable: false },
+						{ title: "Files" },
+						{ title: "Created On" },
+						{ title: "Department" },
+						{ title: "Deleted On" }
+					],
+					searching: false,
+					pageLength: 10,
+					lengthMenu: [10, 25, 50, 100],
+					order: [[2, 'desc']] // default sort by Created On
+				});
+
+				function renderRow(doc) {
+					const file = doc.files?.[0];
+					const fileSizeKB = file ? (file.fileSize / 1024).toFixed(2) + ' KB' : '-';
+					const filesInfo = file ? `
+            <div class="flxtblleft mb-1">
+                <span class="avatar rounded bg-light mb-2">
+                    <img src="/img/icons/fn1.png">
+                </span>
+                <div class="flxtbltxt">
+                    <p class="fs-14 mb-1 fw-normal text-neutral">${file.originalName}</p>
+                    <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
+                </div>
+            </div>` : '-';
+
+					const createdOn = new Date(doc.createdAt).toLocaleString();
+					const deletedOn = new Date(doc.deletedAt).toLocaleString();
+					const departmentName = doc.department?.name || '-';
+
+					const actions = `
+<div class="action-icon d-inline-flex">
+    <a href="#" data-document-id="${doc._id}" class="restore-btn me-2" data-bs-toggle="modal" data-bs-target="#restore-modal">
+        <i class="ti ti-restore"></i>
+    </a>
+    <a href="#" 
+       class="delete-permanent-btn" 
+       data-document-id="${doc._id}" 
+       data-document-name="${file?.originalName || 'Document'}"
+       data-document-size="${fileSizeKB}">
+        <i class="ti ti-trash"></i>
+    </a>
+</div>`;
+
+
+					return [actions, filesInfo, createdOn, departmentName, deletedOn];
+				}
+
+				$('#department, #projectName').on('change', function () {
+					table.ajax.reload();
+				});
+				// Restore document
+				// Restore document
+				$(document).on('click', '.restore-btn', function () {
+					const row = $(this).closest('tr');
+					const documentId = $(this).data('document-id');
+					const modal = $('#restore-modal');
+
+					// Get file info from the table row
+					const fileInfoDiv = row.find('td').eq(1).find('.flxtblleft').clone();
+
+					// Clear modal body and inject file info
+					modal.find('.modal-body').empty().append(fileInfoDiv);
+
+					// Optional: update modal header
+					const fileName = fileInfoDiv.find('.flxtbltxt p').text();
+					modal.find('.modal-title').text(`Are you sure you want to restore "${fileName}"?`);
+
+					// Show modal
+					modal.modal('show');
+
+					// Restore confirmation
+					modal.find('button.btn-primary').off('click').on('click', function () {
+						$.ajax({
+							url: `/api/documents/${documentId}/restore`,
+							method: 'PATCH',
+							success: function () {
+								table.row(row).remove().draw();
+								modal.modal('hide');
+								showToast('Document restored successfully.', 'success');
+							},
+							error: function () {
+								showToast('Failed to restore document.', 'error');
+							}
+						});
+					});
+				});
+
+
+				$(document).on('click', '.delete-permanent-btn', function () {
+					const row = $(this).closest('tr');
+					const documentId = $(this).data('document-id');
+					const documentName = $(this).data('document-name');
+					const documentSize = $(this).data('document-size') || 'Unknown';
+					const modal = $('#fileDelete-modal');
+
+					// Update modal content dynamically
+					modal.find('.flxtbltxt p').text(documentName); // filename
+					modal.find('.flxtbltxt span').text(documentSize); // file size
+
+					// Show the modal
+					modal.modal('show');
+
+					// Handle permanent delete
+					modal.find('button.btn-primary').off('click').on('click', function () {
+						$.ajax({
+							url: '/api/documents/permanent',
+							method: 'DELETE',
+							contentType: 'application/json',
+							data: JSON.stringify({ ids: [documentId] }),
+							success: function () {
+								table.row(row).remove().draw();
+								modal.modal('hide');
+								showToast(`"${documentName}" deleted permanently.`, 'success');
+							},
+							error: function () {
+								showToast('Failed to delete document.', 'error');
+							}
+						});
+					});
+				});
+			});
+		</script>

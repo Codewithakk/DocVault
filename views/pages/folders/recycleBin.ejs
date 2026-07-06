@@ -1,0 +1,294 @@
+<%- include('../../partials/header') %>
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Recycle Bin</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">Recycle Bin</li>
+						</ol>
+					</nav>
+				</div>
+				<div class="rtbtn">
+					<a href="#" data-bs-toggle="modal" data-bs-target="#emptybin-modal"
+						class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+						Empty Trash
+					</a>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="row">
+				<div class="col-xxl-12 col-xl-12">
+					<div class="card flex-fill">
+						<div class="card-body p-0">
+							<div class="custom-datatable-filter table-responsive">
+								<table class="table datatable" id="recycleTable">
+									<thead>
+										<tr>
+											<th></th>
+											<th>Folder Name</th>
+											<th>Department</th>
+											<th>Project</th>
+											<th>Size</th>
+											<th>Created On</th>
+											<th>Deleted On</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<!-- Table rows will be filled dynamically by JS -->
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Projects -->
+			</div>
+		</div>
+
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by
+				<a href="javascript:void(0);" class="text-primary">Duplex Services & Technology</a>
+			</p>
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+
+	<%- include('../../partials/footer') %>
+
+		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+		<script>
+			$(document).ready(function () {
+
+				let recycleTable;
+
+				function loadRecycleBinFolders() {
+					$.ajax({
+						url: '/api/folders/recyclebin',
+						method: 'GET',
+						success: function (response) {
+							if (response.success && Array.isArray(response.folders)) {
+								populateTable(response.folders);
+							} else {
+								console.error("Unexpected API response:", response);
+								showToast('No data found in recycle bin', 'error');
+							}
+						},
+						error: function (err) {
+							console.error("Error loading recycle bin:", err);
+							showToast('Error fetching recycle bin data', 'error');
+						}
+					});
+				}
+function getSelectedFolderIds() {
+	let ids = [];
+
+	$('#recycleTable tbody input.select-folder:checked').each(function () {
+		ids.push($(this).attr('data-folder-id'));
+	});
+
+	return ids;
+}
+
+
+function populateTable(folders) {
+
+if ($.fn.DataTable.isDataTable('#recycleTable')) {
+	recycleTable.clear().rows.add(folders).draw();
+	return;
+}
+
+recycleTable = $('#recycleTable').DataTable({
+	data: folders,
+	pageLength: 10,
+	order: [[1, 'asc']],
+	autoWidth: false,
+	language: { emptyTable: "No folders found in recycle bin." },
+	columns: [
+		{
+			data: "_id",
+			render: function (data) {
+				return `
+				<div class="form-check form-check-md">
+					<input class="form-check-input select-folder" type="checkbox" data-folder-id="${data}">
+				</div>`;
+			}
+		},
+		{
+			data: "name",
+			render: function (data) {
+				return `<p class="fs-14 mb-1 fw-normal text-neutral">${data}</p>`;
+			}
+		},
+		{
+			data: "departmentId",
+			render: function (data) {
+				return data?.name || "-";
+			}
+		},
+		{
+			data: "projectId",
+			render: function (data) {
+				return data?.projectName || "-";
+			}
+		},
+		{
+			data: "size",
+			render: function (data) {
+				return formatBytes(data);
+			}
+		},
+		{
+			data: "createdAt",
+			render: function (data) {
+				return new Date(data).toLocaleString();
+			}
+		},
+		{
+			data: "deletedAt",
+			render: function (data) {
+				return data ? new Date(data).toLocaleString() : "-";
+			}
+		},
+		{
+			data: null,
+			render: function (data) {
+				return `
+				<div class="action-icon d-inline-flex">
+					<a href="#" class="restore-folder me-2" data-folder-id="${data._id}">
+						<i class="ti ti-restore"></i>
+					</a>
+					<a href="#" class="delete-folder" 
+					   data-folder-id="${data._id}"
+					   data-folder-name="${data.name}"
+					   data-folder-size="${data.size}">
+						<i class="ti ti-trash"></i>
+					</a>
+				</div>`;
+			}
+		}
+	]
+});
+}
+
+				$(document).on('click', '.restore-folder', function (e) {
+					e.preventDefault();
+					const folderId = $(this).data('folder-id');
+					if (!folderId) return;
+
+					$('#archivedoc-modal').modal('show');
+					$('#archivedoc-modal .modal-body').text(`Are you sure you want to restore this folder?`);
+
+					$('#archivedoc-modal .btn-primary')
+						.off('click')
+						.on('click', function () {
+							$.ajax({
+								url: `/api/folders/${folderId}/restore`,
+								method: 'PATCH',
+								success: function () {
+									$('#archivedoc-modal').modal('hide');
+									showToast('Folder restored successfully.', 'success');
+									const row = $(`.restore-folder[data-folder-id="${folderId}"]`).closest('tr');
+									recycleTable.row(row).remove().draw(false);
+								},
+								error: function (err) {
+									console.error(err);
+									showToast('Failed to restore folder.', 'error');
+								}
+							});
+						});
+				});
+
+				$(document).on('click', '.delete-folder', function (e) {
+					e.preventDefault();
+					const folderId = $(this).data('folder-id');
+					const folderName = $(this).data('folder-name');
+					const folderSize = $(this).data('folder-size');
+
+					$('#fileDelete-modal').modal('show');
+					$('#fileDelete-modal .flxtbltxt p').text(folderName);
+					$('#fileDelete-modal .flxtbltxt span.fs-11').text(formatBytes(folderSize));
+					$('#fileDelete-modal h5').text(`Are you sure you want to permanently delete "${folderName}"?`);
+
+					$('#fileDelete-modal .btn-primary')
+						.off('click')
+						.on('click', function () {
+							$.ajax({
+								url: `/api/folders/${folderId}`,
+								method: 'DELETE',
+								contentType: 'application/json',
+								data: JSON.stringify({ ids: [folderId] }),
+								success: function () {
+									$('#fileDelete-modal').modal('hide');
+									showToast(`"${folderName}" permanently deleted.`, 'success');
+
+									$(`.delete-folder[data-folder-id="${folderId}"]`).closest('tr').remove();
+								},
+								error: function (err) {
+									console.error(err);
+									showToast('Failed to delete folder.', 'error');
+								}
+							});
+						});
+				});
+
+				$('#emptybin-modal').on('show.bs.modal', function () {
+					$.get('/api/folders/recyclebin/size', function (res) {
+						if (res.totalSize) {
+							$('#emptybin-modal .modal-body').html(
+								`Are you sure you want to permanently <span class="txtblue">delete all files</span> in the recycle bin (${formatBytes(res.totalSize)})? This action cannot be undone.`
+							);
+						}
+					});
+				});
+
+				$('#emptybin-modal .btn-primary').on('click', function () {
+
+const folderIds = getSelectedFolderIds();
+
+if (folderIds.length === 0) {
+	showToast('Please select folders first.', 'error');
+	return;
+}
+
+$.ajax({
+	url: '/api/folders/recyclebin/empty',
+	method: 'DELETE',
+	contentType: 'application/json',
+	data: JSON.stringify({
+		folderIds: folderIds
+	}),
+	success: function () {
+		$('#emptybin-modal').modal('hide');
+		showToast('Selected folders permanently deleted.', 'success');
+		loadRecycleBinFolders();
+	},
+	error: function (err) {
+		console.error(err);
+		showToast('Failed to delete selected folders.', 'error');
+	}
+});
+});
+
+				function formatBytes(bytes) {
+					if (!bytes) return '0 Bytes';
+					const k = 1024;
+					const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+					const i = Math.floor(Math.log(bytes) / Math.log(k));
+					return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+				}
+
+				loadRecycleBinFolders();
+			});
+		</script>

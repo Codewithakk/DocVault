@@ -1,0 +1,279 @@
+<%- include('../../partials/header') %>
+
+	<!-- Page Wrapper -->
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">User Registration Form</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item active">User Registration Form</li>
+						</ol>
+					</nav>
+				</div>
+				<div>
+					<a class="btn btn-primary btn-w-lg rounded-pill" href="/users/list">List</a>
+				</div>
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="add-info-fieldset">
+				<form id="registerForm" method="POST" action="/users/register" enctype="multipart/form-data" novalidate>
+					<div class="modal-body">
+						<div class="row">
+							<!-- Full Name -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="name" class="form-label">Full Name <span
+											class="text-danger">*</span></label>
+									<input type="text" id="name" name="name" class="form-control"
+										placeholder="Enter full name" required maxlength="80"
+										oninput="this.value = this.value.replace(/[^A-Za-z ]/g,'')">
+								</div>
+							</div>
+
+							<!-- Email -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="email" class="form-label">Email Address <span
+											class="text-danger">*</span></label>
+									<input type="email" id="email" name="email" class="form-control"
+										placeholder="example@email.com" required maxlength="80">
+								</div>
+							</div>
+
+							<!-- Phone Number -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="phone_number" class="form-label">Phone Number <span
+											class="text-danger">*</span></label>
+									<input type="tel" id="phone_number" name="phone_number" class="form-control"
+										placeholder="Enter 10-digit phone number" pattern="^[0-9]{10}$" maxlength="10"
+										required oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,10)">
+								</div>
+							</div>
+
+							<!-- Employee ID -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="employee_id" class="form-label">Employee ID <span
+											class="text-danger">*</span></label>
+									<input type="text" id="employee_id" name="employee_id" class="form-control"
+										placeholder="Enter Employee ID" required maxlength="15"
+										oninput="this.value = this.value.toUpperCase()">
+								</div>
+							</div>
+
+							<!-- Department -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="department" class="form-label">Department <span
+											class="text-danger">*</span></label>
+									<select id="department" name="department" class="form-select select2"
+										required></select>
+								</div>
+							</div>
+
+							<!-- Designation -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="designation" class="form-label">Designation <span
+											class="text-danger">*</span></label>
+									<select id="designation" name="designation" class="form-select select2"
+										required></select>
+								</div>
+							</div>
+
+							<!-- Country -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="country" class="form-label">Country <span
+											class="text-danger">*</span></label>
+									<select id="country" name="country" class="form-select select2" required></select>
+								</div>
+							</div>
+
+							<!-- State -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="state" class="form-label">State <span
+											class="text-danger">*</span></label>
+									<select id="state" name="state" class="form-select select2" required></select>
+								</div>
+							</div>
+
+							<!-- City -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="city" class="form-label">City <span class="text-danger">*</span></label>
+									<select id="city" name="city" class="form-select select2" required></select>
+								</div>
+							</div>
+
+							<!-- Postcode -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label class="form-label">Pin Code <span class="text-danger">*</span></label>
+									<input type="text" name="post_code" class="form-control"
+										placeholder="Enter pin code" maxlength="10"
+										oninput="this.value = this.value.replace(/[^0-9]/g,'')">
+								</div>
+							</div>
+
+							<!-- Address -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="address" class="form-label">Address <span
+											class="optnl_lbl">(Optional)</span></label>
+									<textarea id="address" name="address" rows="3" class="form-control"
+										placeholder="Enter address" maxlength="250"></textarea>
+								</div>
+							</div>
+
+							<!-- Profile Image -->
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label for="fileInput" class="form-label">Profile Image <span
+											class="optnl_lbl">(Optional)</span></label>
+									<div class="upload-profilebox form-control p-2" id="uploadprofileBox">
+										<input type="file" name="profile_image" class="form-control d-none"
+											id="fileInput" accept="image/*">
+										<div class="preview" id="preview"></div>
+										<div class="upload-icon text-center"><i class="ti ti-plus fa-2x mb-2"></i></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Submit -->
+					<!-- Submit -->
+					<div class="d-flex align-items-center justify-content-end mt-4">
+						<button id="registerBtn" class="btn btn-primary btn-w-lg rounded-pill" type="submit">
+							<span class="btn-text">Register</span>
+						</button>
+					</div>
+
+				</form>
+			</div>
+		</div>
+
+		<!-- Footer -->
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by
+				<a href="https://duplexservices.com" target="_blank" rel="noopener" class="text-primary">Duplex Services
+					& Technology</a>
+			</p>
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+
+	<!-- Success Modal -->
+	<%- include('../../modals/successRegisterModal') %>
+
+
+		<%- include('../../partials/footer') %>
+			<script>
+				$('#department').select2({
+					placeholder: '-- Select Department --',
+					allowClear: true,
+					ajax: {
+						url: `${baseUrl}/api/departments/search`,
+						dataType: 'json',
+						delay: 250,
+						data: function (params) {
+							return {
+								search: params.term || '',       // search term
+								page: params.page || 1,          // current page
+								limit: 10                        // items per page
+							};
+						},
+						processResults: function (data, params) {
+							params.page = params.page || 1;
+
+							return {
+								results: data.data.map(dep => ({
+									id: dep._id,
+									text: dep.name
+								})),
+								pagination: {
+									more: data.pagination.more
+								}
+							};
+						},
+						cache: true
+					},
+					minimumInputLength: 0
+				});
+
+				$('#designation').select2({
+					placeholder: '-- Select Designation --',
+					allowClear: true,
+					ajax: {
+						url: `${baseUrl}/api/designations/search`,
+						dataType: 'json',
+						delay: 250, // debounce
+						data: function (params) {
+							return {
+								search: params.term || '',
+								page: params.page || 1,
+								limit: 10
+							};
+						},
+						processResults: function (data, params) {
+							params.page = params.page || 1;
+
+							return {
+								results: data.data.map(des => ({
+									id: des._id,
+									text: des.name.charAt(0).toUpperCase() + des.name.slice(1)
+								})),
+								pagination: {
+									more: data.pagination.more
+								}
+							};
+						},
+						cache: true
+					},
+					minimumInputLength: 0 // show initial 10 results without typing
+				});
+
+
+				document.getElementById('registerForm').addEventListener('submit', function (e) {
+					const btn = document.getElementById('registerBtn');
+					const btnText = btn.querySelector('.btn-text');
+
+					// Disable button and show loader
+					btn.disabled = true;
+					btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Registering...';
+
+					// The form will now submit normally, the spinner will show until the page reloads
+				});
+
+				// File upload box click triggers file input
+				document.getElementById("uploadprofileBox").addEventListener("click", () => {
+					document.getElementById("fileInput").click();
+				});
+
+				// Show preview when a file is selected
+				document.getElementById("fileInput").addEventListener("change", (e) => {
+					const preview = document.getElementById("preview");
+					preview.innerHTML = "";
+
+					const file = e.target.files[0];
+					if (file) {
+						const img = document.createElement("img");
+						img.src = URL.createObjectURL(file);
+						img.style.maxWidth = "100px";
+						img.classList.add("img-thumbnail");
+						preview.appendChild(img);
+					}
+				});
+			</script>
+			<script src="/js/pages/userRegister.js"></script>

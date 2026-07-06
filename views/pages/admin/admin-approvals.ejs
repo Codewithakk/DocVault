@@ -1,0 +1,484 @@
+<?php include 'header.php' ?>
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+	<div class="content">
+		<!-- Breadcrumb -->
+		<div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+			<div class="my-auto mb-2">
+				<h2 class="mb-1">Approvals Requests</h2>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="#"><i class="ti ti-smart-home"></i></a>
+						</li>
+						<li class="breadcrumb-item">
+							Approvals
+						</li>
+					</ol>
+				</nav>
+			</div>
+		</div>
+		<!-- /Breadcrumb -->
+
+		<div class="row">
+			<div class="seprate_crdhdr mb-4">
+				<div class="dflexbtwn">
+					<div class="filterbtn_wrps">
+						<button class="btn filterbtn active">All</button>
+						<button class="btn filterbtn">Pending</button>
+						<button class="btn filterbtn">Rejected</button>
+						<button class="btn filterbtn">Approved</button>
+						<button class="btn filterbtn">Draft</button>
+					</div>
+					<div class="d-flex gap-2 align-items-center">
+						<div class="dropdown">
+							<a href="javascript:void(0);"
+								class="dropdown-toggle border text-black btn btn-outline-secondary fs-13 me-2"
+								data-bs-toggle="dropdown">
+								Select Department
+							</a>
+							<ul class="dropdown-menu dropdown-menu-end p-3">
+								<li>
+									<a href="javascript:void(0);" class="dropdown-item rounded-1">UI/UX Designer</a>
+								</li>
+								<li>
+									<a href="javascript:void(0);" class="dropdown-item rounded-1">HR Manager</a>
+								</li>
+								<li>
+									<a href="javascript:void(0);" class="dropdown-item rounded-1">Junior Tester</a>
+								</li>
+							</ul>
+						</div>
+						<div class="input-icon-end position-relative">
+							<input type="text" class="form-control datetimepicker" placeholder="dd/mm/yyyy"
+								value="02-05-2024">
+							<span class="input-icon-addon">
+								<i class="ti ti-calendar text-gray-7"></i>
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xxl-12 col-xl-12">
+				<div class="card flex-fill">
+					<div class="card-body p-0">
+						<div class="custom-datatable-filter table-responsive">
+							<table class="table datatable">
+								<thead>
+									<tr>
+										<th></th>
+										<th>File Name</th>
+										<th>Created Date</th>
+										<th>Approved by</th>
+										<th>Department</th>
+										<th>Approval Status</th>
+										<th>Approval Action</th>
+										<th>Track Approvals</th>
+										<th>Remark</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>
+											<div class="btn-group" role="group">
+												<button type="button" class="btn border-0" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="ti ti-settings"></i> </button>
+												<ul class="dropdown-menu">
+													<li><a class="dropdown-item" href="#"><i class="ti ti-eye"></i>
+															View</a></li>
+													<li><a class="dropdown-item" href="add-document.php"><i
+																class="ti ti-pencil-minus"></i> Edit</a></li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#sharedoc-modal">
+															<i class="ti ti-share"></i> Share</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#versionhistory-modal">
+															<i class="ti ti-history"></i> Version History</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#downloaddoc-modal">
+															<i class="ti ti-download"></i> Download</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#trashdoc-modal">
+															<i class="ti ti-trash"></i> Move to Trash</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#archivedoc-modal">
+															<i class="ti ti-archive"></i> Move to Archive</a>
+													</li>
+												</ul>
+											</div>
+										</td>
+										<td>
+											<div class="flxtblleft">
+												<span class="avatar rounded bg-light mb-2">
+													<img src="assets/img/icons/fn1.png">
+												</span>
+												<div class="flxtbltxt">
+													<p class="fs-14 mb-1 fw-normal text-neutral">Project Proposal
+														v1<span class="text-success">+2</span></p>
+													<span class="fs-11 fw-light text-black">190KB</span>
+												</div>
+											</div>
+										</td>
+										<td>
+											<p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+										</td>
+										<td>
+											<p>Ashish</p>
+										</td>
+										<td>
+											<p>Operation Team</p>
+										</td>
+										<td>
+											<span class="status-badge status-pending">Pending</span>
+										</td>
+
+										<td>
+											<button class="adminapprv_btn" data-bs-toggle="modal"
+												data-bs-target="#approvalModal">Approve</button>
+										</td>
+
+										<td>
+											<a href="approval-tracking.php" class="site-btnmd">Track</a>
+										</td>
+										<td>
+											<p>Document is Approved</p>
+										</td>
+									</tr>
+
+									<tr>
+										<td>
+											<div class="btn-group" role="group">
+												<button type="button" class="btn border-0" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="ti ti-settings"></i> </button>
+												<ul class="dropdown-menu">
+													<li><a class="dropdown-item" href="#"><i class="ti ti-eye"></i>
+															View</a></li>
+													<li><a class="dropdown-item" href="add-document.php"><i
+																class="ti ti-pencil-minus"></i> Edit</a></li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#sharedoc-modal">
+															<i class="ti ti-share"></i> Share</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#versionhistory-modal">
+															<i class="ti ti-history"></i> Version History</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#downloaddoc-modal">
+															<i class="ti ti-download"></i> Download</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#trashdoc-modal">
+															<i class="ti ti-trash"></i> Move to Trash</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#archivedoc-modal">
+															<i class="ti ti-archive"></i> Move to Archive</a>
+													</li>
+												</ul>
+											</div>
+										</td>
+										<td>
+											<div class="flxtblleft">
+												<span class="avatar rounded bg-light mb-2">
+													<img src="assets/img/icons/fn1.png">
+												</span>
+												<div class="flxtbltxt">
+													<p class="fs-14 mb-1 fw-normal text-neutral">Project Proposal
+														v1<span class="text-success">+2</span></p>
+													<span class="fs-11 fw-light text-black">190KB</span>
+												</div>
+											</div>
+										</td>
+										<td>
+											<p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+										</td>
+										<td>
+											<p>Ashish</p>
+										</td>
+										<td>
+											<p>Operation Team</p>
+										</td>
+										<td>
+											<span class="status-badge bg-soft-success">Approved</span>
+										</td>
+
+										<td>
+											<button class="btn">View</button>
+										</td>
+
+										<td>
+											<a href="approval-tracking.php" class="site-btnmd">Track</a>
+										</td>
+										<td>
+											<p>Document is Approved</p>
+										</td>
+									</tr>
+
+									<tr>
+										<td>
+											<div class="btn-group" role="group">
+												<button type="button" class="btn border-0" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="ti ti-settings"></i>
+												</button>
+												<ul class="dropdown-menu">
+													<li><a class="dropdown-item" href="#"><i class="ti ti-eye"></i>
+															View</a></li>
+													<li><a class="dropdown-item" href="add-document.php"><i
+																class="ti ti-pencil-minus"></i> Edit</a></li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#sharedoc-modal">
+															<i class="ti ti-share"></i> Share</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#versionhistory-modal">
+															<i class="ti ti-history"></i> Version History</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#downloaddoc-modal">
+															<i class="ti ti-download"></i> Download</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#trashdoc-modal">
+															<i class="ti ti-trash"></i> Move to Trash</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#archivedoc-modal">
+															<i class="ti ti-archive"></i> Move to Archive</a>
+													</li>
+												</ul>
+											</div>
+										</td>
+										<td>
+											<div class="flxtblleft">
+												<span class="avatar rounded bg-light mb-2">
+													<img src="assets/img/icons/fn1.png">
+												</span>
+												<div class="flxtbltxt">
+													<p class="fs-14 mb-1 fw-normal text-neutral">Project Proposal
+														v1<span class="text-success">+2</span></p>
+													<span class="fs-11 fw-light text-black">190KB</span>
+												</div>
+											</div>
+										</td>
+										<td>
+											<p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+										</td>
+										<td>
+											<p>Ashish</p>
+										</td>
+										<td>
+											<p>Operation Team</p>
+										</td>
+										<td>
+											<span class="status-badge bg-soft-info">Draft</span>
+										</td>
+										<td>
+											<button class="adminapprv_btn bg-primary" data-bs-toggle="modal"
+												data-bs-target="#approvalModal">Edit</button>
+										</td>
+										<td>
+											<a href="approval-tracking.php" class="site-btnmd">Track</a>
+										</td>
+										<td>
+											<p>Document is Approved</p>
+										</td>
+									</tr>
+									<tr>
+										<td>
+											<div class="btn-group" role="group">
+												<button type="button" class="btn border-0" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="ti ti-settings"></i>
+												</button>
+												<ul class="dropdown-menu">
+													<li><a class="dropdown-item" href="#"><i class="ti ti-eye"></i>
+															View</a></li>
+													<li><a class="dropdown-item" href="add-document.php"><i
+																class="ti ti-pencil-minus"></i> Edit</a></li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#sharedoc-modal">
+															<i class="ti ti-share"></i> Share</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#versionhistory-modal">
+															<i class="ti ti-history"></i> Version History</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#downloaddoc-modal">
+															<i class="ti ti-download"></i> Download</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#trashdoc-modal">
+															<i class="ti ti-trash"></i> Move to Trash</a>
+													</li>
+													<li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+															data-bs-target="#archivedoc-modal">
+															<i class="ti ti-archive"></i> Move to Archive</a>
+													</li>
+												</ul>
+											</div>
+										</td>
+										<td>
+											<div class="flxtblleft">
+												<span class="avatar rounded bg-light mb-2">
+													<img src="assets/img/icons/fn1.png">
+												</span>
+												<div class="flxtbltxt">
+													<p class="fs-14 mb-1 fw-normal text-neutral">Project Proposal
+														v1<span class="text-success">+2</span></p>
+													<span class="fs-11 fw-light text-black">190KB</span>
+												</div>
+											</div>
+										</td>
+										<td>
+											<p class="tbl_date">11-02-2025 &nbsp;&nbsp; 11:20</p>
+										</td>
+										<td>
+											<p>Ashish</p>
+										</td>
+										<td>
+											<p>Operation Team</p>
+										</td>
+										<td>
+											<span class="status-badge status-pending">Pending</span>
+										</td>
+										<td>
+											<button class="adminapprv_btn" data-bs-toggle="modal"
+												data-bs-target="#approvalModal">Approve</button>
+										</td>
+										<td>
+											<a href="approval-tracking.php" class="site-btnmd">Track</a>
+										</td>
+										<td>
+											<p>Document is Approved</p>
+										</td>
+									</tr>
+
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /Projects -->
+		</div>
+
+	</div>
+
+	<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+		<p class="mb-0">2025 &copy; HLFPPT.</p>
+		<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services & Technology</a>
+		</p>
+	</div>
+
+</div>
+<!-- /Page Wrapper -->
+
+
+
+<!-- Bootstrap 5 Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-lg modal-dialog-centered">
+		<div class="modal-content rounded-4 shadow">
+			<div class="modal-header border-0 pt-4 pb-0">
+				<h5 class="modal-title fw-bold" id="approvalModalLabel">Action Approval Request</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+
+			<div class="modal-body">
+				<!-- Request Info -->
+				<p class="fs-16"><i class="ti ti-user"></i> <strong>Arun</strong> has requested for the document
+					approvals</p>
+
+				<div class="d-flex justify-content-between align-items-center mb-3">
+					<div class="flxtblleft">
+						<span class="avatar rounded bg-light mb-2">
+							<img src="assets/img/icons/fn1.png">
+						</span>
+						<div class="flxtbltxt">
+							<p class="fs-14 mb-1 fw-normal text-neutral">Project Proposal v1<span
+									class="text-success">+2</span></p>
+							<span class="fs-11 fw-light text-black">190KB</span>
+						</div>
+					</div>
+					<a href="#" class="text-primary fs-16 text-primary">View File</a>
+				</div>
+
+				<p class="fs-16 small mb-1">Approval Request on <strong class="fw-semibold">July 17th, 2025</strong></p>
+
+				<!-- Description -->
+				<div class="mb-3">
+					<label class="form-label fs-16 fw-semibold">Description</label>
+					<textarea class="form-control text-left rounded" rows="2"
+						readonly>This document is about the project proposal which need to sent to the client</textarea>
+				</div>
+
+				<!-- Approve/Decline -->
+				<div class="approval-switch d-flex mb-3">
+					<button type="button" class="btn flex-fill border-0 py-2 active" id="approveBtn">
+						<i class="ti ti-circle-check me-1"></i> Approve
+					</button>
+					<button type="button" class="btn flex-fill border-0 py-2" id="declineBtn">
+						<i class="ti ti-circle-x me-1"></i> Decline
+					</button>
+				</div>
+
+				<!-- Compliance & Expiry -->
+				<div class="row mb-3">
+					<div class="col">
+						<p class="mb-1 fs-16">Compliance and Retention File</p>
+						<p>Yes</p>
+					</div>
+					<div class="col">
+						<p class="mb-1 fs-16">Expiry Date</p>
+						<p>21st August 2025</p>
+					</div>
+				</div>
+
+				<!-- Comment -->
+				<div class="mb-3">
+					<label class="fs-16 mb-2">Leave a comment (optional)</label>
+					<textarea class="form-control" rows="2"></textarea>
+				</div>
+
+				<p class="text-muted fs-16 ">Arun and other approver members will be notified</p>
+			</div>
+
+			<div class="modal-footer border-0 pb-4">
+				<button type="button" class="btn btn-lg btn-light rounded-pill px-4"
+					data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-lg btn-success rounded-pill px-4">Approve</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<?php include 'footer.php';?>
+
+<script>
+	document.addEventListener("DOMContentLoaded", function () {
+		const approveBtn = document.getElementById("approveBtn");
+		const declineBtn = document.getElementById("declineBtn");
+
+		approveBtn.addEventListener("click", () => {
+			approveBtn.classList.add("active");
+			declineBtn.classList.remove("active");
+		});
+
+		declineBtn.addEventListener("click", () => {
+			declineBtn.classList.add("active");
+			approveBtn.classList.remove("active");
+		});
+	});
+</script>

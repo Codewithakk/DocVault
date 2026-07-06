@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <%= file ? file.originalName : "View Document" %>
+    </title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        iframe,
+        img {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        img {
+            object-fit: contain;
+            background-color: #000;
+        }
+
+        .fallback {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .info-bar {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .expired {
+            color: red;
+        }
+
+        a {
+            color: #0af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <% if (expiredMessage || docExpired) { %>
+        <div class="fallback">
+            <div>
+                <!-- <h2>Access Restricted</h2> -->
+                <p>
+                    <%= expiredMessage || "This document is no longer accessible." %>
+                </p>
+                <% if (document && document.ispublic) { %>
+                    <p>This public document link has expired or is unavailable.</p>
+                    <% } else { %>
+                        <p>Access to this document is restricted.</p>
+                        <% } %>
+            </div>
+        </div>
+        <% } else { %>
+            <% if (!file || !file.fileUrl) { %>
+                <div class="fallback">
+                    <h2>File not available</h2>
+                </div>
+
+                <% } else if (file.fileType.isPDF) { %>
+                    <iframe src="/api/file/pdf/<%= file._id %>" title="PDF Preview"></iframe>
+
+                    <% } else if (file.fileType.isWord || file.fileType.isExcel || file.fileType.isPowerPoint) { %>
+                        <iframe
+                            src="https://view.officeapps.live.com/op/embed.aspx?src=<%= encodeURIComponent(file.fileUrl) %>"
+                            title="Office Preview"></iframe>
+
+                        <% } else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(file.originalName)) { %>
+                            <img src="<%= file.fileUrl %>" alt="Image Preview">
+
+                            <% } else { %>
+                                <div class="fallback">
+                                    <h2>Preview not available</h2>
+                                    <p>This file type cannot be previewed.</p>
+                                    <p><a href="<%= file.fileUrl %>" target="_blank">Download file</a></p>
+                                </div>
+                                <% } %>
+                                    <% } %>
+</body>
+
+</html>

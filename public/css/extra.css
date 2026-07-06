@@ -1,0 +1,252 @@
+/* Dashboard */
+
+.flxtblhdr,
+.flxtblrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tbl-col {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Optional: set column widths so headers & rows align perfectly */
+.file-name {
+    flex: 2;
+}
+
+/* more space for long names */
+.user-name {
+    flex: 1;
+    text-align: left;
+}
+
+.time {
+    flex: 2;
+    text-align: left;
+    padding-left: 18px;
+}
+
+.file-status {
+    flex: 1;
+    text-align: left;
+}
+
+/* minor UI improvements */
+.flxtblhdr {
+    background: #f5f6f8;
+    padding: 10px 40px;
+    border-radius: 6px 6px 0 0;
+}
+
+/* for arrow hidden in mini-sidebar */
+.mini-sidebar .arrow-icon,
+.collapsed .arrow-icon {
+    display: none !important;
+}
+
+/* 8 nov */
+
+
+/* --- Responsive Layout --- */
+@media (max-width: 768px) {
+    .dflexbtwn {
+        /* flex-direction: column; */
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .filterbtn_wrps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .filterbtn_wrps .btn {
+        flex: 1 1 calc(50% - 8px);
+        text-align: center;
+    }
+
+    .d-flex.gap-2.align-items-center {
+        flex-direction: column;
+        align-items: stretch !important;
+        width: 100%;
+    }
+
+    .d-flex.gap-2.align-items-center select,
+    .d-flex.gap-2.align-items-center .input-icon-end {
+        width: 100% !important;
+    }
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table.datatable {
+    min-width: 800px;
+}
+
+/* for share document */
+/* Hide button text on devices smaller than 768px */
+@media (max-width: 767.98px) {
+    .btncopylink {
+        padding-left: 0.5rem;
+        /* optional, adjusts button padding */
+        padding-right: 0.5rem;
+    }
+
+    .btncopylink span {
+        display: none;
+    }
+}
+
+.table-responsive-file-status {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive-file-status .flextable {
+    min-width: 600px;
+    /* or whatever width makes sense */
+}
+
+.no-interaction {
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+.icon-activity {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+h5.mt-3.deleteLabel {
+    padding-left: 18px;
+}
+
+.flxtbltxt {
+    align-items: center;
+    gap: 6px;
+    /* space between name and size */
+}
+
+.flxtbltxt p,
+.flxtbltxt span {
+    margin: 0;
+    white-space: nowrap;
+}
+
+
+
+/* Flatpicker */
+
+/* Purple theme for selected dates */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+    background: #2B1871 !important;
+    color: white !important;
+    border-color: #2B1871 !important;
+}
+
+.flatpickr-day.inRange {
+    background: rgba(43, 24, 113, 0.25) !important;
+    color: #2B1871 !important;
+}
+
+/* Calendar icon on the right */
+.calendar-icon {
+    position: absolute;
+    right: 2.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+/* Clear (X) button */
+.clear-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+
+    z-index: 10;
+    font-size: 0.75rem;
+}
+
+#documentDate {
+    padding-right: 3rem !important;
+}
+
+.chart-container-wrapper {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.chart-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+    width: 130px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.center-text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.center-text-content p {
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: 120px;
+    word-wrap: break-word;
+    text-align: center;
+}
+
+.center-text-content h3 {
+    color: #000;
+    font-weight: 600;
+    margin-bottom: 0;
+    font-size: 24px;
+    line-height: 1.2;
+}
+
+.filestatusName {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}

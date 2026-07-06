@@ -1,0 +1,68 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="dflexbtwn page-breadcrumb mb-3" id="breadcrumbWrapper">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1" id="pageTitle">Menu List</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0" id="breadcrumbNav">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">Menu List</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="listbtn" id="listBtnWrapper">
+                    <a href="/permissions/menu/add" id="btnAddMenu" class="site-btnmd fs-14">Add Menu</a>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="card" id="menuListCard">
+                <!-- <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3"
+                    id="menuListHeader">
+                    <h5 id="menuListTitle">Pages List</h5>
+                </div> -->
+                <div class="card-body p-0" id="menuListBody">
+                    <div class="custom-datatable-filter table-responsive" id="menuTableWrapper">
+                        <table class="table datatable" id="menuTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Sr No.</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>URL</th>
+                                    <th>Priority</th>
+                                    <th>Is Active</th>
+                                    <th>Is Show</th>
+                                    <th>Add Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="menuTableBody">
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3"
+                id="footerWrapper">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by
+                    <a href="javascript:void(0);" id="devLink" class="text-primary">Duplex services & Technology</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Confirmation Modal -->
+    <%- include('../../modals/deleteModal') %>
+        <%- include('../../partials/footer') %>
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+            <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+            <script defer src="/js/pages/permissions/menuList.js"></script>

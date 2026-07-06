@@ -1,0 +1,143 @@
+<%- include('../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Settings</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item">Settings</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="card">
+                <div class="card-body">
+
+                    <form id="webSettingsForm" enctype="multipart/form-data">
+
+                        <!-- Company Name -->
+                        <div class="mb-4">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-control" name="companyName"
+                                value="<%= settings?.companyName %>" required>
+                        </div>
+
+                        <!-- Meta Title -->
+                        <div class="mb-4">
+                            <label class="form-label">Meta Title</label>
+                            <input type="text" class="form-control" name="metaTitle" value="<%= settings?.metaTitle %>">
+                        </div>
+
+                        <!-- Company Email -->
+                        <div class="mb-4">
+                            <label class="form-label">Company Email</label>
+                            <input type="email" class="form-control" name="companyEmail"
+                                value="<%= settings?.companyEmail %>" required>
+                        </div>
+                        <!-- Support Name -->
+                        <div class="mb-4">
+                            <label class="form-label">Support Team Name</label>
+                            <input type="text" class="form-control" name="supportTeamName"
+                                value="<%= settings?.supportTeamName %>" required>
+                        </div>
+                        <!-- Support Email -->
+                        <div class="mb-4">
+                            <label class="form-label">Support Email</label>
+                            <input type="email" class="form-control" name="supportEmail"
+                                value="<%= settings?.supportEmail %>" required>
+                        </div>
+
+                        <hr>
+
+                        <!-- Logo -->
+                        <div class="mb-4">
+                            <label class="form-label">Logo</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="logoPreview" src="<%= settings?.logo || '/assets/img/placeholder.png' %>"
+                                    class="img-thumbnail" style="width:120px;">
+                                <input type="file" name="logo" class="form-control"
+                                    onchange="previewImage(event, 'logoPreview')">
+                            </div>
+                        </div>
+
+                        <!-- Favicon -->
+                        <div class="mb-4">
+                            <label class="form-label">Favicon</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="faviconPreview" src="<%= settings?.favicon || '/assets/img/placeholder.png' %>"
+                                    class="img-thumbnail" style="width:60px;">
+                                <input type="file" name="favicon" class="form-control"
+                                    onchange="previewImage(event, 'faviconPreview')">
+                            </div>
+                        </div>
+
+                        <!-- Login Banner -->
+                        <div class="mb-4">
+                            <label class="form-label">Login Page Banner</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="loginBannerPreview"
+                                    src="<%= settings?.banner || '/assets/img/placeholder.png' %>" class="img-thumbnail"
+                                    style="width:200px;">
+                                <input type="file" name="banner" class="form-control"
+                                    onchange="previewImage(event, 'loginBannerPreview')">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Mail Banner</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="mailBannerPreview"
+                                    src="<%= settings?.mailImg || '/assets/img/placeholder.png' %>"
+                                    class="img-thumbnail" style="width:200px;">
+                                <input type="file" name="mailImg" class="form-control"
+                                    onchange="previewImage(event, 'mailBannerPreview')">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Forgot Page Banner</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="forgotBannerPreview"
+                                    src="<%= settings?.forgetpasswordImg || '/assets/img/placeholder.png' %>"
+                                    class="img-thumbnail" style="width:200px;">
+                                <input type="file" name="forgetpasswordImg" class="form-control"
+                                    onchange="previewImage(event, 'forgotBannerPreview')">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">CheckMail Banner</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="checkMailPreview"
+                                    src="<%= settings?.checkMailImg || '/assets/img/placeholder.png' %>"
+                                    class="img-thumbnail" style="width:200px;">
+                                <input type="file" name="checkMailImg" class="form-control"
+                                    onchange="previewImage(event, 'checkMailPreview')">
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" id="saveBtn" class="btn btn-primary">
+                                <span id="btnText">Save</span>
+                                <span id="btnLoader" class="spinner-border spinner-border-sm d-none"></span>
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <script src="/js/components/webSettings.js"></script>
+    <%- include('../partials/footer') %>

@@ -1,0 +1,165 @@
+<!-- Page Wrapper -->
+<%- include('../../partials/header') %>
+	<div class="page-wrapper">
+		<div class="content">
+			<!-- Breadcrumb -->
+			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+				<div class="my-auto mb-2">
+					<h2 class="mb-1">Donor Registration Form</h2>
+					<nav>
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item">
+								<a href="#"><i class="ti ti-smart-home"></i></a>
+							</li>
+							<li class="breadcrumb-item">
+								Donor Registration Form
+							</li>
+						</ol>
+					</nav>
+				</div>
+
+				<div>
+					<a class="btn btn-primary btn-w-lg rounded-pill" href="/donors/list">List</a>
+				</div>
+
+			</div>
+			<!-- /Breadcrumb -->
+
+			<div class="add-info-fieldset">
+				<form id="donorForm" enctype="multipart/form-data">
+					<% if (isEdit && donor && donor._id) { %>
+						<input type="hidden" name="id" id="donor_id" value="<%= donor._id %>">
+						<% } %>
+							<div class="modal-body">
+								<div class="row">
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Full Name</label>
+											<input type="text" name="user_name" id="user_name" class="form-control"
+												required placeholder="Enter your full name"
+												value="<%= donor ? (donor.name || '') : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Email Address</label>
+											<input type="text" id="email_id" name="email_id" class="form-control"
+												required placeholder="Enter your email address"
+												value="<%= donor ? (donor.email || '') : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Phone Number</label>
+											<input type="tel" class="form-control" id="user_mobile" name="user_mobile"
+												required maxlength="10" placeholder="Enter your phone number"
+												value="<%= donor ? (donor.phone_number || '') : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Organization / Individual Name</label>
+											<input type="text" name="user_organization" id="user_organization"
+												class="form-control" required placeholder="Enter company name"
+												value="<%= donor ? (donor.donorDetails?.organization_name || '') : '' %>">
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Donor Type</label>
+											<select class="select" id="donor_type" name="donor_type" required>
+												<option value="">Select</option>
+												<option value="individual" <%=donor && donor.donorDetails &&
+													donor.donorDetails.donor_type==='individual' ? 'selected' : '' %>
+													>Individual</option>
+												<option value="corporate" <%=donor && donor.donorDetails &&
+													donor.donorDetails.donor_type==='corporate' ? 'selected' : '' %>
+													>Corporate</option>
+												<option value="ngo" <%=donor && donor.donorDetails &&
+													donor.donorDetails.donor_type==='ngo' ? 'selected' : '' %>>NGO
+												</option>
+											</select>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">PAN / Tax ID</label>
+											<input type="text" required id="pan_tax_id" name="pan_tax_id"
+												class="form-control" placeholder="ABCDE1234F"
+												value="<%= donor ? (donor.donorDetails?.id_proof || '') : '' %>">
+											<span id="panTaxIdFeedback" class="form-text"></span>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Address <span
+													class="optnl_lbl">(Optional)</span></label>
+											<textarea id="address" name="address"
+												class="d-block simpletxtarea form-control"
+												placeholder="Enter company address (street, city, state, country)"><%= donor ? (donor.address || '') : '' %></textarea>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<label for="uploadprofileBox" class="form-label">Profile Image <span
+												class="optnl_lbl">(Optional)</span></label>
+										<div class="upload-profilebox form-control mb-3" id="uploadprofileBox"
+											style="cursor: pointer;">
+											<label for="fileInput"
+												style="cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; width: 100%;">
+												<input type="file" class="form-control d-none" id="fileInput"
+													name="profile_image" accept="">
+												<div class="preview" id="preview">
+													<% if (donor && donor.profile_image) { %>
+														<img src="/uploads/<%= donor.profile_image %>" alt="Profile"
+															style="max-height: 120px; object-fit: cover;" />
+														<% } %>
+												</div>
+												<div class="upload-icon"><i class="ti ti-plus fa-2x mb-2"></i></div>
+											</label>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="d-flex align-items-center justify-content-end mt-4">
+								<button class="btn btn-primary btn-w-lg rounded-pill" type="submit" id="submitBtn">
+									<span id="textUpdatting" class="btn-text">
+										<%= isEdit ? 'Update' : 'Register' %>
+									</span>
+								</button>
+							</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+			<p class="mb-0">2025 &copy; HLFPPT.</p>
+			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+					Technology</a></p>
+		</div>
+	</div>
+	<!-- /Page Wrapper -->
+
+	<%- include('../../partials/footer') %>
+
+
+		<div id="data-success-register" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modalw620">
+				<div class="modal-content p-4">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<div class="modal-body">
+						<div class="success_mdltxt text-center">
+							<div class="imgscs mb-3"><img src="/img/icons/success.png"></div>
+							<h4 class="fs-24 text-dark fw-medium mb-4">Your Registration has been <br> done
+								successfully
+							</h4>
+							<div class="mb-3 text-center">
+								<a class="btn btn-primary btn-w-lg rounded-pill" href="/donors/list">View List</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- add here my script -->
+		<script src="/js/pages/doner-registration.js"></script>

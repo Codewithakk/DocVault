@@ -1,0 +1,79 @@
+/* DataTable styling */
+.dataTables_wrapper {
+    position: relative;
+}
+
+.dataTables_length,
+.dataTables_filter {
+    margin-bottom: 15px;
+}
+
+.dataTables_length label,
+.dataTables_filter label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.dataTables_length select {
+    margin: 0 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+.dataTables_filter input {
+    margin-left: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+.dataTables_info {
+    padding-top: 10px;
+}
+
+.dataTables_paginate {
+    margin-top: 15px;
+}
+
+.paginate_button {
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.paginate_button.current {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.paginate_button:hover:not(.disabled) {
+    background-color: #f8f9fa;
+}
+
+/* Table styling */
+#menuTable {
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+#menuTable thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+#menuTable tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#menuTable tbody tr:hover {
+    background-color: #f8f9fa;
+}

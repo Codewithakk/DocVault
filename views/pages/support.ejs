@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Center | E-Sangrah</title>
+
+    <style>
+        /* Basic Reset and Variables */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --light-bg: #f8f9fa;
+            --dark-text: #343a40;
+            --border-color: #dee2e6;
+            --card-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header & Search Section */
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .search-box input[type="search"] {
+            width: 100%;
+            max-width: 600px;
+            padding: 15px 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input[type="search"]:focus {
+            outline: none;
+            border-color: #0056b3;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        /* Category Cards */
+        .category-card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.1);
+        }
+
+        .category-card h3 {
+            margin-top: 0;
+            color: var(--dark-text);
+            font-size: 1.5rem;
+        }
+
+        .category-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .category-card ul li a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            display: block;
+            padding: 8px 0;
+            transition: color 0.2s;
+        }
+
+        .category-card ul li a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        /* Contact Section (Call to Action) */
+        .contact-cta {
+            text-align: center;
+            background-color: white;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 40px;
+        }
+
+        .contact-cta h2 {
+            font-size: 2rem;
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+
+        .contact-cta p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .contact-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .contact-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--secondary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                padding: 40px 10px 30px;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .search-box input[type="search"] {
+                padding: 12px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <h1>Support Center</h1>
+
+            <!-- Search box added here -->
+            <div class="search-box">
+                <input type="search" aria-label="Search support articles" placeholder="Search for help...">
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="content-grid">
+            <!-- Empty grid (you can add category cards later) -->
+        </section>
+
+        <section class="contact-cta">
+            <h2>Can't Find Your Answer?</h2>
+            <p>Our dedicated support team is here to help you with any complex issues.</p>
+            <a href="contact.html" class="contact-button">Contact Our Support Team</a>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 E-Sangrah. All rights reserved. |
+                <a href="#">Status Page</a>
+            </p>
+        </div>
+    </footer>
+
+</body>
+
+</html>

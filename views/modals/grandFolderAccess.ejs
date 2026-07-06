@@ -1,0 +1,49 @@
+<!-- Grant Access Modal -->
+<div class="modal fade" id="grantFolderAccessModal" tabindex="-1" aria-labelledby="grantAccessModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="grantAccessModalLabel">Grant Folder Access</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="grantAccessForm" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="userEmail" class="form-label">User Email</label>
+                        <input type="email" class="form-control" id="userEmail" value='' placeholder="Enter user email"
+                            required readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="access" class="form-label">Access Level</label>
+                        <select id="access" class="form-select">
+                            <option value="view">View</option>
+                            <option value="edit">Edit</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="duration" class="form-label">Duration</label>
+                        <select id="duration" class="form-select">
+                            <option value="oneday">1 Day</option>
+                            <option value="oneweek">1 Week</option>
+                            <option value="onemonth">1 Month</option>
+                            <option value="lifetime" selected>Lifetime</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="grantBtn" class="btn btn-primary">
+                    <span class="btn-text">Grant Access</span>
+                    <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

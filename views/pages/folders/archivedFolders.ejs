@@ -1,0 +1,301 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Archive</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                Archive
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="rtbtn">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#emptybin-modal"
+                        class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+                        Empty Archive
+                    </a>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-4">
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="select-dropdown">
+                            <select id="department" class="form-select select2">
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xxl-12 col-xl-12">
+                    <div class="card flex-fill">
+                        <div class="card-body p-0">
+                            <div class="custom-datatable-filter table-responsive">
+                                <table class="table datatable" id="archived_folders_table">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Folder Name</th>
+                                            <th>Owner Name</th>
+                                            <th>Owner Email</th>
+                                            <th>Department</th>
+                                            <th>Project</th>
+                                            <th>Status</th>
+                                            <th>Created By</th>
+                                            <th>Last Modified By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="archived_folders_table_body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Table -->
+            </div>
+        </div>
+
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex Services &
+                    Technology</a></p>
+        </div>
+    </div>
+    <!-- /Page Wrapper -->
+
+    <%- include('../../partials/footer') %>
+
+        <!-- DataTables Scripts -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- Archived Folders Logic -->
+        <script>
+            let archivedFolderIds = [];
+
+            $(document).ready(function () {
+
+                function initSelect2(selector, url, textKey) {
+                    $(selector).select2({
+                        placeholder: `Select Department`,
+                        allowClear: true,
+                        ajax: {
+                            url: url,
+                            dataType: 'json',
+                            delay: 250,
+                            data: params => ({ search: params.term }),
+                            processResults: data => {
+
+                                const results = [
+                                    { id: '', text: `-- Select Department --` },
+                                    ...data.data.map(item => ({
+                                        id: item._id,
+                                        text: item[textKey]
+                                            .split(' ')
+                                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                            .join(' ') // Capitalize each word
+                                    }))
+                                ];
+
+                                return { results };
+                            }
+                        }
+                    });
+
+                    // Handle empty selection
+                    $(selector).on('select2:select', function (e) {
+                        if (!e.params.data.id) {
+                            $(this).val(null).trigger('change');
+                        }
+                    });
+                }
+
+                initSelect2('#department', `${baseUrl}/api/departments/search`, 'name');
+
+
+                const $table = $('#archived_folders_table');
+
+                const dataTable = $table.DataTable({
+                    processing: true,
+                    serverSide: false, // we handle sorting/search manually
+                    paging: true,
+                    searching: false,
+                    ordering: false,
+                    ajax: function (data, callback) {
+                        const page = 1; // default page, implement your own paging if needed
+                        const limit = 50; // or fetch from table length
+                        const search = $('#archived_folders_table_filter input').val() || "";
+                        const department = $('#departmentFilter a.active').data('dept') || "all";
+
+                        $.ajax({
+                            url: `${baseUrl}/api/folders/archived`,
+                            type: "GET",
+                            data: { page, limit, search, department },
+success: function (res) {
+    if (!res.success) return callback({ data: [] });
+
+    archivedFolderIds = res.folders.map(f => f._id); // store all ids
+
+    const folders = res.folders.map(folder => ({
+        actions: `
+        <div class="action-icon d-inline-flex">
+            <a href="#" 
+                class="restore-folder me-2" 
+                data-folder-id="${folder._id}" 
+                data-folder-name="${folder.name}"  
+                data-folder-size="${folder.size || '190KB'}">
+                <i class="ti ti-restore"></i>
+            </a>
+            <a href="#" 
+                class="trash-folder" 
+                data-folder-id="${folder._id}">
+                <i class="ti ti-trash"></i>
+            </a>
+        </div>
+        `,
+        name: folder.name || "-",
+        ownerName: folder.owner?.name || "-",
+        ownerEmail: folder.owner?.email || "-",
+        department: folder.departmentId?.name || "-",
+        project: folder.projectId?.projectName || "-",
+        status: folder.status || "-",
+        createdBy: folder.createdBy?.name || "-",
+        updatedBy: folder.updatedBy?.name || "-"
+    }));
+
+    callback({ data: folders });
+}
+                        });
+                    },
+                    columns: [
+                        { data: 'actions' },
+                        { data: 'name' },
+                        { data: 'ownerName' },
+                        { data: 'ownerEmail' },
+                        { data: 'department' },
+                        { data: 'project' },
+                        { data: 'status' },
+                        { data: 'createdBy' },
+                        { data: 'updatedBy' }
+                    ],
+                    order: [[1, 'asc']]
+                });
+
+                // Department filter
+                $(document).on('click', '#departmentFilter a', function () {
+                    $('#departmentFilter a').removeClass('active');
+                    $(this).addClass('active');
+                    dataTable.ajax.reload();
+                });
+
+                // Trash (delete permanently) single folder
+                $(document).on('click', '.trash-folder', function (e) {
+                    e.preventDefault();
+                    const folderId = $(this).data('folder-id');
+
+                    // Open confirmation modal
+                    $('#trashdoc-modal').modal('show');
+
+                    $('#confirm-trash-folder').off('click').on('click', function () {
+                        $.ajax({
+                            url: `${baseUrl}/api/folders/${folderId}`,
+                            type: 'DELETE',
+                            success: function (res) {
+                                if (res.success) {
+                                    $('#trashdoc-modal').modal('hide');
+                                    showToast(res.message || "Folder deleted successfully", "success");
+                                    dataTable.ajax.reload();
+                                } else {
+                                    showToast(res.message || "Failed to delete folder", "error");
+                                }
+                            },
+                            error: function (xhr) {
+                                showToast(xhr.responseJSON?.message || "Server error while deleting folder", "error");
+                            }
+                        });
+                    });
+                });
+
+                // Restore (unarchive) folder
+                // Handle Restore click
+                $(document).on('click', '.restore-folder', function (e) {
+                    e.preventDefault();
+
+                    const folderId = $(this).data('folder-id');
+
+                    // Example static data — replace with actual folder data if available
+                    const folderName = $(this).data('folder-name') || "Untitled Folder";
+                    const folderSize = $(this).data('folder-size') || "190KB";
+                    const folderCount = $(this).data('folder-count') || "+2";
+
+                    // Fill modal dynamically
+                    $('#restore-file-name').text(folderName);
+                    $('#restore-file-size').text(folderSize);
+                    $('#restore-file-count').text(folderCount);
+
+                    // Show the modal
+                    $('#restore-modal').modal('show');
+
+                    // Confirm restore
+                    $('#confirm-restore').off('click').on('click', function () {
+                        $.ajax({
+                            url: `${baseUrl}/api/folders/${folderId}/archive?isArchived=false`,
+                            type: 'PATCH',
+                            success: function (res) {
+                                if (res.success) {
+                                    $('#restore-modal').modal('hide');
+                                    showToast(res.message || "Folder restored successfully", "success");
+                                    dataTable.ajax.reload();
+                                } else {
+                                    showToast(res.message || "Failed to restore folder", "error");
+                                }
+                            },
+                            error: function (xhr) {
+                                showToast(xhr.responseJSON?.message || "Server error while restoring folder", "error");
+                            }
+                        });
+                    });
+                });
+
+                // Empty Recycle Bin
+                $(document).on('click', '#confirm-empty-bin', function () {
+
+if (!archivedFolderIds.length) {
+    showToast("No folders to delete", "warning");
+    return;
+}
+
+$.ajax({
+    url: `${baseUrl}/api/folders/recyclebin/empty`,
+    type: 'DELETE',
+    contentType: "application/json",
+    data: JSON.stringify({
+        folderIds: archivedFolderIds
+    }),
+    success: function (res) {
+        if (res.success) {
+            $('#emptybin-modal').modal('hide');
+            showToast(res.message || "Archive emptied successfully", "success");
+            dataTable.ajax.reload();
+        } else {
+            showToast(res.message || "Failed to empty archive", "error");
+        }
+    },
+    error: function (xhr) {
+        showToast(xhr.responseJSON?.message || "Server error while emptying archive", "error");
+    }
+});
+});
+            });
+        </script>

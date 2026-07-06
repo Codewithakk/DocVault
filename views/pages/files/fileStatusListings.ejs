@@ -1,0 +1,143 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">All Files ( <span class="totalDoc">10</span> )</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">Dashboard</li>
+                            <li class="breadcrumb-item">File Status</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="javascript:window.history.back()" class="btn btn-primary">Go Back</a>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <!-- File Status Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive" id="fileStatusTableWrapper">
+                        <table class="table table-hover datatable" id="fileStatus_table">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Status</th>
+                                    <th>Last Action Time</th>
+                                    <th>Action By User</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="fileStatus_table_body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /FileStaus Table -->
+    </div>
+
+    <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+        <p class="mb-0">2025 &copy; HLFPPT.</p>
+        <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                Technology</a></p>
+    </div>
+    </div>
+    <!-- /Page Wrapper -->
+
+    <%- include('../../partials/footer') %>
+        <!-- <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet"> -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+        <script>
+            $(document).ready(function () {
+
+                // Initialize DataTable with server-side pagination
+                const table = $('#fileStatus_table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    searching: false,   // optional: disable search if API doesn’t support it
+                    ordering: false,    // optional: disable client-side sort
+                    ajax: function (data, callback, settings) {
+                        // DataTables sends start & length params (zero-based)
+                        const page = Math.floor(data.start / data.length) + 1;
+                        const limit = data.length;
+
+                        $.ajax({
+                            url: `/api/dashboard/file-status?page=${page}&limit=${limit}`,
+                            method: 'GET',
+                            success: function (response) {
+                                if (response.success) {
+                                    // Format rows for DataTables
+                                    const rows = response.files.map(file => {
+                                        const lastAction = formatDateTime(file.lastActionTime);
+                                        const performedBy = file.performedBy
+                                            ? `${file.performedBy.name}<br><small>${file.performedBy.email}</small>`
+                                            : `<span class="text-muted">Unknown</span>`;
+                                        return [
+                                            `
+                                <div class="d-flex align-items-center">
+                                    <img src="${file.icon}" width="30" class="me-2" alt="icon">
+                                    <div>
+                                        <h6 class="mb-0">${file.name}</h6>
+                                        <small class="text-muted">${file.fileSize}</small>
+                                    </div>
+                                </div>
+                                `,
+                                            file.status,
+                                            lastAction,
+                                            performedBy
+                                        ];
+                                    });
+
+                                    // Update file count display
+                                    $(".totalDoc").text(response.total.toLocaleString());
+
+                                    // Return data to DataTables
+                                    callback({
+                                        draw: data.draw,
+                                        recordsTotal: response.total,
+                                        recordsFiltered: response.total,
+                                        data: rows
+                                    });
+                                } else {
+                                    callback({
+                                        draw: data.draw,
+                                        recordsTotal: 0,
+                                        recordsFiltered: 0,
+                                        data: []
+                                    });
+                                }
+                            },
+                            error: function (xhr) {
+                                console.error("Failed to fetch file statuses:", xhr);
+                                callback({
+                                    draw: data.draw,
+                                    recordsTotal: 0,
+                                    recordsFiltered: 0,
+                                    data: []
+                                });
+                            }
+                        });
+                    },
+                    pageLength: 10,
+                    columns: [
+                        { title: "File Name", orderable: false },
+                        { title: "Status", orderable: false },
+                        { title: "Last Action Time", orderable: false },
+                        { title: "Action By User", orderable: false }
+                    ]
+                });
+
+            });
+        </script>

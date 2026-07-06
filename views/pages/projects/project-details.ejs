@@ -1,0 +1,172 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">
+                        <%= project ? project.projectName : "Add New Project" %>
+                    </h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item">Dashboard</li>
+                            <li class="breadcrumb-item">Project List</li>
+                            <li class="breadcrumb-item active">
+                                <%= project ? project.projectName : "Add Project" %>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+
+                <% if ( project && ( user.profile_type==='superadmin' ||
+                    project.addedBy?.toString()===user._id.toString() ) ) { %>
+
+                    <div class="rtbtn">
+                        <button id="toggleModeBtn" class="btn btn-primary btn-lg rounded-pill me-2 mb-2">
+                            <i class="ti ti-pencil me-1"></i> Edit
+                        </button>
+                    </div>
+
+                    <% } %>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <% if (!project) { %>
+                <!-- ADD MODE -->
+                <div class="project-details">
+                    <form id="addProjectForm" enctype="multipart/form-data">
+                        <%- include('../../forms/project-form', { users, donors, designations,vendors, project: null,
+                            viewOnly: false }) %>
+                    </form>
+                </div>
+                <% } else { %>
+                    <!-- VIEW MODE -->
+                    <div id="viewMode" class="project-details">
+                        <%- include('../../forms/project-form', { users, donors, vendors,designations, project,
+                            viewOnly: true }) %>
+                    </div>
+
+                    <!-- EDIT MODE -->
+                    <div id="editMode" class="project-details" style="display:none;">
+                        <form id="editProjectForm">
+                            <%- include('../../forms/project-form', { users, donors,designations, vendors, project,
+                                viewOnly: false }) %>
+                        </form>
+                    </div>
+
+                    <div id="projectDetails" data-project-id="<%= project._id.toString() %>"></div>
+                    <% } %>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>Designed & Developed by <a href="#" class="text-primary">Duplex Services & Technology</a></p>
+        </footer>
+    </div>
+    <!-- Success Modal -->
+    <div id="data-success-register" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modalw620">
+            <div class="modal-content p-4">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-body">
+                    <div class="success_mdltxt text-center">
+                        <div class="imgscs mb-3">
+                            <img src="/img/icons/success.png" alt="Success Icon">
+                        </div>
+                        <h4 class="fs-24 text-dark fw-medium mb-4">
+                            Your Project has been <br> created successfully
+                        </h4>
+                        <div class="mb-3 text-center">
+                            <button class="btn btn-primary rounded-pill minw80" data-bs-dismiss="modal">Ok</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapper = document.getElementById('approvalAuthorityWrapper');
+
+            // Function to initialize Select2 for all selects inside a row
+            const initSelect2 = (row) => {
+                $(row).find('select').select2({ width: '100%' });
+            };
+
+            // Function to create a new Approval Authority row
+            const addApprovalAuthorityRow = () => {
+                const index = wrapper.querySelectorAll('.approval-authority-row').length;
+
+                const html = `
+        <div class="row g-2 mb-2 approval-authority-row">
+            <div class="col-md-4">
+                <select name="approvalAuthority[${index}][userId]" class="form-control select2 user-select" required>
+                    <option value="">-- Select User --</option>
+                    <% users.forEach(u => { %>
+                        <option value="<%= u._id %>" data-designation="<%= u.userDetails?.designation?._id || '' %>">
+                            <%= u.name %>
+                        </option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="approvalAuthority[${index}][designation]" class="form-control select2" required>
+                    <option value="">-- Select Designation --</option>
+                    <% designations.forEach(d => { %>
+                        <option value="<%= d._id %>"><%= d.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="number" name="approvalAuthority[${index}][priority]" class="form-control" placeholder="Priority" required>
+            </div>
+            <div class="col-md-1 d-flex align-items-center">
+                <button type="button" class="btn btn-danger btn-sm removeApprovalAuthority">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+        </div>`;
+
+                wrapper.insertAdjacentHTML('beforeend', html);
+
+                // Initialize Select2 for the newly added row
+                const newRow = wrapper.querySelector('.approval-authority-row:last-child');
+                initSelect2(newRow);
+            };
+
+            // Add row button
+            document.getElementById('addApprovalAuthority')?.addEventListener('click', addApprovalAuthorityRow);
+
+            // Remove row handler (delegated)
+            wrapper.addEventListener('click', (e) => {
+                if (e.target.closest('.removeApprovalAuthority')) {
+                    e.target.closest('.approval-authority-row').remove();
+                }
+            });
+
+            // Auto-set designation when user is selected (delegated for dynamic rows)
+            $(document).on('change', '.user-select', function () {
+                const selectedOption = this.selectedOptions[0];
+                const defaultDesignationId = selectedOption.getAttribute('data-designation');
+
+                const row = $(this).closest('.approval-authority-row');
+                const designationSelect = row.find('select[name*="[designation]"]');
+
+                if (defaultDesignationId) {
+                    designationSelect.val(defaultDesignationId).trigger('change');
+                } else {
+                    designationSelect.val('').trigger('change'); // Clear if no default
+                }
+            });
+
+            // Initialize Select2 for existing rows on page load
+            document.querySelectorAll('.approval-authority-row').forEach(initSelect2);
+        });
+    </script>
+    <script src="/js/pages/projects/project-details.js"></script>
+    <%- include('../../partials/footer') %>

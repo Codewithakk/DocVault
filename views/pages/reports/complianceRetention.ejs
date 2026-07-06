@@ -1,0 +1,260 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Compliance and Retention</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                            <li class="breadcrumb-item">User Management</li>
+                            <li class="breadcrumb-item">Reports</li>
+                            <li class="breadcrumb-item active" aria-current="page">Compliance and Retention</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-3">
+                    <div class="d-flex justify-content-end mb-3 gap-3 flex-wrap">
+                        <!-- Department Select -->
+                        <div class="me-2">
+                            <select id="compilanceDepartment" class="form-select fs-13 select2">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                        </div>
+                        <!-- Date Picker -->
+                        <div class="input-icon-end position-relative">
+                            <input type="text" class="form-control datetimepicker" placeholder="Select Date">
+                            <span class="input-icon-addon"><i class="ti ti-calendar text-gray-7"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-nowrap mb-0" id="documentsTable">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>File Name</th>
+                                        <th>Department</th>
+                                        <th>Compliance</th>
+                                        <th>Retention</th>
+                                        <th>Expiry Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer d-sm-flex align-items-center justify-content-between border-top bg-white p-3 mt-4">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                        Technology</a></p>
+            </div>
+        </div>
+    </div>
+    <%- include('../../partials/footer') %>
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+        <script>
+            let documentsTable = null;
+
+            // Build the dropdown actions
+            function buildActions(doc) {
+                const docId = doc._id;
+                const fileId = doc.files?._id || '';
+
+                return `
+        <div class="btn-group" role="group">
+            <button type="button" class="btn border-0 p-1" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="ti ti-settings"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" data-id="${docId}" data-action="view"><i class="ti ti-eye"></i> View</a></li>
+                <li><a class="dropdown-item" href="/documents/edit/${docId}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
+                <li>
+                    <a class="dropdown-item share-btn" href="#"
+                       data-doc-id="${docId}"
+                       data-file-id="${fileId}"
+                       data-bs-toggle="modal"
+                       data-bs-target="#sharedoc-modal">
+                        <i class="ti ti-share"></i> Share
+                    </a>
+                </li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-id="${docId}" data-bs-target="#versionhistory-modal"><i class="ti ti-history"></i> Version History</a></li>
+                <li>
+                    <a class="dropdown-item" href="#"
+                       data-bs-toggle="modal"
+                       data-file-id="${fileId}"
+                       data-bs-target="#downloaddoc-modal">
+                        <i class="ti ti-download"></i> Download
+                    </a>
+                </li>
+                <li><a class="dropdown-item btn-delete" href="#" data-id="${docId}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal"><i class="ti ti-trash"></i> Move to Trash</a></li>
+                <li><a class="dropdown-item archive-document" href="#" data-id="${docId}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal"><i class="ti ti-archive"></i> Move to Archive</a></li>
+            </ul>
+        </div>`;
+            }
+
+
+            $(document).ready(function () {
+                $('#compilanceDepartment').select2({
+                    placeholder: '-- Select Department --',
+                    allowClear: true,
+                    ajax: {
+                        url: '/api/departments',
+                        dataType: 'json',
+                        delay: 250,
+                        processResults: function (data) {
+                            return {
+                                results: data.data.map(dep => ({
+                                    id: dep._id,
+                                    text: dep.name
+                                }))
+                            };
+                        }
+                    }
+                });
+
+                $('.datetimepicker').datetimepicker({
+                    dateFormat: 'd-m-Y',
+                    onChange: function () {
+                        reloadTable();
+                    }
+                });
+
+                initDataTable();
+
+                $('#compilanceDepartment').on('change', function () {
+                    reloadTable();
+                });
+
+                documentsTable.on('init', function () {
+                    $('#documentsTable_filter input').off().on('keyup', _.debounce(function () {
+                        documentsTable.search(this.value).draw();
+                    }, 500));
+                });
+
+            });
+
+            function initDataTable() {
+                documentsTable = $('#documentsTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    searching: true,
+                    ordering: false,
+                    lengthMenu: [10, 25, 50, 100],
+                    ajax: async function (data, callback) {
+                        const department = $('#compilanceDepartment').val();
+                        const date = $('.datetimepicker').val();
+                        const search = data.search?.value || '';
+                        const page = Math.floor(data.start / data.length) + 1;
+                        const limit = data.length;
+
+                        const params = new URLSearchParams();
+                        params.append('page', page);
+                        params.append('limit', limit);
+                        if (department) params.append('department', department);
+                        if (date) params.append('date', date);
+                        if (search) params.append('search', search);
+
+                        try {
+                            const response = await fetch(`/api/documents?${params.toString()}`);
+                            const result = await response.json();
+
+                            if (!result.success) {
+                                callback({ data: [], recordsTotal: 0, recordsFiltered: 0 });
+                                return;
+                            }
+
+                            const docs = result.data.documents.map(doc => {
+                                const { _id, metadata, department, compliance, files, currentVersionLabel, archivedAt } = doc;
+                                const file = doc.files;  // object, not array
+
+                                const retentionStatus = getRetentionStatus(archivedAt, compliance?.expiryDate) || { icon: '', status: '-' };
+                                const retentionDisplay = `
+        <p class="mb-0 d-flex align-items-center fw-medium text-neutral">
+            ${retentionStatus.icon}
+            ${retentionStatus.status}
+        </p>
+    `;
+
+                                const fileName = metadata?.fileName || file?.originalName || 'Untitled';
+                                const fileSizeKB = file?.fileSize || '—';  // already includes "KB"
+                                const version = currentVersionLabel ? ` <span class="text-success">v${currentVersionLabel}</span>` : '';
+                                const fileIcon = getFileIcon(fileName);
+                                const expiry = compliance?.expiryDate ? formatDateTime(compliance.expiryDate) : 'N/A';
+                                const retention = retentionDisplay;
+
+                                const isCompliant = compliance?.isCompliance
+                                    ? `<p class="text-success d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle" style="width: 28px; height: 28px;">
+                <i class="ti ti-check"></i>
+            </span> Compliant
+           </p>`
+                                    : `<p class="text-danger d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle" style="width: 28px; height: 28px;">
+                <i class="ti ti-x"></i>
+            </span> Non-Compliant
+           </p>`;
+
+                                return [  // <-- ADD return HERE
+                                    buildActions(doc),
+                                    `<div class="flxtblleft">
+            <span class="avatar rounded bg-light mb-2">
+                <img src="${fileIcon}" alt="file icon">
+            </span>
+            <div class="flxtbltxt">
+                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName}${version}</p>
+                <span class="fs-11 fw-light text-black">${fileSizeKB}</span>  <!-- fixed variable name -->
+            </div>
+        </div>`,
+                                    department?.name || 'N/A',
+                                    isCompliant,
+                                    retention,
+                                    expiry
+                                ];
+                            });
+                            callback({
+                                data: docs,
+                                recordsTotal: result.data.pagination.totalDocuments,
+                                recordsFiltered: result.data.pagination.totalDocuments
+                            });
+                        } catch (error) {
+                            console.error('Error loading documents:', error);
+                            callback({ data: [], recordsTotal: 0, recordsFiltered: 0 });
+                        }
+                    },
+                    columns: [
+                        { title: '' },
+                        { title: 'File Name' },
+                        { title: 'Department' },
+                        { title: 'Compliance' },
+                        { title: 'Retention' },
+                        { title: 'Expiry Date' }
+                    ]
+                });
+            }
+
+            function reloadTable() {
+                if (documentsTable) {
+                    documentsTable.ajax.reload();
+                }
+            }
+        </script>
+        <script src="/js/components/shareDocument.js"></script>

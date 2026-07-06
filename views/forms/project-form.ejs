@@ -1,0 +1,423 @@
+<!-- /views/forms/project-form -->
+<% if (!viewOnly) { %>
+    <form id="<%= project ? 'editProjectForm' : 'addProjectForm' %>" enctype="multipart/form-data">
+        <% } %>
+
+            <div class="project-details card shadow-sm p-4">
+
+                <!-- Project Name, Code, Type -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label><strong>Project Name</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectName || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <input type="text" name="projectName" class="form-control"
+                                    placeholder="Enter Project Name" value="<%= project?.projectName || '' %>" required
+                                    maxlength="200">
+                                <% } %>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label><strong>Project Code</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectCode || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <input type="text" name="projectCode" class="form-control"
+                                    placeholder="Enter Project Code" value="<%= project?.projectCode || '' %>"
+                                    <%=project ? 'readonly' : '' %> maxlength="20"
+                                oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')" required>
+                                <% } %>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label><strong>Project Type</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectType?.name || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <select name="projectType" class="form-control select2" required>
+                                    <option value="">-- Select Project Type --</option>
+                                    <% projectTypes.forEach(pt=> { %>
+                                        <option value="<%= pt._id %>"
+                                            <%=project?.projectType?._id?.toString()===pt._id.toString() ? "selected"
+                                            : "" %>>
+                                            <%= pt.name %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% } %>
+                    </div>
+                </div>
+
+                <!-- Project Manager, Logo, Status -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label><strong>Project Managers</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= (project?.projectManager || []).map(pm=> pm.name).join(", ") || "Unassigned" %>
+                            </div>
+                            <% } else { %>
+                                <select name="projectManager[]" class="form-control select2"
+                                    data-placeholder="Select Project Manager" required>
+                                    <option></option>
+                                    <% users.forEach(u=> { %>
+                                        <option value="<%= u._id %>" <%=project?.projectManager?.some(pm=>
+                                            pm._id?.toString() === u._id.toString()) ? "selected" : "" %>>
+                                            <%= u.name %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% } %>
+                    </div>
+                    <div class="col-md-4">
+                        <label><strong>Project Logo</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <% if (project?.projectLogo) { %>
+                                    <img src="<%= project.projectLogo %>" alt="Logo"
+                                        class="img-fluid border rounded bg-light p-1"
+                                        style="max-height:50px; object-fit:contain;">
+                                    <% } else { %>
+                                        N/A
+                                        <% } %>
+                            </div>
+                            <% } else { %>
+                                <input type="file" name="projectLogo" class="form-control" title="Upload project logo">
+                                <% } %>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label><strong>Status</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectStatus || "Unknown" %>
+                            </div>
+                            <% } else { %>
+                                <select name="projectStatus" class="form-control select2">
+                                    <option value="Active" <%=project?.projectStatus==="Active" ? "selected" : "" %>
+                                        >Active</option>
+                                    <option value="Inactive" <%=project?.projectStatus==="Inactive" ? "selected" : "" %>
+                                        >Inactive</option>
+                                    <option value="Closed" <%=project?.projectStatus==="Closed" ? "selected" : "" %>
+                                        >Closed</option>
+                                </select>
+                                <% } %>
+                    </div>
+                </div>
+
+                <!-- Dates and Duration -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label><strong>Start Date</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectStartDateFormatted || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <div class="position-relative mb-0">
+                                    <input type="text" name="projectStartDate" class="form-control datetimepicker"
+                                        placeholder="Select Start Date"
+                                        value="<%= project?.projectStartDateISO || '' %>" required>
+                                    <span class="input-icon-addon">
+                                        <i class="ti ti-calendar text-gray-7"></i>
+                                    </span>
+                                </div>
+                                <% } %>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label><strong>End Date</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectEndDateFormatted || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <div class="position-relative mb-0">
+                                    <input type="text" name="projectEndDate" class="form-control datetimepicker"
+                                        placeholder="Select End Date" value="<%= project?.projectEndDateISO || '' %>"
+                                        required>
+                                    <span class="input-icon-addon">
+                                        <i class="ti ti-calendar text-gray-7"></i>
+                                    </span>
+                                </div>
+                                <% } %>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label><strong>Duration (Days)</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectDuration || "N/A" %> Days
+                            </div>
+                            <% } else { %>
+                                <input type="number" name="projectDuration" class="form-control"
+                                    value="<%= project?.projectDuration || '' %>" placeholder="Duration" disabled>
+                                <% } %>
+                    </div>
+                </div>
+
+                <!-- Donors, Vendors, Collaboration -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label><strong>Donors</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= (project?.donor || []).map(d=> d.name).join(", ") || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <select name="donor[]" class="form-control select2" multiple
+                                    data-placeholder="Select Donors">
+                                    <option></option> <!-- required for placeholder -->
+                                    <% donors.forEach(d=> { %>
+                                        <option value="<%= d._id %>" <%=project?.donor?.some(pd=> pd._id?.toString() ===
+                                            d._id.toString()) ? "selected" : "" %>>
+                                            <%= d.name %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% } %>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label><strong>Vendors</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= (project?.vendor || []).map(v=> v.name).join(", ") || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <select name="vendor[]" class="form-control select2" multiple
+                                    data-placeholder="Select Vendors">
+                                    <option></option>
+                                    <% vendors.forEach(v=> { %>
+                                        <option value="<%= v._id %>" <%=project?.vendor?.some(pv=> pv._id?.toString()
+                                            === v._id.toString()) ? "selected" : "" %>>
+                                            <%= v.name %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% } %>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label><strong>Collaboration Team</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= (project?.projectCollaborationTeam || []).map(c=> c.name).join(", ") || "N/A" %>
+                            </div>
+                            <% } else { %>
+                                <select name="projectCollaborationTeam[]" class="form-control select2" multiple
+                                    data-placeholder="Select Team Members">
+                                    <option></option>
+                                    <% users.forEach(u=> { %>
+                                        <option value="<%= u._id %>" <%=project?.projectCollaborationTeam?.some(c=>
+                                            c._id?.toString() === u._id.toString()) ? "selected" : "" %>>
+                                            <%= u.name %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% } %>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label><strong>File Access Approvers</strong></label>
+
+                        <% if (viewOnly) { %>
+                            <% if (project?.approvalAuthority && project.approvalAuthority.length) { %>
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Designation</th>
+                                            <th>Priority</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% project.approvalAuthority .sort((a, b)=> a.priority - b.priority)
+                                            .forEach(a => { %>
+                                            <tr>
+                                                <td>
+                                                    <%= a.userId?.name || 'N/A' %>
+                                                </td>
+                                                <td>
+                                                    <%= a.designation?.name || 'N/A' %>
+                                                </td>
+                                                <td>
+                                                    <%= a.priority %>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                    </tbody>
+                                </table>
+                                <% } else { %>
+                                    <div>N/A</div>
+                                    <% } %>
+
+                                        <% } else { %>
+                                            <div id="approvalAuthorityWrapper">
+                                                <% (project?.approvalAuthority || []) .sort((a, b)=> a.priority -
+                                                    b.priority)
+                                                    .forEach((a, index) => { %>
+                                                    <div class="row g-2 mb-2 approval-authority-row">
+                                                        <div class="col-md-4">
+                                                            <select name="approvalAuthority[<%= index %>][userId]"
+                                                                class="form-control select2 user-select" required>
+                                                                <option value="">-- Select User --</option>
+                                                                <% users.forEach(u=> { %>
+                                                                    <option value="<%= u._id %>"
+                                                                        data-designation="<%= u.userDetails?.designation?._id || '' %>"
+                                                                        <%=a.userId?._id?.toString()===u._id.toString()
+                                                                        ? 'selected' : '' %>>
+                                                                        <%= u.name %>
+                                                                    </option>
+                                                                    <% }) %>
+                                                            </select>
+
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <select name="approvalAuthority[<%= index %>][designation]"
+                                                                class="form-control select2" required>
+                                                                <option value="">-- Select Designation --</option>
+                                                                <% designations.forEach(d=> { %>
+                                                                    <option value="<%= d._id %>"
+                                                                        <%=a.designation?._id?.toString()===d._id.toString()
+                                                                        ? 'selected' : '' %>>
+                                                                        <%= d.name %>
+                                                                    </option>
+                                                                    <% }) %>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <input type="number"
+                                                                name="approvalAuthority[<%= index %>][priority]"
+                                                                class="form-control" placeholder="Enter priority"
+                                                                min="1" max="999" value="<%= a.priority %>" required>
+                                                        </div>
+                                                        <div class="col-md-1 d-flex align-items-center">
+                                                            <button type="button"
+                                                                class="btn btn-danger btn-sm removeApprovalAuthority">
+                                                                <i class="ti ti-x"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <% }) %>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end mt-2">
+                                                <button type="button" id="addApprovalAuthority"
+                                                    class="btn btn-primary btn-sm">
+                                                    <i class="ti ti-plus"></i> Add
+                                                </button>
+                                            </div>
+
+                                            <script>
+                                                document.addEventListener('click', function (e) {
+                                                    if (e.target.id === 'addApprovalAuthority') {
+                                                        const wrapper = document.getElementById('approvalAuthorityWrapper');
+                                                        const index = wrapper.querySelectorAll('.approval-authority-row').length;
+
+                                                        const html = `
+                            <div class="row g-2 mb-2 approval-authority-row">
+                                <div class="col-md-4">
+                                    <select name="approvalAuthority[${index}][userId]" class="form-control select2" required>
+                                        <option value="">-- Select User --</option>
+                                        <% users.forEach(u => { %>
+                                            <option value="<%= u._id %>"><%= u.name %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="approvalAuthority[${index}][designation]" class="form-control select2" required>
+                                        <option value="">-- Select Designation --</option>
+                                        <% designations.forEach(d => { %>
+                                            <option value="<%= d._id %>"><%= d.name %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" name="approvalAuthority[${index}][priority]" class="form-control" placeholder="Priority" required>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-center">
+                                    <button type="button" class="btn btn-danger btn-sm removeApprovalAuthority">
+                                        <i class="ti ti-x"></i>
+                                    </button>
+                                </div>
+                            </div>`;
+
+                                                        wrapper.insertAdjacentHTML('beforeend', html);
+                                                        $('.select2').select2();
+                                                    }
+
+                                                    if (e.target.closest('.removeApprovalAuthority')) {
+                                                        e.target.closest('.approval-authority-row').remove();
+                                                    }
+                                                    // Auto-set designation when user is selected
+                                                    if (e.target.classList.contains('user-select')) {
+                                                        const selectedOption = e.target.selectedOptions[0];
+                                                        const defaultDesignationId = selectedOption.getAttribute('data-designation');
+
+                                                        // Find the designation select in the same row
+                                                        const row = e.target.closest('.approval-authority-row');
+                                                        const designationSelect = row.querySelector('select[name*="[designation]"]');
+
+                                                        if (defaultDesignationId) {
+                                                            designationSelect.value = defaultDesignationId;
+                                                            $(designationSelect).trigger('change'); // in case select2 is used
+                                                        }
+                                                    }
+                                                });
+                                            </script>
+                                            <% } %>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label><strong>Description</strong></label>
+                        <% if (viewOnly) { %>
+                            <div>
+                                <%= project?.projectDescription || "No description available" %>
+                            </div>
+                            <% } else { %>
+                                <textarea name="projectDescription" class="form-control" rows="4"
+                                    style="resize:vertical" maxlength="1000"
+                                    placeholder="Enter project description"><%= project?.projectDescription || '' %></textarea>
+                                <% } %>
+                    </div>
+                </div>
+                <% if (!viewOnly) { %>
+                    <div class="d-flex justify-content-end">
+                        <% if (!project) { %>
+                            <a href="/projects" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" id="createBtn" class="btn btn-primary submitBtn">
+                                <span class="btn-text">Create Project</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status"
+                                    aria-hidden="true"></span>
+                            </button>
+                            <% } else { %>
+                                <button type="button" id="cancelEditBtn" class="btn btn-secondary me-2">Cancel</button>
+                                <button type="submit" id="saveBtn" class="btn btn-primary submitBtn">
+                                    <span class="btn-text">Save Changes</span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status"
+                                        aria-hidden="true"></span>
+                                </button>
+                                <% } %>
+                    </div>
+                    <% } %>
+
+            </div>
+            <% if (!viewOnly) { %>
+    </form>
+    <% } %>

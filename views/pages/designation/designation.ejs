@@ -1,0 +1,149 @@
+<%- include('../../partials/header') %>
+
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">
+                        <%= designation ? 'Edit' : 'Add' %> Designation
+                    </h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                <%= designation ? 'Edit' : 'Add' %> Designation
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a class="btn btn-primary btn-w-lg rounded-pill" href="/designations/list">List</a>
+                </div>
+            </div>
+
+            <!-- Toast container -->
+            <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+            <!-- Form -->
+            <div class="add-info-fieldset">
+                <form id="designationForm" novalidate>
+                    <div class="row">
+
+                        <!-- Name -->
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Designation Name</label>
+                            <input type="text" id="name" name="name" class="form-control"
+                                placeholder="Enter designation name" value="<%= designation ? designation.name : '' %>"
+                                required>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="col-md-3 mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <input type="text" id="priority" name="priority" class="form-control"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Enter priority"
+                                value="<%= designation ? designation.priority : '' %>">
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-3 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select id="status" name="status" class="form-select select2">
+                                <option value="Active" <%=designation && designation.status==='Active' ? 'selected' : ''
+                                    %>>Active</option>
+                                <option value="Inactive" <%=designation && designation.status==='Inactive' ? 'selected'
+                                    : '' %>>Inactive</option>
+                            </select>
+                        </div>
+
+                        <!-- Is Donor or Vendor -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label d-block">Is Donor / Vendor?</label>
+                            <input type="checkbox" id="isDonorOrVendor" name="isDonorOrVendor" <%=designation &&
+                                designation.isDonorOrVendor ? 'checked' : '' %> >
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-md-12 mb-3">
+                            <label for="description" class="form-label">
+                                Description <span class="optnl_lbl">(Optional)</span>
+                            </label>
+                            <textarea id="description" name="description" rows="3" class="form-control"
+                                placeholder="Enter description"><%= designation ? designation.description : '' %></textarea>
+                        </div>
+
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-flex align-items-center justify-content-end mt-4">
+                        <button id="submitBtn" class="btn btn-primary btn-w-lg rounded-pill" type="submit">
+                            <%= designation ? 'Update' : 'Add' %>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+            <p class="mb-0">2025 &copy; HLFPPT.</p>
+            <p>
+                Designed & Developed by
+                <a href="https://duplexservices.com" target="_blank" class="text-primary">Duplex Services &
+                    Technology</a>
+            </p>
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+
+        <script>
+            const form = document.getElementById('designationForm');
+            const submitBtn = document.getElementById('submitBtn');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span> Processing...
+        `;
+
+                // Collect form data
+                const formData = new FormData(form);
+                formData.set("isDonorOrVendor", document.getElementById("isDonorOrVendor").checked);
+
+                const data = Object.fromEntries(formData.entries());
+
+                const id = "<%= designation ? designation._id : '' %>";
+                const url = id ? `/api/designations/${id}` : '/api/designations';
+                const method = id ? 'PATCH' : 'POST';
+
+                try {
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await res.json();
+
+                    if (res.ok) {
+                        showToast(result.message || 'Saved successfully!', 'success');
+                        setTimeout(() => window.location.href = '/designations/list', 1000);
+                    } else {
+                        showToast(result.message || 'Failed to save.', 'danger');
+                    }
+                } catch (err) {
+                    showToast('Something went wrong!', 'danger');
+                } finally {
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            });
+        </script>

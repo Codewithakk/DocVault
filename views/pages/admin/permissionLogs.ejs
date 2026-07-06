@@ -1,0 +1,292 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+
+            <!-- Breadcrumb -->
+            <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+                <div class="my-auto mb-2">
+                    <h2 class="mb-1">Access and Permission Logs</h2>
+                    <nav>
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="#"><i class="ti ti-smart-home"></i></a>
+                            </li>
+                            <li class="breadcrumb-item">User Management</li>
+                            <li class="breadcrumb-item">Reports</li>
+                            <li class="breadcrumb-item active" aria-current="page">Access and Permission Logs</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!-- /Breadcrumb -->
+
+            <div class="row">
+                <div class="seprate_crdhdr mb-3">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="input-icon-end position-relative" style="max-width: 200px;">
+                            <input type="text" class="form-control datetimepicker" placeholder="Select Date">
+                            <span class="input-icon-addon">
+                                <i class="ti ti-calendar text-gray-7"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="permissionLogsTable" class="table table-hover datatable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th></th>
+                                        <th>User</th>
+                                        <th>Document</th>
+                                        <th>Date</th>
+                                        <th>Action by user</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be loaded dynamically via DataTables -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+                <p class="mb-0">2025 &copy; HLFPPT.</p>
+                <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                        Technology</a></p>
+            </div>
+
+        </div>
+        <!-- /Page Wrapper -->
+    </div>
+
+    <%- include('../../partials/footer') %>
+        <%- include('../../modals/grandAccess') %>
+            <!-- Scripts -->
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+            <script>
+                $(document).ready(function () {
+                    let customFlatpickr = null;
+                    let selectedLogId = null;
+                    let selectedToken = null;
+                    // Initialize Flatpickr when "Custom" is selected
+                    $('#sharedoc-modal input[name="time"]').on('change', function () {
+                        if ($(this).attr('id') === 'custom') {
+                            $('#customDateWrapper').show();
+
+                            if (!customFlatpickr) {
+                                customFlatpickr = flatpickr("#flatpickr-range", {
+                                    mode: "range",
+                                    dateFormat: "d-m-Y"
+                                });
+                            }
+
+                        } else {
+                            $('#customDateWrapper').hide();
+                        }
+                    });
+
+
+                    $('#permissionLogsTable').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: function (data, callback) {
+                            const page = Math.ceil(data.start / data.length) + 1;
+                            const limit = data.length;
+
+                            const startDate = $('.datetimepicker').val() || '';
+                            const endDate = ''; // implement end date picker if needed
+
+                            $.ajax({
+                                url: `/api/permission-logs?page=${page}&limit=${limit}&startDate=${startDate}&endDate=${endDate}`,
+                                type: 'GET',
+                                success: function (res) {
+                                    callback({
+                                        recordsTotal: res.pagination.total,
+                                        recordsFiltered: res.pagination.total,
+                                        data: res.data.map(log => {
+
+                                            const file = log.document?.files?.[0];
+                                            const fileName = file?.originalName || 'N/A';
+                                            const fileSizeKB = file ? (file.fileSize / 1024).toFixed(1) + ' KB' : '';
+
+                                            const fileExtension = fileName.split('.').pop()?.toLowerCase();
+                                            const icon = fileIcons[fileExtension] || fileIcons.default;
+
+                                            const fileInfo = file ? `
+        <div class="d-flex align-items-center">
+            <span class="avatar rounded bg-light me-2">
+                <img src="${icon}" style="height:30px;">
+            </span>
+            <div>
+                <p class="mb-0 text-dark">${fileName}</p>
+                <small class="text-muted">${fileSizeKB}</small>
+            </div>
+        </div>
+    ` : '-';
+
+                                            return [
+                                                `<div class="btn-group" role="group">
+            <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                <i class="ti ti-settings"></i>
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item share-btn" href="#" data-log-id="${log._id}" data-bs-toggle="modal" data-bs-target="#grandAccess-modal">Grant Access
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item reject-btn" href="#" data-log-id="${log._id}">Reject</a>
+                </li>
+            </ul>
+        </div>`,
+                                                log.user?.username || 'N/A',
+                                                fileInfo,
+                                                new Date(log.requestedAt).toLocaleDateString(),
+                                                log.requestStatus === 'approved'
+                                                    ? '<span class="badge bg-soft-success">Approved</span>'
+                                                    : log.requestStatus === 'rejected'
+                                                        ? '<span class="badge bg-soft-danger">Rejected</span>'
+                                                        : '<span class="badge bg-soft-warning">Pending</span>'
+                                            ];
+                                        })
+                                    });
+                                },
+                                error: function (err) {
+                                    console.error(err);
+                                    callback({ recordsTotal: 0, recordsFiltered: 0, data: [] });
+                                }
+                            });
+                        },
+                        columns: [
+                            { title: "" },
+                            { title: "User" },
+                            { title: "Document" },
+                            { title: "Date" },
+                            { title: "Action by user" }
+                        ],
+                        columnDefs: [
+                            {
+                                targets: 0,   // First column (Action column)
+                            }
+                        ],
+                        lengthMenu: [10, 25, 50, 100],
+                        pageLength: 10
+                    });
+
+                    // When clicking grant access
+                    $(document).on("click", ".share-btn", function () {
+                        selectedLogId = $(this).data("log-id");
+                    });
+
+                    // Flatpickr for custom
+                    $('input[name="time"]').on('change', function () {
+                        if ($(this).attr('id') === 'custom') {
+                            $('#customDateWrapper').show();
+                            if (!customFlatpickr) {
+                                customFlatpickr = flatpickr("#flatpickr-range", {
+                                    mode: "range",
+                                    dateFormat: "d-m-Y"
+                                });
+                            }
+                        } else {
+                            $('#customDateWrapper').hide();
+                        }
+                    });
+
+                    // Submit Access
+                    $("#grandAccessBtn").on("click", function () {
+                        if (!selectedLogId) return showToast("Please select a log first.", 'warning');
+
+                        const selectedDuration = $('input[name="time"]:checked').attr("id");
+                        if (!selectedDuration) return showToast("Please select duration", 'warning');
+
+                        let customDates = null;
+                        if (selectedDuration === 'custom') {
+                            customDates = $("#flatpickr-range").val();
+                            if (!customDates) return showToast("Please select custom date range", 'warning');
+                        }
+
+                        $.ajax({
+                            url: "/api/permission-logs/grant-access",
+                            type: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                logId: selectedLogId,
+                                duration: selectedDuration.toLowerCase(),
+                                customDates
+                            }),
+                            success: function (res) {
+                                $("#grandAccess-modal").modal("hide");
+                                $('#permissionLogsTable').DataTable().ajax.reload();
+                                showToast(res.message || "Access granted successfully", 'success');
+                            },
+                            error: function (err) {
+                                console.error(err);
+                                showToast("Failed to grant access", 'error');
+                            }
+                        });
+                    });
+
+                    $('.datetimepicker').on('change', function () {
+                        $('#permissionLogsTable').DataTable().ajax.reload();
+                    });
+
+                    // Open modal and update content when "Reject" is clicked
+                    $(document).on('click', '.reject-btn', function (e) {
+                        e.preventDefault();
+                        selectedLogId = $(this).data('log-id');
+
+                        // Update modal content
+                        $('#trashdocLabel').html('<img src="/img/icons/bin.png"> <br>Reject Permission Request');
+                        $('#trashdoc-modal .modal-body').text('Are you sure you want to reject this permission request?');
+
+                        // Update confirm button text
+                        $('#confirm-trash-folder').text('Yes, Reject');
+
+                        // Show modal
+                        $('#trashdoc-modal').modal('show');
+                    });
+
+                    // Confirm button in modal
+                    $('#confirm-trash-folder').on('click', function () {
+                        if (!selectedLogId) return;
+
+                        $.ajax({
+                            url: 'http://localhost:5000/api/permission-logs/requestStatus',
+                            type: 'PATCH',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                logId: selectedLogId,
+                                requestStatus: 'rejected'
+                            }),
+                            success: function (res) {
+                                $('#trashdoc-modal').modal('hide');
+                                // Optionally reload DataTable
+                                $('#permissionLogsTable').DataTable().ajax.reload();
+                                showToast('Request rejected successfully.', 'success');
+                            },
+                            error: function (err) {
+                                console.error(err);
+                                showToast('Failed to reject the request.', 'error');
+                            }
+                        });
+                    });
+
+                    // Reset modal when closed
+                    $('#trashdoc-modal').on('hidden.bs.modal', function () {
+                        selectedLogId = null;
+                        $('#trashdocLabel').html('<img src="/img/icons/bin.png"> <br>Move to Recycle Bin');
+                        $('#trashdoc-modal .modal-body').text('Please confirm that you want to move the selected item(s) to the Recycle bin');
+                        $('#confirm-trash-folder').text('Yes, Move');
+                    });
+                });
+            </script>

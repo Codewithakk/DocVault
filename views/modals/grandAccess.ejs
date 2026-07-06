@@ -1,0 +1,67 @@
+<!-- Grand Access Modal -->
+<div class="modal fade" id="grandAccess-modal" tabindex="-1" aria-labelledby="grandAccessLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Centered & Large -->
+        <div class="modal-content p-3 custom-modal">
+
+            <!-- Modal Header -->
+            <div class="modal-header border-0">
+                <div class="mdhhdng_subhdng">
+                    <h5 class="modal-title fw-bold" id="grandAccessLabel">Grant Access</h5>
+                    <p class="text-muted small mb-0"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <!-- Time Duration -->
+                <h6 class="fw-normal fs-20 mb-3">Time Duration</h6>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="time" id="oneday">
+                        <label class="form-check-label" for="oneday">One Day</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="time" id="oneweek">
+                        <label class="form-check-label" for="oneweek">1 Week</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="time" id="onemonth">
+                        <label class="form-check-label" for="onemonth">1 Month</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="time" id="lifetime">
+                        <label class="form-check-label" for="lifetime">Lifetime</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="time" id="onetime">
+                        <label class="form-check-label" for="onetime">One Time</label>
+                    </div>
+
+                    <div class="form-check position-relative">
+                        <input class="form-check-input" type="radio" name="time" id="custom">
+                        <label class="form-check-label rangelabel" for="custom">
+                            Custom <i class="ti ti-calendar"></i>
+                        </label>
+                        <div id="customDateWrapper" class="mt-2 w-100" style="display:none;">
+                            <input type="text" class="form-control" placeholder="DD-MM-YYYY to DD-MM-YYYY"
+                                id="flatpickr-range" />
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-0">
+                <button class="btn btn-primary" id="grandAccessBtn">Submit</button>
+            </div>
+
+        </div>
+    </div>
+</div>

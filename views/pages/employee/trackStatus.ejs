@@ -1,0 +1,361 @@
+<%- include('../../partials/header') %>
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content">
+            <div class="container mx-auto px-4 py-8">
+
+                <!-- Header -->
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">My Approvals</h1>
+                        <p class="text-gray-600 mt-2">Track and manage document approval progress</p>
+                    </div>
+
+                </div>
+
+                <!-- Document Status Section -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Document Status</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Document Info -->
+                        <div>
+                            <p class="text-gray-600">Document Name</p>
+                            <p class="text-lg font-semibold text-gray-800">
+                                <%= document.metadata?.fileName || 'Untitled Document' %>
+                            </p>
+                            <% if (document.metadata?.fileDescription) { %>
+                                <p class="text-gray-600 mt-1">
+                                    <%= document.metadata.fileDescription %>
+                                </p>
+                                <% } %>
+                        </div>
+
+                        <!-- Submission Info -->
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Submitted on:</p>
+                            <p class="font-semibold text-gray-700">
+                                <%= document.formattedDate %>
+                            </p>
+
+                            <p class="text-sm text-gray-500 mt-2">Current Status:</p>
+                            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold
+                            <%= document.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                               document.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                               document.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
+                               'bg-yellow-100 text-yellow-800' %>">
+                                <%= document.status %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Additional Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm border-t pt-4">
+                        <% if (document.project) { %>
+                            <div>
+                                <span class="font-semibold text-gray-600">Project:</span>
+                                <span class="ml-2 text-gray-800">
+                                    <%= document.project.name %>
+                                </span>
+                            </div>
+                            <% } %>
+                                <% if (document.department) { %>
+                                    <div>
+                                        <span class="font-semibold text-gray-600">Department:</span>
+                                        <span class="ml-2 text-gray-800">
+                                            <%= document.department.name %>
+                                        </span>
+                                    </div>
+                                    <% } %>
+                                        <% if (document.owner) { %>
+                                            <div>
+                                                <span class="font-semibold text-gray-600">Owner:</span>
+                                                <span class="ml-2 text-gray-800">
+                                                    <%= document.owner.name %>
+                                                </span>
+                                            </div>
+                                            <% } %>
+                    </div>
+
+                    <!-- File Actions -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <% if (document.files && document.files.length> 0) { %>
+                            <a href="/api/files/<%= document.files[0]._id %>" target="_blank"
+                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-2"></i>View File
+                            </a>
+                            <a href="/api/files/<%= document.files[0]._id %>/download"
+                                class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-download mr-2"></i>Download (<%= document.fileSize %>)
+                            </a>
+                            <% } %>
+
+                                <% if (document.link) { %>
+                                    <a href="<%= document.link %>" target="_blank"
+                                        class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                        <i class="fas fa-external-link-alt mr-2"></i>External Link
+                                    </a>
+                                    <% } %>
+                    </div>
+                </div>
+
+                <!-- Approval Workflow Table -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                    <div class="px-6 py-4 bg-gray-50 border-b">
+                        <h2 class="text-xl font-semibold text-gray-700">Approval Workflow</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Level</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Designation</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Name</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Approved on</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Request Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Remark</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <% approvals.forEach((approval)=> { %>
+                                    <tr class="hover:bg-gray-50 <%= approval.isCurrentUser ? 'bg-blue-50' : '' %>">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<%=
+                                                approval.level %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <%= approval.designation %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div
+                                                    class="flex-shrink-0 h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
+                                                    <span class="text-sm font-medium text-gray-700">
+                                                        <%= approval.approver.name.charAt(0).toUpperCase() %>
+                                                    </span>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">
+                                                        <%= approval.approver.name %>
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        <%= approval.approver.email %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <%= approval.formattedApprovedOn || '-' %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                    status-<%= approval.status.toLowerCase().replace(' ', '') %>">
+                                                <i class="fas 
+                                        <%= approval.status === 'Approved' ? 'fa-check mr-1' : 
+                                           approval.status === 'Rejected' ? 'fa-times mr-1' : 
+                                           approval.status === 'In Review' ? 'fa-eye mr-1' : 
+                                           'fa-clock mr-1' %>"></i>
+                                                <%= approval.status %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">
+                                            <%= approval.remark || '-' %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <% if (approval.status==='Pending' && approval.isCurrentUser) { %>
+                                                <div class="flex space-x-2">
+                                                    <button
+                                                        onclick="showApprovalModal('<%= approval._id %>', 'approve')"
+                                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                                        <i class="fas fa-check mr-1"></i>Approve
+                                                    </button>
+                                                    <button onclick="showApprovalModal('<%= approval._id %>', 'reject')"
+                                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                                        <i class="fas fa-times mr-1"></i>Reject
+                                                    </button>
+                                                </div>
+                                                <% } else if (approval.isCurrentUser) { %>
+                                                    <span class="text-gray-500">You <%= approval.status.toLowerCase() %>
+                                                            this</span>
+                                                    <% } %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Approval Progress -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Approval Progress</h2>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Overall Progress</span>
+                            <span>
+                                <%= progress.completed %> of <%= progress.total %> steps completed
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-green-600 h-3 rounded-full progress-bar"
+                                style="width: <%= progress.percentage %>%"></div>
+                        </div>
+                        <div class="text-right text-sm text-gray-500 mt-1">
+                            <%= progress.percentage %>% Complete
+                        </div>
+                    </div>
+
+                    <!-- Progress Steps -->
+                    <div class="relative">
+                        <div class="absolute top-4 left-0 right-0 h-0.5 bg-gray-200"></div>
+                        <div class="absolute top-4 left-0 h-0.5 bg-green-600"
+                            style="width: <%= progress.percentage %>%"></div>
+                        <div class="relative flex justify-between">
+                            <% approvals.forEach((approval)=> { %>
+                                <div class="flex flex-col items-center z-10">
+                                    <div
+                                        class="w-8 h-8 rounded-full flex items-center justify-center mb-2
+                                <%= approval.status === 'Approved' ? 'bg-green-500 text-white' : 
+                                   approval.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-600' %>">
+                                        <i
+                                            class="fas <%= approval.status === 'Approved' ? 'fa-check' : approval.status === 'Rejected' ? 'fa-times' : 'fa-clock' %> text-xs"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-700 text-center max-w-20">
+                                        <%= approval.designation %>
+                                    </span>
+                                    <span class="text-xs text-gray-500 mt-1 text-center">
+                                        <%= approval.approver.name %>
+                                    </span>
+                                    <% if (approval.formattedApprovedOn) { %>
+                                        <span class="text-xs text-gray-400 mt-1 text-center">
+                                            <%= approval.formattedApprovedOn %>
+                                        </span>
+                                        <% } %>
+                                </div>
+                                <% }) %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approval Modal -->
+            <div id="approvalModal"
+                class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-auto">
+                    <h3 class="text-lg font-semibold mb-4" id="modalTitle">Approve Document</h3>
+                    <form id="approvalForm">
+                        <input type="hidden" id="approvalId">
+                        <input type="hidden" id="approvalAction">
+
+                        <div class="mb-4">
+                            <label for="remark" class="block text-sm font-medium text-gray-700 mb-2">Remark
+                                (Optional)</label>
+                            <textarea id="remark" name="remark" rows="3"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Add any comments or remarks..."></textarea>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="hideApprovalModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
+                            <button type="submit" id="submitButton"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors">Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <%- include('../../partials/footer') %>
+
+        <script>
+            // Modal Handling
+            function showApprovalModal(approvalId, action) {
+                const modal = document.getElementById('approvalModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const approvalIdInput = document.getElementById('approvalId');
+                const approvalActionInput = document.getElementById('approvalAction');
+                const submitButton = document.getElementById('submitButton');
+
+                approvalIdInput.value = approvalId;
+                approvalActionInput.value = action;
+                document.getElementById('remark').value = '';
+
+                if (action === 'approve') {
+                    modalTitle.textContent = 'Approve Document';
+                    submitButton.textContent = 'Approve';
+                    submitButton.className = 'px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors';
+                } else {
+                    modalTitle.textContent = 'Reject Document';
+                    submitButton.textContent = 'Reject';
+                    submitButton.className = 'px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors';
+                }
+
+                modal.classList.remove('hidden');
+            }
+
+            function hideApprovalModal() {
+                document.getElementById('approvalModal').classList.add('hidden');
+            }
+
+            // Form submission
+            document.getElementById('approvalForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const approvalId = document.getElementById('approvalId').value;
+                const action = document.getElementById('approvalAction').value;
+                const remark = document.getElementById('remark').value;
+                const submitButton = document.getElementById('submitButton');
+
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+                try {
+                    const response = await fetch(`/documents/<%= document._id %>/approvals/${approvalId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: action === 'approve' ? 'Approved' : 'Rejected', remark })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        showToast('Error: ' + result.error, 'error');
+                        submitButton.disabled = false;
+                        submitButton.textContent = action === 'approve' ? 'Approve' : 'Reject';
+                    }
+                } catch (error) {
+                    showToast('Error updating approval: ' + error.message, 'error');
+                    submitButton.disabled = false;
+                    submitButton.textContent = action === 'approve' ? 'Approve' : 'Reject';
+                }
+            });
+
+            // Close modal on outside click or Escape
+            document.getElementById('approvalModal').addEventListener('click', e => { if (e.target.id === 'approvalModal') hideApprovalModal(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') hideApprovalModal(); });
+        </script>
+        </body>
+
+        </html>

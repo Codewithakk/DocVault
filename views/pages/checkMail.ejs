@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check your mailbox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card-container {
+            background-color: #e6f0ff;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .illustration {
+            max-width: 100%;
+            height: auto;
+            width: 350px;
+            margin-bottom: 30px;
+            mix-blend-mode: multiply;
+        }
+
+        /* Typography */
+        h1 {
+            color: #2a2a72;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        p.main-text {
+            color: #555555;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        p.sub-text {
+            color: #999999;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-top: 5px;
+        }
+
+        .email-highlight {
+            font-weight: bold;
+            color: #2a2a72;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card-container">
+        <img src="<%= checkMailImg %>" alt="Sending email illustration" class="illustration">
+
+        <h1>Check your mailbox!</h1>
+
+        <p class="main-text">
+            We sent you a link to verify your email.
+        </p>
+
+        <p class="sub-text">
+            Check your spam folder if you do not hear from us <br>
+            after a while
+        </p>
+    </div>
+
+</body>
+
+</html>
