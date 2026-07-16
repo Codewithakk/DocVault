@@ -173,6 +173,19 @@ export const handleFolderUpload = async (req, res, parentFolder) => {
         const folderName = req.query.folderName || "New Folder";
 
         // Create the new subfolder
+        const existingFolder = await Folder.findOne({
+            owner: ownerId,
+            parent: parentFolder._id,
+            name: folderName,
+        });
+        
+        if (existingFolder) {
+            return res.status(409).json({
+                success: false,
+                message: `Folder "${folderName}" already exists. Please choose a different name.`,
+            });
+        }
+        
         const subfolder = await Folder.create({
             name: folderName,
             parent: parentFolder._id,
@@ -278,7 +291,7 @@ export const deleteFile = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: `File deleted successfully from ${isTemp ? "TempFile" : "File"} collection.`,
+            message: `File deleted successfully.`,
         });
     } catch (err) {
         logger.error("Delete file error:", err);

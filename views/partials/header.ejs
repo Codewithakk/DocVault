@@ -133,20 +133,20 @@
 
                         <!-- Search -->
                         <div class="me-auto d-flex align-items-center" id="header-search">
-                            <a id="toggle_btn" href="javascript:void(0);" class="btn btn-menubar me-1">
+                            <a id="toggle_btn" href="javascript:void(0);" class="btn btn-menubar me-4">
                                 <i class="ti ti-arrow-bar-to-left"></i>
                             </a>
                             <form action="/documents/list" method="get" class="input-group d-inline-flex me-1"
                                 id="globalSearchForm">
-                                <div class="position-relative">
+                                <div class="position-relative w-100">
                                     <input type="text" name="q" id="globalSearchInput" class="form-control"
                                         placeholder="Search by doc, tag, metadata.."
                                         value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
                                     <input type="hidden" name="status" id="searchStatus"
                                         value="<%= typeof status !== 'undefined' ? status : 'all' %>">
-                                    <!-- <span class="input-icon-addon">
+                                    <span class="input-icon-addon">
                                         <i class="ti ti-search"></i>
-                                    </span> -->
+                                    </span>
                                     <!-- Clear button (global) -->
                                     <button type="button"
                                         class="btn btn-sm btn-icon clear-search-global position-absolute end-0 top-50 translate-middle-y me-2"
@@ -160,7 +160,7 @@
 
                         <div class="d-flex align-items-center">
                             <!-- Year Selection -->
-                            <div class="d-inline-flex me-2" >
+                            <div class="d-inline-flex me-2">
                                 <select id="selectHeaderYear" class="form-select select2" style="width:120px;">
                                     <!-- Years will be populated dynamically -->
                                 </select>
@@ -168,7 +168,7 @@
                             <!-- /Year Selection -->
 
                             <!-- Project Select -->
-                            <div class="input-group d-inline-flex me-1">
+                            <div class="input-group d-inline-flex me-4">
                                 <select id="selectHeaderProject" class="form-select select2" style="width:200px;">
                                     <option></option>
                                 </select>
@@ -176,22 +176,22 @@
                             </div>
                             <!-- /Project Select -->
                             <!-- Upload Dropdown -->
-                            <div class="dropdown me-1">
+                            <div class="dropdown me-4">
                                 <a href="#" id="uploadBtn" class="btn sm_btnsite" data-bs-toggle="dropdown">
-                                    Upload <i class="ti ti-chevron-down"></i>
+                                   <i class="ti ti-upload me-1"></i> Upload <i class="ti ti-chevron-down ms-1"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <div class="card mb-0 border-0 shadow-none">
                                         <div class="card-body">
-                                            <a href="/upload-folder" class="d-block pb-2">
-                                                <span class="avatar avatar-md bg-transparent-dark me-2">
-                                                    <i class="ti ti-folder-filled text-gray-9"></i>
+                                            <a href="/upload-folder" class="d-block pb-2 fw-medium">
+                                                <span class="avatar avatar-md rounded-3 bg-soft-primary me-2">
+                                                    <i class="ti ti-folder text-primary fs-18"></i>
                                                 </span>
                                                 New Folder
                                             </a>
-                                            <a href="/documents/add" class="d-block py-2">
-                                                <span class="avatar avatar-md bg-transparent-dark me-2">
-                                                    <i class="ti ti-file-filled text-gray-9"></i>
+                                            <a href="/documents/add" class="d-block py-2 fw-medium">
+                                                <span class="avatar avatar-md rounded-3 bg-soft-primary me-2">
+                                                    <i class="ti ti-file text-primary fs-18"></i>
                                                 </span>
                                                 New File
                                             </a>
@@ -201,7 +201,7 @@
                             </div>
                             <!-- /Upload Dropdown -->
                             <!-- Notifications -->
-                            <div class="me-1 notification_item">
+                            <div class="me-4 notification_item">
                                 <a href="notifications" class="btn btn-menubar position-relative me-1"
                                     id="notification_popup" data-bs-toggle="dropdown">
                                     <i class="ti ti-bell"></i>
@@ -306,7 +306,7 @@
                     </div>
                 </div>
                 <!-- /Mobile Menu -->
-                <div id="network-status-banner" style="display:none; background:#ff3b3b; color:white; 
+                <!-- <div id="network-status-banner" style="display:none; background:#ff3b3b; color:white; 
             padding:8px; text-align:center; position:fixed; top:0; width:100%; z-index:10000;">
                     You are offline, or the connection is too slow…
                 </div>
@@ -315,7 +315,7 @@
                     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; font-size:22px; color:white;">
                     Reconnecting… Please wait
-                </div>
+                </div> -->
             </div>
         </div>
         <!-- /Header -->

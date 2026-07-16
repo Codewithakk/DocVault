@@ -34,25 +34,31 @@
                     method="POST" novalidate>
 
                     <div class="row">
-                        <!-- Name -->
-                        <div class="col-md-6 mb-3">
-                            <label for="name" class="form-label">Department Name <span
-                                    class="text-danger">*</span></label>
+                        <!-- Name - First Row -->
+                        <div class="col-md-3 mb-3">
+                            <label for="name" class="form-label">Department Name <span class="text-danger">*</span></label>
                             <input type="text" id="name" name="name" class="form-control"
                                 placeholder="Enter department name" value="<%= department ? department.name : '' %>"
                                 required>
                         </div>
 
-                        <!-- Priority -->
+                        <!-- Short Name - First Row -->
                         <div class="col-md-3 mb-3">
-                            <label for="priority" class="form-label">Priority <span
-                                    class="optnl_lbl">(Optional)</span></label>
+                            <label for="shortName" class="form-label">Short Name <span class="text-danger">*</span></label>
+                            <input type="text" id="shortName" name="shortName" class="form-control"
+                                placeholder="Enter Short Name" value="<%= department ? department.shortName : '' %>"
+                                required>
+                        </div>
+
+                        <!-- Priority - First Row -->
+                        <div class="col-md-3 mb-3">
+                            <label for="priority" class="form-label">Priority <span class="optnl_lbl">(Optional)</span></label>
                             <input type="text" id="priority" name="priority" class="form-control"
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Enter priority"
                                 value="<%= department ? department.priority : 0 %>">
                         </div>
 
-                        <!-- Status -->
+                        <!-- Status - First Row -->
                         <div class="col-md-3 mb-3">
                             <label for="status" class="form-label">Status</label>
                             <select id="status" name="status" class="form-select select2">
@@ -67,10 +73,9 @@
                             </select>
                         </div>
 
-                        <!-- Description -->
+                        <!-- Description - Second Row (full width) -->
                         <div class="col-md-12 mb-3">
-                            <label for="description" class="form-label">Description <span
-                                    class="optnl_lbl">(Optional)</span></label>
+                            <label for="description" class="form-label">Description <span class="optnl_lbl">(Optional)</span></label>
                             <textarea id="description" name="description" rows="3" class="form-control"
                                 placeholder="Enter description"><%= department ? department.description : '' %></textarea>
                         </div>

@@ -1,4 +1,13 @@
-// document-edit.js - Complete Fixed Version
+// document-edit.js
+
+$(document).ready(function() {
+    // Force header project select to work independently
+    if (typeof initializeHeaderComponents === 'function') {
+        // Re-initialize header components after page load
+        setTimeout(initializeHeaderComponents, 100);
+    }
+});
+
 window.selectedFolders = [];
 window.selectedProject = { id: null, name: null };
 window.selectedDepartment = { id: null, name: null };
@@ -127,7 +136,7 @@ function showSuccessModal(documentData) {
         if (modalSubtext) {
             let subtext = '';
             if (folderName) {
-                subtext = `Updated in "${folderName}" folder.You will be redirected to the documents list shortly.`;
+                subtext = `Updated in "${folderName}" folder. You will be redirected to the documents list shortly.`;
             }
             // if (metadataFileName) {
             //     subtext += ` Metadata: "${metadataFileName}"`;

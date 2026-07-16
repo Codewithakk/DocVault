@@ -24,22 +24,59 @@
 			</div>
 			<!-- /Breadcrumb -->
 
+			<!-- Stats Row -->
+			<!-- <div class="row mb-3">
+				<div class="col-md-12">
+					<div class="d-flex gap-3 flex-wrap">
+						<span class="badge bg-primary">Total Items: <span id="totalItems">0</span></span>
+						<span class="badge bg-success">Folders: <span id="totalFolders">0</span></span>
+						<span class="badge bg-info">Files: <span id="totalFiles">0</span></span>
+						<span class="badge bg-warning">Total Size: <span id="totalSize">0 Bytes</span></span>
+					</div>
+				</div>
+			</div> -->
+
+			<!-- Filters Row -->
+			<div class="row mb-3">
+				<div class="col-md-3">
+					<label class="form-label">Department</label>
+					<select id="departmentFilter" class="form-select select2">
+						<option value="">All Departments</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label class="form-label">Format Type</label>
+					<select id="itemTypeFilter" class="form-select select2">
+						<option value="all">All Format</option>
+						<option value="file">Files Only</option>
+						<option value="folder">Folders Only</option>
+					</select>
+				</div>
+				<!-- <div class="col-md-3 d-flex align-items-end">
+					
+					<button class="btn btn-primary w-100" id="applyFiltersBtn">Apply Filters</button>
+				</div> -->
+				<!-- <div class="col-md-3 d-flex align-items-end">
+					<button class="btn btn-success w-100" id="restoreSelectedBtn">Restore Selected</button>
+				</div> -->
+			</div>
+
 			<div class="row">
 				<div class="col-xxl-12 col-xl-12">
 					<div class="card flex-fill">
 						<div class="card-body p-0">
 							<div class="custom-datatable-filter table-responsive">
-								<table class="table datatable" id="recycleTable">
+								<table class="table" id="recycleTable">
 									<thead>
 										<tr>
-											<th></th>
-											<th>Folder Name</th>
+											<th style="width: 50px;"><input type="checkbox" id="selectAll"></th>
+											<th style="width: 100px;">Actions</th>
+											<th>Name</th>
+											<th>Type</th>
 											<th>Department</th>
 											<th>Project</th>
 											<th>Size</th>
-											<th>Created On</th>
 											<th>Deleted On</th>
-											<th>Actions</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -50,7 +87,30 @@
 						</div>
 					</div>
 				</div>
-				<!-- /Projects -->
+			</div>
+			
+			<!-- Custom Pagination -->
+			<div class="row mt-3">
+				<div class="col-md-6">
+					<div class="d-flex align-items-center gap-2">
+						<label class="mb-0">Show</label>
+						<select class="form-select form-select-sm w-auto" id="showEntries">
+							<option value="10">10</option>
+							<option value="25">25</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+						</select>
+						<label class="mb-0">entries</label>
+						<span class="ms-3" id="tableInfo">Showing 0 to 0 of 0 entries</span>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="dataTables_paginate paging_simple_numbers">
+						<ul class="pagination justify-content-end" id="tablePagination">
+							<!-- Pagination will be rendered here -->
+						</ul>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -65,230 +125,626 @@
 
 	<%- include('../../partials/footer') %>
 
-		<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-		<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+	<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-		<script>
-			$(document).ready(function () {
+	<script>
+		$(document).ready(function () {
+			let currentPage = 1;
+			let totalPages = 1;
+			let totalItems = 0;
+			let perPage = 10;
+			let stats = { folders: 0, files: 0 };
+		
+			// Initialize Department Select2
+			$('#departmentFilter').select2({
+				placeholder: '-- Select Department --',
+				allowClear: true,
+				width: '100%',
+				ajax: {
+					url: '/api/departments/search',
+					dataType: 'json',
+					delay: 250,
+					data: function (params) {
+						return {
+							search: params.term
+						};
+					},
+					processResults: function (data) {
+						const results = [
+							{ id: '', text: 'All Departments' },
+							...data.data.map(item => ({
+								id: item._id,
+								text: item.name
+							}))
+						];
+						return {
+							results: results
+						};
+					},
+					cache: true
+				}
+			});
+		
+			// Initialize Item Type Select2
+			$('#itemTypeFilter').select2({
+				placeholder: 'Select Item Type',
+				allowClear: true,
+				width: '100%',
+				data: [
+					{ id: 'all', text: 'All Items' },
+					{ id: 'file', text: 'Files Only' },
+					{ id: 'folder', text: 'Folders Only' }
+				]
+			});
+		
+			// Load Recycle Bin Data with Filters
+			function loadRecycleBinData(page = 1, limit = 10) {
+				const departmentId = $('#departmentFilter').val();
+				const itemType = $('#itemTypeFilter').val();
+		
+				const params = new URLSearchParams();
+				if (departmentId && departmentId !== '') {
+					params.append('department', departmentId);
+				}
+				if (itemType && itemType !== 'all') {
+					params.append('itemType', itemType);
+				}
+				params.append('page', page);
+				params.append('limit', limit);
+		
+				const url = `/api/folders/recyclebin${params.toString() ? '?' + params.toString() : ''}`;
+		
+				$.ajax({
+					url: url,
+					method: 'GET',
+					success: function (response) {
+						if (response.success && Array.isArray(response.items)) {
+							currentPage = response.page || 1;
+							totalPages = response.totalPages || 1;
+							totalItems = response.total || 0;
+							stats = response.stats || { folders: 0, files: 0 };
+							perPage = limit;
+							
+							updateStats();
+							renderTable(response.items);
+							renderPagination(response.page, response.totalPages);
+							updateTableInfo(response.page, response.limit, response.total);
+						} else {
+							console.error("Unexpected API response:", response);
+							showToast('No data found in recycle bin', 'error');
+							renderTable([]);
+							renderPagination(1, 1);
+							updateTableInfo(1, 10, 0);
+						}
+					},
+					error: function (err) {
+						console.error("Error loading recycle bin:", err);
+						showToast('Error fetching recycle bin data', 'error');
+						renderTable([]);
+						renderPagination(1, 1);
+						updateTableInfo(1, 10, 0);
+					}
+				});
+			}
+		
+			// Update Statistics
+			function updateStats() {
+				$('#totalItems').text(totalItems);
+				$('#totalFolders').text(stats.folders || 0);
+				$('#totalFiles').text(stats.files || 0);
+				
+				let totalSize = 0;
+				$('#recycleTable tbody tr').each(function() {
+					const sizeText = $(this).find('td:eq(5)').text();
+					const size = parseSize(sizeText);
+					if (size) totalSize += size;
+				});
+				$('#totalSize').text(formatBytes(totalSize));
+			}
+		
+			function parseSize(sizeStr) {
+				if (!sizeStr) return 0;
+				const units = { 'Bytes': 1, 'KB': 1024, 'MB': 1048576, 'GB': 1073741824 };
+				for (let unit in units) {
+					if (sizeStr.includes(unit)) {
+						const num = parseFloat(sizeStr);
+						return num * units[unit];
+					}
+				}
+				return 0;
+			}
+		
+			// Render Table
+			function renderTable(items) {
+				if ($.fn.DataTable.isDataTable('#recycleTable')) {
+					$('#recycleTable').DataTable().destroy();
+				}
+		
+				$('#recycleTable tbody').empty();
+		
+				if (!items || items.length === 0) {
+					$('#recycleTable tbody').html('<tr><td colspan="8" class="text-center">No items found in recycle bin</td></tr>');
+					return;
+				}
+		
+				const displayItems = items.map(item => {
+				const isFile = item.itemType === 'file';
+				return {
+					...item,
+					displayName: isFile ? item.originalName || item.name : item.name,
+					icon: isFile ? '📄' : '📁',
+					typeLabel: isFile ? 'File' : 'Folder',
+					typeBadge: isFile ? 'bg-info' : 'bg-primary',
+					size: isFile ? item.fileSize || item.size : item.size || 0,
+					deletedAt: item.deletedAt || item.updatedAt,
+					departmentName: item.departmentId?.name || '-',
+					projectName: item.projectId?.projectName || '-',
+					folderInfo: isFile && item.folder ? ` (in ${item.folder.name})` : '',
+					restoreUrl: isFile 
+						? `/api/files/${item._id}/restore`
+						: `/api/folders/${item._id}/restore`,
+					deleteUrl: isFile
+						? `/api/files/${item._id}`
+						: `/api/folders/${item._id}`,
+					s3Url: item.s3Url || null  // Add this line
+				};
+			});
+		
+				$('#recycleTable').DataTable({
+					data: displayItems,
+					paging: false,
+					ordering: true,
+					info: false,
+					order: [[1, 'asc']],
+					autoWidth: false,
+					language: { 
+						emptyTable: "No items found in recycle bin."
+					},
+					columns: [
+						{
+							data: "_id",
+							render: function (data, type, row) {
+								return `
+								<div class="form-check form-check-md">
+									<input class="form-check-input select-item" type="checkbox" 
+										   data-item-id="${data}" 
+										   data-item-type="${row.itemType}">
+								</div>`;
+							}
+						},
+						{
+							data: null,
+							render: function (row) {
+								let actions = `
+								<div class="action-icon d-inline-flex">
+									<a href="#" class="restore-item me-2"
+										data-item-id="${row._id}"
+										data-item-type="${row.itemType}"
+										data-restore-url="${row.restoreUrl}">
+										<i class="ti ti-restore"></i>
+									</a>
 
-				let recycleTable;
+									<a href="#" class="delete-item me-2"
+										data-item-id="${row._id}"
+										data-item-name="${row.displayName}"
+										data-item-type="${row.itemType}"
+										data-delete-url="${row.deleteUrl}"
+										data-item-size="${row.size}">
+										<i class="ti ti-trash"></i>
+									</a>`;
 
-				function loadRecycleBinFolders() {
+								// Only add view icon for files
+								if (row.itemType === 'file') {
+									actions += `
+									<a href="/folders/view/${row._id}" target="_blank"
+										class="view-item"
+										title="View File">
+										<i class="ti ti-eye"></i>
+									</a>`;
+								}
+
+								actions += `</div>`;
+								return actions;
+							}
+						},
+						{
+							data: function(row) {
+								return `<p class="fs-14 mb-1 fw-normal text-neutral">${row.icon} ${row.displayName}${row.folderInfo || ''}</p>`;
+							}
+						},
+						{
+							data: "typeLabel",
+							render: function (data, type, row) {
+								return `<span class="badge ${row.typeBadge}">${data}</span>`;
+							}
+						},
+						{
+							data: "departmentName"
+						},
+						{
+							data: "projectName"
+						},
+						{
+							data: "size",
+							render: function (data) {
+								return formatBytes(data);
+							}
+						},
+						{
+							data: "deletedAt",
+							render: function (data) {
+								return data ? new Date(data).toLocaleString() : "-";
+							}
+						},
+					]
+				});
+		
+				$('#selectAll').off('click').on('click', function() {
+					const isChecked = $(this).prop('checked');
+					$('#recycleTable tbody input.select-item').prop('checked', isChecked);
+				});
+			}
+		
+			// Render Custom Pagination
+			function renderPagination(currentPage, totalPages) {
+				const $pagination = $('#tablePagination');
+				$pagination.empty();
+		
+				if (totalPages <= 1) {
+					$pagination.html('<li class="page-item disabled"><span class="page-link">Page 1 of 1</span></li>');
+					return;
+				}
+		
+				$pagination.append(`
+					<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+						<a href="#" class="page-link" data-page="${currentPage - 1}">Previous</a>
+					</li>
+				`);
+		
+				let startPage = Math.max(1, currentPage - 2);
+				let endPage = Math.min(totalPages, currentPage + 2);
+		
+				if (startPage > 1) {
+					$pagination.append(`<li class="page-item"><a href="#" class="page-link" data-page="1">1</a></li>`);
+					if (startPage > 2) {
+						$pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+					}
+				}
+		
+				for (let i = startPage; i <= endPage; i++) {
+					$pagination.append(`
+						<li class="page-item ${i === currentPage ? 'active' : ''}">
+							<a href="#" class="page-link" data-page="${i}">${i}</a>
+						</li>
+					`);
+				}
+		
+				if (endPage < totalPages) {
+					if (endPage < totalPages - 1) {
+						$pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+					}
+					$pagination.append(`
+						<li class="page-item"><a href="#" class="page-link" data-page="${totalPages}">${totalPages}</a></li>
+					`);
+				}
+		
+				$pagination.append(`
+					<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+						<a href="#" class="page-link" data-page="${currentPage + 1}">Next</a>
+					</li>
+				`);
+		
+				$pagination.find('.page-link').off('click').on('click', function(e) {
+					e.preventDefault();
+					const page = parseInt($(this).data('page'));
+					if (page && page !== currentPage && page >= 1 && page <= totalPages) {
+						loadRecycleBinData(page, perPage);
+					}
+				});
+			}
+		
+			// Update Table Info
+			function updateTableInfo(page, limit, total) {
+				if (total === 0) {
+					$('#tableInfo').text('Showing 0 to 0 of 0 entries');
+					return;
+				}
+				const start = (page - 1) * limit + 1;
+				const end = Math.min(page * limit, total);
+				$('#tableInfo').text(`Showing ${start} to ${end} of ${total} entries`);
+			}
+		
+			// Show Entries Dropdown Handler
+			$('#showEntries').on('change', function() {
+				const newLimit = parseInt($(this).val());
+				perPage = newLimit;
+				loadRecycleBinData(1, newLimit);
+			});
+		
+			// Get Selected Items
+			function getSelectedItems() {
+				const items = [];
+				$('#recycleTable tbody input.select-item:checked').each(function () {
+					const $row = $(this).closest('tr');
+					const table = $('#recycleTable').DataTable();
+					const rowData = table.row($row).data();
+					if (rowData) {
+						items.push({
+							id: $(this).attr('data-item-id'),
+							type: $(this).attr('data-item-type'),
+							data: rowData
+						});
+					}
+				});
+				return items;
+			}
+		
+			// Apply Filters
+			$('#applyFiltersBtn').on('click', function() {
+				loadRecycleBinData(1, perPage);
+			});
+		
+			// Auto-apply on select change
+			$('#departmentFilter, #itemTypeFilter').on('change', function() {
+				loadRecycleBinData(1, perPage);
+			});
+		
+			// Restore Selected Items
+			$('#restoreSelectedBtn').on('click', function() {
+				const selectedItems = getSelectedItems();
+				
+				if (selectedItems.length === 0) {
+					showToast('Please select items to restore.', 'error');
+					return;
+				}
+		
+				$('#archivedoc-modal').modal('show');
+				$('#archivedoc-modal .modal-body').text(`Are you sure you want to restore ${selectedItems.length} selected item(s)?`);
+		
+				$('#archivedoc-modal .btn-primary')
+					.off('click')
+					.on('click', function() {
+						const $btn = $(this);
+						const originalText = $btn.text();
+						$btn.prop('disabled', true).text('Restoring...');
+		
+						let completed = 0;
+						let failed = 0;
+						let restoredItems = [];
+		
+						selectedItems.forEach((item) => {
+							const url = item.type === 'file' 
+								? `/api/files/${item.id}/restore`
+								: `/api/folders/${item.id}/restore`;
+		
+							$.ajax({
+								url: url,
+								method: 'PATCH',
+								success: function(response) {
+									completed++;
+									restoredItems.push(item.data.displayName || item.id);
+									
+									if (completed + failed === selectedItems.length) {
+										$('#archivedoc-modal').modal('hide');
+										$btn.prop('disabled', false).text(originalText);
+										
+										const msg = response?.message || `${completed} item(s) restored successfully.`;
+										if (failed === 0) {
+											showToast(`${msg}`, 'success');
+										} else {
+											showToast(`Restored ${completed} item(s), ${failed} failed.`, 'warning');
+										}
+										loadRecycleBinData(currentPage, perPage);
+									}
+								},
+								error: function(err) {
+									failed++;
+									if (completed + failed === selectedItems.length) {
+										$('#archivedoc-modal').modal('hide');
+										$btn.prop('disabled', false).text(originalText);
+										
+										const errorMsg = err.responseJSON?.message || 'Some items failed to restore.';
+										if (completed > 0) {
+											showToast(`Restored ${completed} item(s), ${failed} failed. ${errorMsg}`, 'warning');
+										} else {
+											showToast(`${errorMsg}`, 'error');
+										}
+										loadRecycleBinData(currentPage, perPage);
+									}
+								}
+							});
+						});
+					});
+			});
+		
+			// Restore Single Item
+			$(document).on('click', '.restore-item', function (e) {
+				e.preventDefault();
+				const itemId = $(this).data('item-id');
+				const itemType = $(this).data('item-type');
+				const restoreUrl = $(this).data('restore-url');
+				const itemName = $(this).closest('tr').find('td:eq(1)').text().trim();
+				
+				if (!itemId) return;
+		
+				$('#archivedoc-modal').modal('show');
+				$('#archivedoc-modal .modal-body').text(`Are you sure you want to restore "${itemName}"?`);
+		
+				$('#archivedoc-modal .btn-primary')
+					.off('click')
+					.on('click', function () {
+						const $btn = $(this);
+						const originalText = $btn.text();
+						$btn.prop('disabled', true).text('Restoring...');
+		
+						$.ajax({
+							url: restoreUrl,
+							method: 'PATCH',
+							success: function (response) {
+								$('#archivedoc-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								const msg = response?.message || `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} restored successfully.`;
+								showToast(` ${msg}`, 'success');
+								loadRecycleBinData(currentPage, perPage);
+							},
+							error: function (err) {
+								$('#archivedoc-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								console.error(err);
+								const errorMsg = err.responseJSON?.message || `Failed to restore ${itemType}.`;
+								showToast(`❌ ${errorMsg}`, 'error');
+							}
+						});
+					});
+			});
+		
+			// Delete Single Item
+			$(document).on('click', '.delete-item', function (e) {
+				e.preventDefault();
+				const itemId = $(this).data('item-id');
+				const itemName = $(this).data('item-name');
+				const itemType = $(this).data('item-type');
+				const deleteUrl = $(this).data('delete-url');
+				const itemSize = $(this).data('item-size');
+		
+				$('#fileDelete-modal').modal('show');
+				$('#fileDelete-modal .flxtbltxt p').text(itemName);
+				$('#fileDelete-modal .flxtbltxt span.fs-11').text(formatBytes(itemSize));
+				$('#fileDelete-modal h5').text(`Are you sure you want to permanently delete this ${itemType}?`);
+		
+				$('#fileDelete-modal .btn-primary')
+					.off('click')
+					.on('click', function () {
+						const $btn = $(this);
+						const originalText = $btn.text();
+						$btn.prop('disabled', true).text('Deleting...');
+						
+						$.ajax({
+							url: deleteUrl,
+							method: 'DELETE',
+							contentType: 'application/json',
+							data: JSON.stringify({ ids: [itemId] }),
+							success: function (response) {
+								$('#fileDelete-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								const msg = response?.message || `"${itemName}" permanently deleted.`;
+								showToast(`🗑️ ${msg}`, 'success');
+								loadRecycleBinData(currentPage, perPage);
+							},
+							error: function (err) {
+								$('#fileDelete-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								console.error(err);
+								const errorMsg = err.responseJSON?.message || 'Failed to delete item.';
+								showToast(`❌ ${errorMsg}`, 'error');
+							}
+						});
+					});
+			});
+		
+			// Empty Trash Modal - Show
+			$('#emptybin-modal').on('show.bs.modal', function () {
+				const selectedItems = getSelectedItems();
+				if (selectedItems.length === 0) {
+					showToast('Please select items to delete.', 'error');
+					return false;
+				}
+				
+				let totalSize = 0;
+				let itemNames = [];
+				selectedItems.forEach(item => {
+					totalSize += item.data.size || 0;
+					itemNames.push(item.data.displayName || item.id);
+				});
+				
+				$('#emptybin-modal .modal-body').html(
+					`Are you sure you want to permanently <span class="txtblue">delete ${selectedItems.length} selected item(s)</span> (${formatBytes(totalSize)})?<br><br>
+					<small>Items: ${itemNames.join(', ')}</small><br>
+					<strong>This action cannot be undone.</strong>`
+				);
+			});
+		
+			// Empty Trash - Delete Selected
+			$('#emptybin-modal .btn-primary').off('click').on('click', function () {
+				const selectedItems = getSelectedItems();
+		
+				if (selectedItems.length === 0) {
+					showToast('Please select items first.', 'error');
+					$('#emptybin-modal').modal('hide');
+					return;
+				}
+		
+				const $btn = $(this);
+				const originalText = $btn.text();
+				$btn.prop('disabled', true).text('Deleting...');
+		
+				let completed = 0;
+				let failed = 0;
+				let deletedItems = [];
+		
+				selectedItems.forEach((item) => {
+					const url = item.type === 'file'
+						? `/api/files/${item.id}`
+						: `/api/folders/${item.id}`;
+		
 					$.ajax({
-						url: '/api/folders/recyclebin',
-						method: 'GET',
+						url: url,
+						method: 'DELETE',
+						contentType: 'application/json',
+						data: JSON.stringify({ ids: [item.id] }),
 						success: function (response) {
-							if (response.success && Array.isArray(response.folders)) {
-								populateTable(response.folders);
-							} else {
-								console.error("Unexpected API response:", response);
-								showToast('No data found in recycle bin', 'error');
+							completed++;
+							deletedItems.push(item.data.displayName || item.id);
+							
+							if (completed + failed === selectedItems.length) {
+								$('#emptybin-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								const msg = response?.message || `${completed} item(s) deleted successfully.`;
+								if (failed === 0) {
+									showToast(`🗑️ ${msg}`, 'success');
+								} else if (completed > 0) {
+									showToast(`Deleted ${completed} item(s), ${failed} failed.`, 'warning');
+								} else {
+									showToast(`❌ Failed to delete items.`, 'error');
+								}
+								loadRecycleBinData(currentPage, perPage);
 							}
 						},
 						error: function (err) {
-							console.error("Error loading recycle bin:", err);
-							showToast('Error fetching recycle bin data', 'error');
-						}
-					});
-				}
-function getSelectedFolderIds() {
-	let ids = [];
-
-	$('#recycleTable tbody input.select-folder:checked').each(function () {
-		ids.push($(this).attr('data-folder-id'));
-	});
-
-	return ids;
-}
-
-
-function populateTable(folders) {
-
-if ($.fn.DataTable.isDataTable('#recycleTable')) {
-	recycleTable.clear().rows.add(folders).draw();
-	return;
-}
-
-recycleTable = $('#recycleTable').DataTable({
-	data: folders,
-	pageLength: 10,
-	order: [[1, 'asc']],
-	autoWidth: false,
-	language: { emptyTable: "No folders found in recycle bin." },
-	columns: [
-		{
-			data: "_id",
-			render: function (data) {
-				return `
-				<div class="form-check form-check-md">
-					<input class="form-check-input select-folder" type="checkbox" data-folder-id="${data}">
-				</div>`;
-			}
-		},
-		{
-			data: "name",
-			render: function (data) {
-				return `<p class="fs-14 mb-1 fw-normal text-neutral">${data}</p>`;
-			}
-		},
-		{
-			data: "departmentId",
-			render: function (data) {
-				return data?.name || "-";
-			}
-		},
-		{
-			data: "projectId",
-			render: function (data) {
-				return data?.projectName || "-";
-			}
-		},
-		{
-			data: "size",
-			render: function (data) {
-				return formatBytes(data);
-			}
-		},
-		{
-			data: "createdAt",
-			render: function (data) {
-				return new Date(data).toLocaleString();
-			}
-		},
-		{
-			data: "deletedAt",
-			render: function (data) {
-				return data ? new Date(data).toLocaleString() : "-";
-			}
-		},
-		{
-			data: null,
-			render: function (data) {
-				return `
-				<div class="action-icon d-inline-flex">
-					<a href="#" class="restore-folder me-2" data-folder-id="${data._id}">
-						<i class="ti ti-restore"></i>
-					</a>
-					<a href="#" class="delete-folder" 
-					   data-folder-id="${data._id}"
-					   data-folder-name="${data.name}"
-					   data-folder-size="${data.size}">
-						<i class="ti ti-trash"></i>
-					</a>
-				</div>`;
-			}
-		}
-	]
-});
-}
-
-				$(document).on('click', '.restore-folder', function (e) {
-					e.preventDefault();
-					const folderId = $(this).data('folder-id');
-					if (!folderId) return;
-
-					$('#archivedoc-modal').modal('show');
-					$('#archivedoc-modal .modal-body').text(`Are you sure you want to restore this folder?`);
-
-					$('#archivedoc-modal .btn-primary')
-						.off('click')
-						.on('click', function () {
-							$.ajax({
-								url: `/api/folders/${folderId}/restore`,
-								method: 'PATCH',
-								success: function () {
-									$('#archivedoc-modal').modal('hide');
-									showToast('Folder restored successfully.', 'success');
-									const row = $(`.restore-folder[data-folder-id="${folderId}"]`).closest('tr');
-									recycleTable.row(row).remove().draw(false);
-								},
-								error: function (err) {
-									console.error(err);
-									showToast('Failed to restore folder.', 'error');
+							failed++;
+							if (completed + failed === selectedItems.length) {
+								$('#emptybin-modal').modal('hide');
+								$btn.prop('disabled', false).text(originalText);
+								
+								const errorMsg = err.responseJSON?.message || '';
+								if (completed > 0) {
+									showToast(`Deleted ${completed} item(s), ${failed} failed. ${errorMsg}`, 'warning');
+								} else {
+									showToast(`❌ Failed to delete items: ${errorMsg || 'Unknown error'}`, 'error');
 								}
-							});
-						});
-				});
-
-				$(document).on('click', '.delete-folder', function (e) {
-					e.preventDefault();
-					const folderId = $(this).data('folder-id');
-					const folderName = $(this).data('folder-name');
-					const folderSize = $(this).data('folder-size');
-
-					$('#fileDelete-modal').modal('show');
-					$('#fileDelete-modal .flxtbltxt p').text(folderName);
-					$('#fileDelete-modal .flxtbltxt span.fs-11').text(formatBytes(folderSize));
-					$('#fileDelete-modal h5').text(`Are you sure you want to permanently delete "${folderName}"?`);
-
-					$('#fileDelete-modal .btn-primary')
-						.off('click')
-						.on('click', function () {
-							$.ajax({
-								url: `/api/folders/${folderId}`,
-								method: 'DELETE',
-								contentType: 'application/json',
-								data: JSON.stringify({ ids: [folderId] }),
-								success: function () {
-									$('#fileDelete-modal').modal('hide');
-									showToast(`"${folderName}" permanently deleted.`, 'success');
-
-									$(`.delete-folder[data-folder-id="${folderId}"]`).closest('tr').remove();
-								},
-								error: function (err) {
-									console.error(err);
-									showToast('Failed to delete folder.', 'error');
-								}
-							});
-						});
-				});
-
-				$('#emptybin-modal').on('show.bs.modal', function () {
-					$.get('/api/folders/recyclebin/size', function (res) {
-						if (res.totalSize) {
-							$('#emptybin-modal .modal-body').html(
-								`Are you sure you want to permanently <span class="txtblue">delete all files</span> in the recycle bin (${formatBytes(res.totalSize)})? This action cannot be undone.`
-							);
+								loadRecycleBinData(currentPage, perPage);
+							}
 						}
 					});
 				});
-
-				$('#emptybin-modal .btn-primary').on('click', function () {
-
-const folderIds = getSelectedFolderIds();
-
-if (folderIds.length === 0) {
-	showToast('Please select folders first.', 'error');
-	return;
-}
-
-$.ajax({
-	url: '/api/folders/recyclebin/empty',
-	method: 'DELETE',
-	contentType: 'application/json',
-	data: JSON.stringify({
-		folderIds: folderIds
-	}),
-	success: function () {
-		$('#emptybin-modal').modal('hide');
-		showToast('Selected folders permanently deleted.', 'success');
-		loadRecycleBinFolders();
-	},
-	error: function (err) {
-		console.error(err);
-		showToast('Failed to delete selected folders.', 'error');
-	}
-});
-});
-
-				function formatBytes(bytes) {
-					if (!bytes) return '0 Bytes';
-					const k = 1024;
-					const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-					const i = Math.floor(Math.log(bytes) / Math.log(k));
-					return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-				}
-
-				loadRecycleBinFolders();
 			});
+		
+			// Utility Functions
+			function formatBytes(bytes) {
+				if (!bytes || bytes === 0) return '0 Bytes';
+				const k = 1024;
+				const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+				const i = Math.floor(Math.log(bytes) / Math.log(k));
+				return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+			}
+		
+			// Initial Load
+			loadRecycleBinData(1, 10);
+		});
 		</script>

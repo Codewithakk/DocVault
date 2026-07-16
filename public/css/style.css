@@ -461,7 +461,7 @@ ul .btn-primary:not(:disabled):not(.disabled).active:focus {
 }
 
 .bg-soft-primary {
-  background-color: #FEF0E9;
+  background-color: #e2eafc;
   color: #2B1871;
 }
 
@@ -7617,7 +7617,8 @@ h6,
   opacity: 1;
 }
 
-.text-success {
+.text-success,
+.text-green {
   color: #31910E !important;
   opacity: 1;
 }
@@ -7627,7 +7628,8 @@ h6,
   opacity: 1;
 }
 
-.text-danger {
+.text-danger,
+.text-red {
   color: #E54F4F !important;
   opacity: 1;
 }
@@ -12205,7 +12207,7 @@ table.table-bordered thead tr th p {
 
 .breadcrumb .breadcrumb-item {
   color: #6B7280;
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .breadcrumb .breadcrumb-item a {
@@ -12299,8 +12301,8 @@ table.table-bordered thead tr th p {
   transition: all 0.5s ease-in-out;
   position: relative;
   border-radius: 5px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0px 1px 1px 1px rgba(198, 198, 198, 0.2);
+  border: 0px solid #E5E7EB;
+  box-shadow: 1px 2px 15px 5px rgba(198, 198, 198, 0.2);
   color: inherit;
 }
 
@@ -16015,20 +16017,24 @@ button.swal2-cancel {
 }
 
 .header .input-group {
-  width: 259px;
+  width: auto;
+}
+
+.header #globalSearchInput {
+  width: 400px;
 }
 
 .header .input-group .input-icon-addon {
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .header .input-group input {
-  height: 30px;
+  height: 43px;
   border-left: 1px solid #E5E7EB !important;
   border-top-left-radius: 5px !important;
   border-bottom-left-radius: 5px !important;
-  padding-left: 10px;
-  font-size: 12px;
+  padding-left: 35px;
+  font-size: 14px;
 }
 
 .header .input-group .input-group-text {
@@ -17281,7 +17287,7 @@ button.swal2-cancel {
 }
 
 .sidebar .sidebar-logo .logo img {
-  max-width: 160px;
+  max-width: 140px;
 }
 
 .sidebar .slimScrollDiv .sidebar-menu {
@@ -17332,9 +17338,9 @@ button.swal2-cancel {
   align-items: center;
   -webkit-box-align: center;
   -ms-flex-align: center;
-  padding: 10px 15px;
+  padding: 7px 15px;
   position: relative;
-  color: #3B7080;
+  color: #271572;
 }
 
 .sidebar .sidebar-menu>ul>li>a svg {
@@ -17373,8 +17379,8 @@ button.swal2-cancel {
 
 .sidebar .sidebar-menu>ul>li>a span {
   font-size: 15px;
-  font-weight: 500;
-  color: #4B5563;
+  font-weight: 400;
+  color: #1c2b4f;
 }
 
 .sidebar .sidebar-menu>ul>li.active a {
@@ -17399,8 +17405,8 @@ button.swal2-cancel {
   font-size: 14px;
   position: relative;
   display: block;
-  padding: 8px 8px 8px 40px;
-  padding-left: 10px;
+  padding: 7px 7px !important;
+  border-radius: 8px;
 }
 
 .sidebar .sidebar-menu>ul>li ul {
@@ -17436,12 +17442,12 @@ button.swal2-cancel {
 .sidebar .sidebar-menu>ul>li ul li a span {
   font-size: 14px;
   white-space: nowrap;
-  font-weight: 300;
+  font-weight: 400;
   margin-right: 5px;
 }
 
 span.menuname {
-  margin-left: 6px;
+  margin-left: 12px;
 }
 
 span.submenuname {
@@ -17449,7 +17455,8 @@ span.submenuname {
 }
 
 .sidebar .sidebar-menu>ul>li ul li a.active {
-  color: #2B1871;
+  color: #fff;
+  background: #2B1871;
 }
 
 .sidebar .sidebar-menu>ul>li ul li a.active span {
@@ -17544,14 +17551,22 @@ span.submenuname {
   left: 0px;
 }
 
-.dropdown_wrap li a i.ti.ti-folder-filled {
+.dropdown_wrap li a i.ti.ti-folder {
   position: relative;
-  left: 0;
-  color: #FFC700;
-  margin-right: 6px;
+  left: 3px;
+  color: #271572;
   font-size: 18px;
-  top: -1px;
+  top: 2px;
 }
+
+.sidebar .sidebar-menu>ul>li ul li a.active i {
+  color: #fff;
+}
+
+ul#menu-list>li>a>i {
+  font-size: 18px;
+}
+
 
 .dropdown_wrap a.active {
   font-weight: 500;
@@ -17639,7 +17654,7 @@ span.submenuname {
 }
 
 .sidebar-menu ul li>ul>li {
-  padding-left: 20px;
+  padding-left: 15px;
 }
 
 .sidebar .sidebar-menu .menu-arrow::before {
@@ -28390,7 +28405,7 @@ body.layout-mode-rtl .nav-list::before {
 }
 
 a#notification_popup {
-  font-size: 16px;
+  font-size: 22px;
 }
 
 @keyframes rotation {
@@ -28537,7 +28552,7 @@ a#notification_popup {
   padding-left: 10px;
   font-size: 14px;
   font-weight: 400;
-  padding-right: 30px;
+  padding-right: 10px;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__rendered span {
@@ -33888,4 +33903,9 @@ span.flatpickr-weekday {
 
 .text-neutral {
   color: #5E5E5E !important;
+}
+
+.sm_btnsite:hover {
+  background: #34a5e5;
+  color: #fff;
 }

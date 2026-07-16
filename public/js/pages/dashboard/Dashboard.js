@@ -108,7 +108,86 @@ $(document).ready(function () {
             loadDonorVendorProjects();
         });
     }
-
+    // Load storage data from API
+    async function loadStorageData(projectId = '') {
+        try {
+            const url = `${baseUrl}/api/myStorage`;
+            
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const data = result.data;
+                
+                // Calculate used percentage from remaining storage
+                const usedPercentage = (data.remainingPercentage || 0);
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${usedPercentage}%`;
+                    progressBar.setAttribute('aria-valuenow', usedPercentage);
+                }
+                
+                // Update storage summary text
+                const summaryText = document.querySelector('.d-flex.align-items-center.justify-content-between p:first-child');
+                if (summaryText) {
+                    const usedGB = data.remainingStorage;
+                    const totalGB = data.totalStorage;
+                    summaryText.textContent = `${usedGB} GB used of ${totalGB} GB`;
+                }
+                
+                // Update percentage text
+                const percentageText = document.querySelector('.d-flex.align-items-center.justify-content-between p.text-title');
+                if (percentageText) {
+                    percentageText.textContent = `${Math.round(usedPercentage)}%`;
+                }
+                
+                // Update storage distribution
+                updateStorageDistribution(data);
+            }
+        } catch (error) {
+            console.error('Error loading storage data:', error);
+        }
+    }
+    
+    // Update storage distribution items
+    function updateStorageDistribution(data) {
+        const folderWraps = document.querySelectorAll('.folder-wrap');
+        
+        if (folderWraps.length >= 3) {
+            // Calculate total used storage
+            const totalUsed = data.documents + data.media + data.others;
+            
+            // Documents
+            const docSize = data.documents || 0;
+            const docGB = docSize.toFixed(2);
+            const docPercentage = totalUsed > 0 ? ((docSize / totalUsed) * 100) : 0;
+            folderWraps[0].querySelector('h6').textContent = `${docGB} GB`;
+            const docLabel = folderWraps[0].querySelector('.fs-12');
+            // if (docLabel) {
+            //     docLabel.textContent = `Documents (${docPercentage.toFixed(1)}%)`;
+            // }
+            
+            // Media
+            const mediaSize = data.media || 0;
+            const mediaGB = mediaSize.toFixed(2);
+            const mediaPercentage = totalUsed > 0 ? ((mediaSize / totalUsed) * 100) : 0;
+            folderWraps[1].querySelector('h6').textContent = `${mediaGB} GB`;
+            const mediaLabel = folderWraps[1].querySelector('.fs-12');
+            // if (mediaLabel) {
+            //     mediaLabel.textContent = `Media (${mediaPercentage.toFixed(1)}%)`;
+            // }
+            
+            // Others
+            const othersSize = data.others || 0;
+            const othersGB = othersSize.toFixed(2);
+            const othersPercentage = totalUsed > 0 ? ((othersSize / totalUsed) * 100) : 0;
+            folderWraps[2].querySelector('h6').textContent = `${othersGB} GB`;
+            const othersLabel = folderWraps[2].querySelector('.fs-12');
+            // if (othersLabel) {
+            //     othersLabel.textContent = `Others (${othersPercentage.toFixed(1)}%)`;
+            // }
+        }
+    }
     // Load current project from session
     async function loadCurrentProject() {
         try {
@@ -312,26 +391,26 @@ $(document).ready(function () {
                 const formattedDateTime = formatDateTime(activity.timestamp);
 
                 const cardItem = `
-    <div class="d-flex flex-column flex-md-row justify-content-between mb-3">
-        
-        <div class="d-flex">
-            <span class="me-3">
-                <img src="/img/icons/user-activity.svg" alt="activity" class="icon-activity">
-            </span>
+                    <div class="d-flex flex-column flex-md-row justify-content-between mb-3">
+                        
+                        <div class="d-flex align-items-center">
+                            <span class="avatar rounded-3 bg-light me-2">
+                                <img src="/img/icons/user-activity.svg" alt="activity" class="icon-20">
+                            </span>
 
-            <div>
-                <p class="fs-16 mb-1 fw-normal">
-                    ${details}
-                </p>
-            </div>
-        </div>
+                            <div> 
+                                <p class="fs-16 fw-normal">
+                                    ${details}
+                                </p>
+                            </div>
+                        </div>
 
-        <div class="text-md-end text-muted fs-13 mt-2 mt-md-0">
-            ${formattedDateTime}
-        </div>
+                        <div class="text-md-end text-muted fs-13 mt-2 mt-md-0">
+                            ${formattedDateTime}
+                        </div>
 
-    </div>
-`;
+                    </div>
+                `;
 
                 container.append(cardItem);
             });
@@ -547,9 +626,7 @@ $(document).ready(function () {
         const colorClass = isPositive ? 'bg-soft-success text-success' : 'bg-soft-danger text-danger';
 
         $badge.html(`
-        <span class="sm-avatar avatar rounded ${colorClass.split(' ')[0]}">
             <i class="${icon}"></i>
-        </span> 
         ${isPositive ? '+' : ''}${growthPercent}%
     `);
     }
@@ -1132,16 +1209,23 @@ $(document).ready(function () {
     });
 
     // Initialize Dashboard
+    // In your initializeDashboard function, add:
     async function initializeDashboard() {
         if (isInitialized) return;
         isInitialized = true;
         const selectedDeptId = $('#uploadDepartment').val() || '';
+        
         initializeHeaderProjectSelect();
         initializeRecentActivityDepartment();
         initializeUploadDepartment();
         initializeDonorVendorSection();
+        
         await loadCurrentProject();
-
+    
+        // Load storage data
+        await loadStorageData(currentProjectId);
+        
+        // Other load functions...
         loadDashboardStats(currentProjectId);
         loadRecentActivities(currentProjectId);
         loadFileStatus(currentProjectId);
@@ -1153,7 +1237,7 @@ $(document).ready(function () {
         loadDocumentTypeUploads(currentProjectId, typeUploadsperiod);
         loadDepartmentDocumentUploads(currentProjectId, currentPeriod, selectedDeptId);
         loadDonorVendorProjects();
-
+    
         // Dashboard card click handlers
         const dashboardCards = document.querySelectorAll('.dashboard-card');
         dashboardCards.forEach(card => {

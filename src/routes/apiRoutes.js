@@ -92,6 +92,8 @@ router.post("/approval/submit", optionalAuth, DocumentController.submitApprovalB
 // Apply authentication to all routes
 router.use(authenticate);
 
+router.get("/myStorage", CommonController.myStorage);
+
 //encryption
 
 router.get('/documents/download/:fileId/:token', authenticate, async (req, res) => {
@@ -171,6 +173,7 @@ router.get("/analytics/department-file-usage", AdminDashboard.getDepartmentFileU
 
 // Permission Logs
 router.get("/my-approvals", AdminController.getMyApprovals);
+router.get("/my-approvals-counts", AdminController.getMyApprovalsCounts);
 router.get("/permission-logs", authorize('admin', 'superadmin', 'user'), AdminController.getPermissionLogs);
 router.patch("/permission-logs/requestStatus", authorize('admin', 'superadmin', 'user'), PermissionLogsValidators.updateRequestStatusValidator, validators, AdminController.updateRequestStatus);
 router.post("/permission-logs/grant-access", authorize('admin', 'superadmin', 'user'), PermissionLogsValidators.grantAccessValidator, validators, AdminController.grantAccess)
@@ -179,6 +182,7 @@ router.post("/permission-logs/grant-access", authorize('admin', 'superadmin', 'u
 // Employee routes
 // ---------------------------
 router.get("/approval-requests", EmployeeController.getApprovalRequests);
+router.get("/approval-requests-counts",EmployeeController.getApprovalRequestsCounts);
 
 
 
@@ -187,6 +191,7 @@ router.get("/approval-requests", EmployeeController.getApprovalRequests);
 // ---------------------------
 
 router.get("/documents", DocumentController.getDocuments);
+router.get("/documents-count", DocumentController.getDocumentsCount);
 router.get("/documents/compliance", DocumentController.getComplianceDocuments);
 router.get("/documents/folder/:folderId", authenticate, DocumentController.getDocumentsByFolder);
 router.get("/documents/search", DocumentController.searchDocuments);
@@ -661,7 +666,8 @@ router.get('/folders/details/:id', FolderController.getFolder);
 // Rename a folder
 router.patch('/folders/:id/rename', FolderController.renameFolder);
 
-// Update Folder status
+// resotre File status
+router.patch('/files/:id/restore', FolderController.restoreFile);
 
 // Soft delete a folder
 router.delete('/folders/:id', FolderController.deleteFolder);
@@ -682,6 +688,8 @@ router.get('/folders/archived', FolderController.getArchivedFolders);
 // Get folder tree structure
 router.get('/folders/tree/structure', FolderController.getFolderTree);
 
+// Get folder Count
+router.get('/folders-count', FolderController.getFoldersCount);
 
 /**
  * Folders Permissions Management

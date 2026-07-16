@@ -224,8 +224,7 @@ $(document).ready(function () {
         }
     
         const formData = new FormData(this);
-    
-        // ✅ Send LOCATION OBJECT
+
         formData.append('location[country]', countryData.id);
         formData.append('location[country_name]', countryData.text);
     

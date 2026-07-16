@@ -381,6 +381,148 @@ export const getMyApprovals = async (req, res) => {
     }
 };
 
+export const getMyApprovalsCounts = async (req, res) => {
+    try {
+        const user = req.user || req.session.user;
+        const userId = new mongoose.Types.ObjectId(user._id);
+        const profileType = user.profile_type;
+        const userDepartment = user.department
+            ? new mongoose.Types.ObjectId(user.department)
+            : null;
+
+        const {
+            status,
+            department,
+            createdAt,
+            createdAtStart,
+            createdAtEnd,
+            documentId
+        } = req.query;
+
+        // Base filter
+        const filter = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            documentApprovalAuthority: { $exists: true, $ne: [] }
+        };
+
+        if (profileType !== "superadmin") {
+            filter.documentApprovalAuthority = {
+                $elemMatch: {
+                    userId,
+                    isMailSent: true
+                }
+            };
+
+            const accessConditions = [
+                { owner: userId },
+                { "documentApprovalAuthority.userId": userId }
+            ];
+
+            if (userDepartment) {
+                accessConditions.push({ department: userDepartment });
+            }
+
+            filter.$or = accessConditions;
+        }
+
+        if (documentId && mongoose.Types.ObjectId.isValid(documentId)) {
+            filter._id = new mongoose.Types.ObjectId(documentId);
+        }
+
+        if (department && mongoose.Types.ObjectId.isValid(department)) {
+            filter.department = new mongoose.Types.ObjectId(department);
+        }
+
+        if (createdAtStart && createdAtEnd) {
+            const start = new Date(createdAtStart);
+            const end = new Date(createdAtEnd);
+
+            if (!isNaN(start) && !isNaN(end)) {
+                filter.createdAt = {
+                    $gte: new Date(
+                        start.getFullYear(),
+                        start.getMonth(),
+                        start.getDate(),
+                        0,
+                        0,
+                        0,
+                        0
+                    ),
+                    $lte: new Date(
+                        end.getFullYear(),
+                        end.getMonth(),
+                        end.getDate(),
+                        23,
+                        59,
+                        59,
+                        999
+                    )
+                };
+            }
+        } else if (createdAt) {
+            const [day, month, year] = createdAt.split("-").map(Number);
+
+            if (!isNaN(day)) {
+                filter.createdAt = {
+                    $gte: new Date(year, month - 1, day, 0, 0, 0, 0),
+                    $lte: new Date(year, month - 1, day, 23, 59, 59, 999)
+                };
+            }
+        }
+
+        // Filtered count (selected status)
+        const filteredFilter = { ...filter };
+
+        if (status && status !== "All") {
+            filteredFilter.status = status;
+        }
+
+        // Base filter for status-wise counts (without status)
+        const statusFilter = { ...filter };
+
+        const [filteredCount, statusAggregation] = await Promise.all([
+            Document.countDocuments(filteredFilter),
+
+            Document.aggregate([
+                { $match: statusFilter },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 }
+                    }
+                }
+            ])
+        ]);
+
+        const statusCounts = {
+            All: 0,
+            Draft: 0,
+            Pending: 0,
+            Approved: 0,
+            Rejected: 0
+        };
+
+        statusAggregation.forEach(item => {
+            statusCounts[item._id] = item.count;
+            statusCounts.All += item.count;
+        });
+
+        return res.status(200).json({
+            success: true,
+            filteredCount,
+            statusCounts
+        });
+
+    } catch (error) {
+        console.error("Error in getMyApprovalsCounts:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
+    }
+};
+
 export const getPermissionLogs = async (req, res) => {
     const ownerId = req.user._id;
     const profileType = req.session.user.profile_type;

@@ -17,7 +17,7 @@ const fileSchema = new mongoose.Schema({
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Department", default: null },
     uploadedAt: { type: Date, default: Date.now },
     isPrimary: { type: Boolean, default: false },
-    status: { type: String, enum: ["active", "archived"], default: "active" },
+    status: { type: String, enum: ["active", "archived", 'inactive'], default: "active" },
     fileSize: { type: Number, default: 0 },
     hash: { type: String },
     // Add activity tracking for files
@@ -36,6 +36,7 @@ const fileSchema = new mongoose.Schema({
 
 // Indexes
 fileSchema.index({ folder: 1, uploadedAt: -1 });
+fileSchema.index({ uploadedBy: 1 });
 fileSchema.index({ document: 1, version: -1, status: 1 });
 fileSchema.index({ "activityLog.timestamp": -1 });
 

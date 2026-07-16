@@ -222,13 +222,14 @@ export const saveSessionProject = async (req, res) => {
         }
 
         // Handle selectedYear
-        if (selectedYear) {
-            req.session.selectedYear = selectedYear;
-        } else {
-            // Clear session if selectedYear is null or not provided
-            req.session.selectedYear = null;
-        }
-
+        // if (selectedYear) {
+        //     req.session.selectedYear = selectedYear;
+        // } else {
+        //     // Clear session if selectedYear is null or not provided
+        //     req.session.selectedYear = null;
+        // }
+        // Handle selectedYear
+        req.session.selectedYear = selectedYear || new Date().getFullYear().toString();
         req.session.save((err) => {
             if (err) return res.status(500).json({ error: "Failed to save session" });
 
@@ -236,7 +237,7 @@ export const saveSessionProject = async (req, res) => {
                 success: true,
                 selectedProject: req.session.selectedProject,
                 selectedProjectName: req.session.selectedProjectName,
-                selectedYear: req.session.selectedYear,
+                selectedYear: req.session.selectedYear ,
             });
         });
     } catch (err) {
@@ -1112,6 +1113,179 @@ export const getExportFormats = async (req, res) => {
             success: false,
             message: 'Failed to get export formats',
             error: error.message
+        });
+    }
+};
+
+// GET update profile
+export const myStorage = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const projectId = req.session?.selectedProject;
+        
+        // Get year from session or use current year
+        let year = req.session?.selectedYear ? Number(req.session.selectedYear) : new Date().getFullYear();
+        
+        console.log('Year being used:', year);
+        console.log('User ID:', userId);
+
+        const MAX_STORAGE = 200 * 1024 * 1024 * 1024;
+
+        // Build match query WITHOUT date filter first to debug
+        const match = {
+            uploadedBy: new mongoose.Types.ObjectId(userId),
+            status: "active"
+        };
+
+        if (projectId) {
+            match.projectId = new mongoose.Types.ObjectId(projectId);
+        }
+
+        // FIRST: Get all files for this user (to check if any exist)
+        const allFiles = await File.find(match).select('uploadedAt fileSize fileType originalName');
+        console.log(`Total files for user: ${allFiles.length}`);
+        
+        if (allFiles.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No files found for this user",
+                data: {
+                    totalStorage: 200,
+                    usedStorage: 0,
+                    remainingStorage: 200,
+                    usedPercentage: 0,
+                    remainingPercentage: 100,
+                    documents: 0,
+                    media: 0,
+                    others: 0,
+                    documentsCount: 0,
+                    mediaCount: 0,
+                    othersCount: 0,
+                    documentsPercentage: 0,
+                    mediaPercentage: 0,
+                    othersPercentage: 0
+                }
+            });
+        }
+
+        // If no year is selected in session, don't filter by year
+        let dateMatch = { ...match };
+        
+        if (req.session?.selectedYear) {
+            // Only apply year filter if explicitly selected
+            const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+            const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0));
+            
+            dateMatch.uploadedAt = {
+                $gte: startDate,
+                $lt: endDate
+            };
+        } else {
+            // No year filter - get all files
+            console.log('No year filter - getting all files');
+        }
+
+        // Get filtered files
+        const filteredFiles = await File.find(dateMatch).select('fileType fileSize originalName uploadedAt');
+
+        // If no files in filtered results, use all files
+        const filesToProcess = filteredFiles.length > 0 ? filteredFiles : allFiles;
+        // Define categories
+        const documentTypes = [
+            'application/pdf', 'application/msword', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain', 'application/rtf',
+            'application/vnd.oasis.opendocument.text',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx'
+        ];
+        
+        const mediaTypes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp',
+            'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo',
+            'audio/mpeg', 'audio/wav', 'audio/flac',
+            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'mp4', 'mp3', 'avi', 'mov', 'wav', 'flac'
+        ];
+
+        let documentsStorage = 0;
+        let documentCount = 0;
+        let mediaStorage = 0;
+        let mediaCount = 0;
+        let othersStorage = 0;
+        let othersCount = 0;
+
+        filesToProcess.forEach(file => {
+            const fileType = file.fileType?.toLowerCase() || '';
+            const fileSize = file.fileSize || 0;
+            
+            let isDocument = documentTypes.some(type => fileType.includes(type.toLowerCase()));
+            let isMedia = mediaTypes.some(type => fileType.includes(type.toLowerCase()));
+            
+            if (isDocument && isMedia) {
+                const ext = file.originalName?.split('.').pop()?.toLowerCase() || '';
+                if (mediaTypes.some(type => ext.includes(type))) {
+                    isDocument = false;
+                } else {
+                    isMedia = false;
+                }
+            }
+            
+            if (isDocument) {
+                documentsStorage += fileSize;
+                documentCount++;
+            } else if (isMedia) {
+                mediaStorage += fileSize;
+                mediaCount++;
+            } else {
+                othersStorage += fileSize;
+                othersCount++;
+            }
+        });
+
+        // Calculate totals
+        const totalUsed = documentsStorage + mediaStorage + othersStorage;
+        const remainingStorage = Math.max(0, MAX_STORAGE - totalUsed);
+        
+        const bytesToGB = (b) => parseFloat((b / (1024 * 1024 * 1024)).toFixed(2));
+        
+        const usedGB = bytesToGB(totalUsed);
+        const remainingGB = bytesToGB(remainingStorage);
+        const usedPercent = totalUsed > 0 ? parseFloat(((totalUsed / MAX_STORAGE) * 100).toFixed(1)) : 0;
+        const remainingPercent = parseFloat((100 - usedPercent).toFixed(1));
+
+        const docPercent = totalUsed > 0 ? parseFloat(((documentsStorage / totalUsed) * 100).toFixed(1)) : 0;
+        const mediaPercent = totalUsed > 0 ? parseFloat(((mediaStorage / totalUsed) * 100).toFixed(1)) : 0;
+        const otherPercent = totalUsed > 0 ? parseFloat(((othersStorage / totalUsed) * 100).toFixed(1)) : 0;
+
+        return res.status(200).json({
+            success: true,
+            message: "My Storage fetched successfully",
+            data: {
+                totalStorage: 200,
+                usedStorage: usedGB,
+                remainingStorage: remainingGB,
+                usedPercentage: usedPercent,
+                remainingPercentage: remainingPercent,
+                documents: parseFloat(bytesToGB(documentsStorage)),
+                media: parseFloat(bytesToGB(mediaStorage)),
+                others: parseFloat(bytesToGB(othersStorage)),
+                documentsCount: documentCount,
+                mediaCount: mediaCount,
+                othersCount: othersCount,
+                documentsPercentage: docPercent,
+                mediaPercentage: mediaPercent,
+                othersPercentage: otherPercent
+            }
+        });
+
+    } catch (err) {
+        console.error("My Storage error:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message
         });
     }
 };

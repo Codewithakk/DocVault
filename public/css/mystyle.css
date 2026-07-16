@@ -45,7 +45,7 @@
         font-size: 16px;
         font-style: normal;
         font-weight: 400;
-        min-width: 150px;
+        min-width:250px;
         height: 52px;
         transition: all 0.5s;
     }
@@ -118,7 +118,7 @@
     .password-box i {
         position: absolute;
         right: 0;
-        top: 0px;
+        top: -5px;
     }
 
     .wrapotp_check {
@@ -130,21 +130,20 @@
     .otpsection .password-box span i {
         top: 8px;
     }
-
     .sm_btnsite {
         display: inline-block;
-        padding: 11px 10px;
-        min-width: 120px;
+        padding: 10px;
+        min-width: 145px;
         color: #fff;
-        border-radius: 20px;
+        border-radius: 10px;
         background: #2B1871;
-        font-size: 16.93px;
-        height: 40px;
+        font-size: 16px;
+        height: 43px;
         font-style: normal;
         font-weight: 500;
-        line-height: 11.953px;
+        line-height: normal;
     }
-
+    
     .profile-dropdown .avatar {
         margin-right: 7px;
     }
@@ -161,14 +160,14 @@
     }
 
     .bg-soft-success {
-        background: rgba(60, 149, 28, 0.17);
+        background: #c5f1d8;
     }
 
-    .card_avtr_right {
-        position: absolute;
+    /* .card_avtr_right {
+        position: relative;
         right: 12px;
         bottom: 10px;
-    }
+    } */
 
     .dflexbtwn {
         display: flex;
@@ -468,10 +467,10 @@
     }
 
     .filterbtn {
-        border-radius: 20px;
+        border-radius: 10px;
         border: 1px solid #2B1871;
         padding: 7px 20px;
-        font-size: 16px;
+        font-size: 16px; 
         font-style: normal;
         font-weight: 300;
         color: #2B1871;
@@ -608,8 +607,7 @@
     }
 
     .fldrname {
-        text-align: center;
-        max-width: 120px;
+        /* max-width: 120px; */
         margin-top: 5px;
     }
 
@@ -1021,7 +1019,7 @@
     /* sidebar */
     .arrow-icon {
         transition: transform 0.3s ease;
-        margin-right: 5px;
+        margin-left: 5px;
         /* space between arrow and folder icon */
         display: inline-block;
     }
@@ -1135,6 +1133,100 @@
         max-width: 90% !important;
         z-index: 999999 !important;
     }
+
+
+    .dashboardtop-card .card-body{ display: flex; gap:15px; }
+
+    .storage-distrbuted {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .storage-distrbuted .folder-wrap {
+        width: 32%;
+    }
+
+    .icon-20 { height: 20px !important; width: 20px !important;}
+
+    .folder_links .btn .ti-dots {
+        transform: rotate(90deg);
+        display: inline-block;
+    }
+
+
+    .status-tab.btn-outline-info.btn-active:focus { background: #fff !important; }
+
+    .bg-soft-infos {
+        background-color: #edf3ff;
+        color: #29156e;
+    }
+
+    .loginheadwrap {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .lgnhdicon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .lgnhdicon i {
+        font-size: 34px;
+    }
+    .fieldwrap input {
+        padding-left: 42px;
+    }
+
+    .fieldwrap > i {
+        position: absolute;
+        left: 15px;
+        top: 20px;
+        width: 20px;
+    }
+
+    .fieldwrap {
+        position: relative;
+    }
+
+    span.truncate-recent { margin-right: 0 !important; margin-left: 5px; }
+
+    a.menu-link.recent-toggle.active {
+        color: #fff !important;
+    }
+
+
+    @media(max-width:1500px) {
+        .header #globalSearchInput {
+            width: 260px;
+        }
+    }
+    
+    @media(max-width:1440px) {
+        .header #toggle_btn {
+            margin-right: 12px !important;
+        }
+        .header .me-4 {
+            margin-right: 10px !important;
+        }
+
+        .sm_btnsite { min-width:130px; }
+
+    }
+
+    @media (max-width: 1300px) {
+        .header .me-4 {
+            margin-right: 5px !important;
+        }
+        .lgnhdtxt h2 { font-size: 28px; }
+    }
+
 
     /* Mobile adjustments */
     @media (max-width: 767px) {

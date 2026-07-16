@@ -16,7 +16,7 @@ async function loadSidebar() {
             if (item.type === 'Dashboard') return 'ti ti-layout-dashboard';
             if (item.type === 'Document') return 'ti ti-files';
             if (item.type === 'File') return 'ti ti-file';
-            return 'ti ti-folder-filled';
+            return 'ti ti-folder';
         };
 
         const buildMenu = (items) => {
@@ -31,9 +31,9 @@ async function loadSidebar() {
                     return `
         <li class="submenu">
             <a href="javascript:void(0);" class="menu-link" ${titleAttr}>
-                <i class="ti ti-chevron-down arrow-icon"></i>
                 <i class="${iconClass}"></i>
                 <span class="menuname">${title}</span>
+                <i class="ti ti-chevron-down arrow-icon"></i>       
             </a>
             <ul class="dropdown_wrap" style="display:none;">
                 ${buildMenu(children)}
@@ -61,11 +61,10 @@ async function loadSidebar() {
 
                 return `
                     <li class="recent-parent" data-folder="${item.folderId}">
-                       <a href="${hasChildren ? 'javascript:void(0);' : `/folders/viewer/${item.folderId}`}"
-   class="menu-link recent-toggle" ${titleAttr}>
-                            <i class="ti ti-chevron-down arrow-icon"></i>
-                            <i class="ti ti-folder-filled"></i>
+                       <a href="${hasChildren ? 'javascript:void(0);' : `/folders/viewer/${item.folderId}`}"  class="menu-link recent-toggle" ${titleAttr}>
+                            <i class="ti ti-folder"></i>
                             <span class="truncate-recent">${title}</span>
+                            <span class="ti ti-chevron-down arrow-icon"></span>
                         </a>
                         ${hasChildren ? `
                             <ul class="dropdown_wrap recent-child" style="display:none;">
@@ -99,10 +98,10 @@ async function loadSidebar() {
         if (recentData.success && recentData.recentFolders?.length) {
             menuHtml += `
                 <li class="submenu">
-                    <a href="javascript:void(0);" class="menu-link">
-                        <span class="ti ti-chevron-down arrow-icon"></span>
-                        <i class="ti ti-folder-filled"></i>
+                    <a href="javascript:void(0);" class="menu-link">                        
+                        <i class="ti ti-folder"></i>
                         <span class="menuname recenthistorymenu">Recent History</span>
+                        <span class="ti ti-chevron-down arrow-icon"></span>
                     </a>
                     <ul class="dropdown_wrap recent-folder-wrap" style="display:none;">
                         ${recentData.recentFolders.map(project => {
@@ -111,9 +110,9 @@ async function loadSidebar() {
                 return `
                                 <li class="submenu">
                                     <a href="javascript:void(0);" class="menu-link" ${projectTooltip}>
-                                        <span class="ti ti-chevron-down arrow-icon"></span>
-                                        <i class="ti ti-folder-filled"></i>
+                                        <i class="ti ti-folder"></i>
                                         <span class="menuname recenthistorymenu">${projectTitle}</span>
+                                        <span class="ti ti-chevron-down arrow-icon"></span>
                                     </a>
                                     <ul class="dropdown_wrap" style="display:none;">
                                         ${buildRecentMenu(project.folders)}

@@ -33,6 +33,7 @@
                                 <tr>
                                     <th>Sr No.</th>
                                     <th>Name</th>
+                                    <th>Short Name</th>
                                     <th>Priority</th>
                                     <th>Status</th>
                                     <th>Added By</th>
@@ -84,6 +85,7 @@
                     <tr>
                         <td>${index + 1}</td>
                         <td>${dept.name}</td>
+                        <td>${dept.shortName || 'N/A'}</td>
                         <td>${dept.priority}</td>
                         <td>${dept.status}</td>
                         <td>${addedBy}</td>

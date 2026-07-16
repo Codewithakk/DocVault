@@ -6,8 +6,13 @@ export const createDepartmentValidator = [
     body("name")
         .trim()
         .notEmpty().withMessage("Department name is required")
-        .isLength({ min: 2, max: 50 }).withMessage("Name must be 2-50 characters long")
+        .isLength({ min: 2, max: 250 }).withMessage("Name must be 2-250 characters long")
         .matches(/^[a-zA-Z0-9\s\-]+$/).withMessage("Name contains invalid characters"),
+    body("shortName")
+        .trim()
+        .notEmpty().withMessage("Department Short name is required")
+        .isLength({ min: 2, max: 50 }).withMessage("Short Name must be 2-50 characters long")
+        .matches(/^[a-zA-Z0-9\s\-]+$/).withMessage("Short Name contains invalid characters"),
 
     body("priority")
         .optional()
@@ -29,6 +34,12 @@ export const updateDepartmentValidator = [
         .trim()
         .isLength({ min: 2, max: 250 }).withMessage("Name must be 2-250 characters long")
         .matches(/^[a-zA-Z0-9\s\-]+$/).withMessage("Name contains invalid characters"),
+    
+    body("shortName")
+        .trim()
+        .notEmpty().withMessage("Department Short name is required")
+        .isLength({ min: 2, max: 50 }).withMessage("Short Name must be 2-50 characters long")
+        .matches(/^[a-zA-Z0-9\s\-]+$/).withMessage("Short Name contains invalid characters"),
 
     body("priority")
         .optional()

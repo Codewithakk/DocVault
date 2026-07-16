@@ -13,21 +13,75 @@
                             <li class="breadcrumb-item">Approvals</li>
                         </ol>
                     </nav>
-                </div>
+                </div> 
             </div>
             <!-- /Breadcrumb -->
 
             <div class="row">
                 <div class="seprate_crdhdr mb-4">
-                    <div class="dflexbtwn">
-                        <div class="filterbtn_wrps">
+                    <div class="d-flex flex-column gap-4 align-items-start">
+                        <div class="d-flex flex-wrap gap-3 mb-2">
+                            <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 filterbtn status-tab" data-filter="All">
+                                <span class="avatar avatar-lg bg-soft-primary text-primary">
+                                    <i class="ti ti-folder fs-24"></i>
+                                </span>
+                                <div class="fltrtxt text-start">
+                                    <h5 class="fs-14 mb-1 fw-medium">All</h5>
+                                    <h4 class="fs-21 mb-1">0</h4>
+                                    <p class="text-gray-7 fw-normal">Documents</p>
+                                </div>                            
+                            </button>
+                            <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 filterbtn status-tab" data-filter="Pending">
+                                <span class="avatar avatar-lg bg-soft-warning text-warning">
+                                    <i class="ti ti-clock fs-24"></i>
+                                </span>
+                                <div class="fltrtxt text-start">
+                                    <h5 class="fs-14 mb-1 fw-medium">Pending</h5>
+                                    <h4 class="fs-21 mb-1">0</h4>
+                                    <p class="text-gray-7 fw-normal">Documents</p>
+                                </div>                            
+                            </button>
+                            <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 filterbtn status-tab" data-filter="Approved">
+                                <span class="avatar avatar-lg bg-soft-success text-success">
+                                    <i class="ti ti-folder-check fs-24"></i>
+                                </span>
+                                <div class="fltrtxt text-start">
+                                    <h5 class="fs-14 mb-1 fw-medium">Approved</h5>
+                                    <h4 class="fs-21 mb-1">0</h4>
+                                    <p class="text-gray-7 fw-normal">Documents</p>
+                                </div>                            
+                            </button>
+                            <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 filterbtn status-tab" data-filter="Rejected">
+                                <span class="avatar avatar-lg bg-soft-danger text-danger">
+                                    <i class="ti ti-folder-x fs-24"></i>
+                                </span>
+                                <div class="fltrtxt text-start">
+                                    <h5 class="fs-14 mb-1 fw-medium">Rejected</h5>
+                                    <h4 class="fs-21 mb-1">0</h4>
+                                    <p class="text-gray-7 fw-normal">Documents</p>
+                                </div>                            
+                            </button>
+                            <!-- <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 filterbtn status-tab" data-filter="Draft">
+                                <span class="avatar avatar-lg bg-soft-primary text-primary">
+                                    <i class="ti ti-folder-pause fs-24"></i>
+                                </span>
+                                <div class="fltrtxt text-start">
+                                    <h5 class="fs-14 mb-1 fw-medium">Draft</h5>
+                                    <h4 class="fs-21 mb-1">1</h4>
+                                    <p class="text-gray-7 fw-normal">Documents</p>
+                                </div>                            
+                            </button> -->
+                        </div>
+
+
+                        <!-- <div class="filterbtn_wrps">
                             <button class="btn filterbtn active" data-filter="">All</button>
                             <button class="btn filterbtn" data-filter="Pending">Pending</button>
                             <button class="btn filterbtn" data-filter="Rejected">Rejected</button>
                             <button class="btn filterbtn" data-filter="Approved">Approved</button>
                             <button class="btn filterbtn" data-filter="Draft">Draft</button>
-                        </div>
-                        <div class="d-flex gap-2 align-items-center">
+                        </div> -->
+                        <div class="d-flex gap-2 align-items-end">
                             <div class="mb-0">
                                 <select id="department" class="form-select select2" style="width: 200px;"></select>
                             </div>
@@ -184,7 +238,6 @@
         <!-- Scripts -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 const baseUrl = window.location.origin;
@@ -192,6 +245,8 @@
                 let currentRow = null;
                 let currentMode = 'approve';
                 const documentId = "<%= documentId %>";
+                let selectedDateRange = null;
+        
                 // File Icons
                 const fileIcons = {
                     xls: "/img/icons/fn3.png", xlsx: "/img/icons/fn3.png",
@@ -200,30 +255,67 @@
                     ppt: "/img/icons/fn1.png", pptx: "/img/icons/fn1.png",
                     default: "/img/icons/fn1.png"
                 };
-
+        
                 function getFileIcon(filename) {
                     const ext = filename?.split('.').pop()?.toLowerCase();
                     return fileIcons[ext] || fileIcons.default;
                 }
-
+        
                 function formatFileSize(bytes) {
                     if (!bytes) return '0 KB';
                     const kb = bytes / 1024;
                     return kb < 1024 ? `${kb.toFixed(1)} KB` : `${(kb / 1024).toFixed(1)} MB`;
                 }
-
+        
                 function formatDate(dateStr) {
                     if (!dateStr) return 'Not set';
                     return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 }
-
+        
+                function formatDateTime(dateStr) {
+                    if (!dateStr) return '-';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + 
+                           ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                }
+        
                 function stripHtml(html) {
                     const div = document.createElement('div');
                     div.innerHTML = html || '';
                     return div.textContent || div.innerText || '';
                 }
-                let selectedDateRange = null;
-
+        
+                // === APPROVAL COUNTS INTEGRATION ===
+                async function updateApprovalCounts() {
+                    try {
+                        const department = $('#department').val() || '';
+                        let dateParams = '';
+                        
+                        if (selectedDateRange && selectedDateRange.start && selectedDateRange.end) {
+                            dateParams = `&createdAtStart=${selectedDateRange.start.toISOString()}&createdAtEnd=${selectedDateRange.end.toISOString()}`;
+                        }
+        
+                        const url = `/api/my-approvals-counts?department=${department}${dateParams}`;
+                        const response = await fetch(url);
+                        const result = await response.json();
+        
+                        if (result.success) {
+                            const counts = result.statusCounts;
+                            
+                            // Update each status count badge
+                            document.querySelectorAll('.status-tab').forEach(btn => {
+                                const status = btn.getAttribute('data-filter');
+                                const countElement = btn.querySelector('h4.fs-21');
+                                if (countElement && counts[status] !== undefined) {
+                                    countElement.textContent = counts[status];
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error fetching approval counts:', error);
+                    }
+                }
+        
                 // Initialize flatpickr on the #documentDate input
                 const fp = flatpickr("#documentDate", {
                     mode: "range",
@@ -231,7 +323,7 @@
                     allowInput: false,
                     clickOpens: true,
                     locale: { rangeSeparator: " to " },
-
+        
                     onChange: function (selectedDates, dateStr, instance) {
                         if (selectedDates.length === 2) {
                             selectedDateRange = {
@@ -239,39 +331,41 @@
                                 end: selectedDates[1]
                             };
                             document.getElementById("clearDateRange").style.display = "block";
-                            table.ajax.reload(); // reload table with range
+                            table.ajax.reload();
+                            updateApprovalCounts(); // Update counts when date range changes
                         }
                     },
-
+        
                     onClose: function (selectedDates) {
-                        // if partial selection (only one date) — clear to avoid confusion
                         if (selectedDates.length === 1) {
                             setTimeout(() => fp.clear(), 100);
                             selectedDateRange = null;
                             document.getElementById("clearDateRange").style.display = "none";
                             table.ajax.reload();
+                            updateApprovalCounts();
                         }
-
-                        // if fully cleared
+        
                         if (selectedDates.length === 0) {
                             selectedDateRange = null;
                             document.getElementById("clearDateRange").style.display = "none";
                             table.ajax.reload();
+                            updateApprovalCounts();
                         }
                     }
                 });
-
+        
                 // Hide clear button initially
                 document.getElementById("clearDateRange").style.display = "none";
-
+        
                 // Clear button functionality
                 document.getElementById("clearDateRange").addEventListener("click", function () {
                     fp.clear();
                     selectedDateRange = null;
                     this.style.display = "none";
                     table.ajax.reload();
+                    updateApprovalCounts();
                 });
-
+        
                 // Populate Modal
                 function populateModal(data, mode = 'approve', remark = '') {
                     const doc = data.data.document;
@@ -279,7 +373,7 @@
                     const docId = doc._id;
                     document.getElementById('modalLoading').style.display = 'none';
                     document.getElementById('modalContent').style.display = 'block';
-
+        
                     // Static Data
                     document.getElementById('modalOwnerName').textContent = doc.owner?.name || 'User';
                     const version = doc.versioning?.currentVersion?.$numberDecimal || '1.0';
@@ -292,7 +386,7 @@
                     document.getElementById('modalCompliance').textContent = doc.compliance?.isCompliance ? 'Yes' : 'No';
                     document.getElementById('modalExpiryDate').textContent = doc.compliance?.expiryDate ? formatDate(doc.compliance.expiryDate) : 'Not set';
                     document.getElementById('modalNotifyText').textContent = `${doc.owner?.name || 'User'} and other approver members will be notified`;
-
+        
                     // Dynamic UI Based on Mode
                     const toggle = document.getElementById('approvalToggle');
                     const commentBox = document.getElementById('modalComment');
@@ -300,7 +394,7 @@
                     const footer = document.getElementById('modalFooter');
                     const title = document.getElementById('approvalModalLabel');
                     const optional = document.getElementById('commentOptional');
-
+        
                     if (mode === 'view') {
                         title.textContent = 'View Approval';
                         toggle.style.display = 'none';
@@ -316,23 +410,19 @@
                         submitBtn.classList.replace('btn-success', 'btn-primary');
                         commentBox.removeAttribute('readonly');
                         optional.textContent = '';
-
-                        // Keep current status reflected
+        
                         const approveBtn = document.getElementById('approveBtn');
                         const declineBtn = document.getElementById('declineBtn');
-
-                        // Determine the user's current approval status
-                        const currentUser = data.data.currentUser || {}; // optional, depending on your API
+        
+                        const currentUser = data.data.currentUser || {};
                         const currentAuthority = (data.data.document.documentApprovalAuthority || [])
                             .find(a => a.userId?._id === currentUser._id);
-
+        
                         const currentStatus = currentAuthority?.status || data.data.currentStatus || 'Pending';
-
-                        // Highlight the current status
+        
                         approveBtn.classList.toggle('active', currentStatus === 'Approved');
                         declineBtn.classList.toggle('active', currentStatus === 'Rejected');
-
-                        // Attach toggle handlers
+        
                         approveBtn.onclick = () => {
                             approveBtn.classList.add('active');
                             declineBtn.classList.remove('active');
@@ -342,9 +432,7 @@
                             approveBtn.classList.remove('active');
                         };
                     }
-
                     else {
-                        // approve mode
                         title.textContent = 'Action Approval Request';
                         toggle.style.display = 'flex';
                         submitBtn.style.display = 'inline-block';
@@ -353,21 +441,18 @@
                         commentBox.removeAttribute('readonly');
                         optional.textContent = '(optional)';
                     }
-
-                    // Set comment
+        
                     commentBox.value = remark;
-
-                    // Reset toggle state
+        
                     if (mode === 'approve') {
                         const approveBtn = document.getElementById('approveBtn');
                         const declineBtn = document.getElementById('declineBtn');
                         const discussionBtn = document.getElementById('needDiscussionBtn');
-                        // Reset active states
+                        
                         approveBtn.classList.add('active');
                         declineBtn.classList.remove('active');
                         discussionBtn.classList.remove('active');
-
-                        // Add click handlers
+        
                         approveBtn.onclick = () => {
                             approveBtn.classList.add('active');
                             declineBtn.classList.remove('active');
@@ -385,7 +470,7 @@
                         };
                     }
                 }
-
+        
                 // Load Document Data
                 async function loadDocument(docId) {
                     try {
@@ -399,68 +484,65 @@
                         return null;
                     }
                 }
-
+        
                 // Open Modal with Mode
                 $(document).on('click', '.openApprovalModal', async function () {
                     const docId = this.getAttribute('data-id');
                     const approverStat = this.getAttribute('data-status');
                     const remark = this.getAttribute('data-remark') || '';
-                    const outerStat = this.getAttribute('data-outer-status');  // NEW
-
+                    const outerStat = this.getAttribute('data-outer-status');
+        
                     currentDocumentId = docId;
                     currentRow = $(this).closest('tr');
-
-                    // FORCE VIEW MODE IF DOCUMENT IS ALREADY APPROVED
+        
                     let mode = 'approve';
                     if (outerStat === 'Approved') {
                         mode = 'view';
                     } else {
                         mode = approverStat === 'Approved' ? 'edit'
                             : approverStat === 'Rejected' ? 'view'
-                                : 'approve';
+                            : 'approve';
                     }
-
+        
                     currentMode = mode;
-
-                    // Show loading
+        
                     document.getElementById('modalLoading').style.display = 'block';
                     document.getElementById('modalContent').style.display = 'none';
-
+        
                     const data = await loadDocument(docId);
                     if (data) {
                         populateModal(data, mode, remark);
                     }
-
+        
                     const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
                     modal.show();
                 });
-
+        
                 // Submit Approval / Edit
                 document.getElementById('submitApprovalBtn').addEventListener('click', async () => {
                     if (!currentDocumentId || currentMode === 'view') return;
-
+        
                     const submitBtn = document.getElementById('submitApprovalBtn');
                     const approveBtn = document.getElementById('approveBtn');
                     const declineBtn = document.getElementById('declineBtn');
                     const discussionBtn = document.getElementById('needDiscussionBtn');
                     const comment = document.getElementById('modalComment').value.trim();
-                    // Detect which action user selected
+                    
                     let action = 'approve';
                     if (declineBtn.classList.contains('active')) {
                         action = 'reject';
                     } else if (discussionBtn.classList.contains('active')) {
                         action = 'need_discussion';
                     }
-
-                    // For "Need Discussion", remark is compulsory
+        
                     if (action === 'need_discussion' && !comment) {
                         showToast('Please enter a remark for discussion.', 'error');
                         return;
                     }
-
+        
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-
+        
                     try {
                         const res = await fetch(`/api/documents/${currentDocumentId}/approval`, {
                             method: 'PATCH',
@@ -468,14 +550,15 @@
                             body: JSON.stringify({ action, comment })
                         });
                         const result = await res.json();
-
+        
                         if (res.ok && result.success) {
                             const modalInstance = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
                             if (modalInstance) modalInstance.hide();
                             await refreshRowOnly(currentDocumentId);
                             showToast(result.message || `Action submitted successfully!`, 'success');
+                            updateApprovalCounts(); // Update counts after approval action
                         } else {
-                            showToast(result.message || 'Operation failed', 'success');
+                            showToast(result.message || 'Operation failed', 'error');
                         }
                     } catch (err) {
                         console.error(err);
@@ -485,23 +568,22 @@
                         submitBtn.innerHTML = 'Submit';
                     }
                 });
-
+        
                 // Refresh only one row after edit/approve
                 async function refreshRowOnly(docId) {
                     const table = $('#approvalsTable').DataTable();
-
+        
                     try {
                         const res = await fetch(`/api/my-approvals?docId=${docId}&limit=1`);
                         const json = await res.json();
                         const newData = json.data?.[0];
-
+        
                         if (newData && currentRow) {
-                            // Find row in DataTable by document ID to ensure proper redraw
                             const rowIndex = table.rows().eq(0).filter((idx) => {
                                 const data = table.row(idx).data();
                                 return data && data._id === docId;
                             });
-
+        
                             if (rowIndex.length) {
                                 table.row(rowIndex[0]).data(newData).draw(false);
                             }
@@ -510,7 +592,7 @@
                         console.error('Row refresh failed', err);
                     }
                 }
-
+        
                 // Initialize Select2
                 $('#department').select2({
                     placeholder: '-- Select Department --',
@@ -525,10 +607,10 @@
                         })
                     }
                 });
-
+        
                 // Initialize Datepicker
                 flatpickr(".datetimepicker", { dateFormat: "Y-m-d", allowInput: true });
-
+        
                 // DataTable
                 const table = $('#approvalsTable').DataTable({
                     processing: true,
@@ -537,14 +619,13 @@
                         const page = Math.floor(data.start / data.length) + 1;
                         const limit = data.length;
                         let sortField = 'createdAt', sortOrder = 'desc';
-
+        
                         if (data.order?.length) {
                             const colMap = { 1: 'metadata.fileName', 2: 'createdAt', 3: 'documentDonor.name' };
                             sortField = colMap[data.order[0].column] || 'createdAt';
                             sortOrder = data.order[0].dir;
                         }
-
-                        // Build params
+        
                         const params = {
                             page, limit,
                             status: $('.filterbtn.active').data('filter'),
@@ -552,17 +633,14 @@
                             sortField, sortOrder,
                             documentId: documentId || ''
                         };
-
-                        // If a date range is selected send ISO start/end
+        
                         if (selectedDateRange && selectedDateRange.start && selectedDateRange.end) {
-                            // We send ISO strings so backend can parse easily.
                             params.createdAtStart = selectedDateRange.start.toISOString();
                             params.createdAtEnd = selectedDateRange.end.toISOString();
                         } else {
-                            // keep backward compatibility: if you ever use single-date, you can send createdAt in d-m-Y format
                             params.createdAt = '';
                         }
-
+        
                         $.get(`/api/my-approvals`, params, res => {
                             callback({
                                 draw: data.draw,
@@ -581,33 +659,21 @@
                             render: (data, type, row) => {
                                 const version = row.currentVersionNumber?.$numberDecimal || row.currentVersionLabel || '1.0';
                                 const fileId = row.files?._id || '';
-
+        
                                 return `
-        <div class="btn-group" role="group">
-            <button type="button" class="btn border-0" data-bs-toggle="dropdown">
-                <i class="ti ti-settings"></i>
-            </button>
-
-            <ul class="dropdown-menu">
-                <li>
-                    <a class="dropdown-item" 
-                       href="/documents/${row._id}/versions/view?version=${version}">
-                        <i class="ti ti-eye"></i> View
-                    </a>
-                </li>
-  <!--
-    <li>
-        <a class="dropdown-item"
-           href="#"
-           data-bs-toggle="modal"
-           data-file-id="${fileId}"
-           data-bs-target="#downloaddoc-modal">
-            <i class="ti ti-download"></i> Download
-        </a>
-    </li>
-    -->
-            </ul>
-        </div>`;
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                                            <i class="ti ti-settings"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" 
+                                                   href="/documents/${row._id}/versions/view?version=${version}">
+                                                    <i class="ti ti-eye"></i> View
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>`;
                             }
                         },
                         {
@@ -621,15 +687,15 @@
                                 const version = row.currentVersionNumber?.$numberDecimal || row.currentVersionLabel || '1.0';
                                 const icon = getFileIcon(fileIcon);
                                 return `<div class="flxtblleft">
-                            <span class="avatar rounded bg-light mb-2"><img src="${icon}" alt="icon"></span>
-                            <div class="flxtbltxt">
-                                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName} <span class="text-success">v${version}</span></p>
-                                <span class="fs-11 fw-light text-black">${fileSize}</span>
-                            </div>
-                        </div>`;
+                                            <span class="avatar rounded bg-light mb-2"><img src="${icon}" alt="icon"></span>
+                                            <div class="flxtbltxt">
+                                                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName} <span class="text-success">v${version}</span></p>
+                                                <span class="fs-11 fw-light text-black">${fileSize}</span>
+                                            </div>
+                                        </div>`;
                             }
                         },
-                        { data: "createdAt", render: d => formatDateTime(d)},
+                        { data: "createdAt", render: d => formatDateTime(d) },
                         { data: "documentDonor.name", defaultContent: '-' },
                         { data: "department.name", defaultContent: '-' },
                         {
@@ -651,15 +717,15 @@
                                         new Date(a.approvedOn || a.addDate) >
                                             new Date(b.approvedOn || b.addDate) ? a : b)
                                     : null;
-
+        
                                 const approverStatus = latest?.status || 'Pending';
                                 const remark = latest?.remark || '';
                                 const outerStatus = row.status;
-
+        
                                 let mode = 'approve';
                                 let label = 'Approve';
                                 let btnCls = 'adminapprv_btn';
-
+        
                                 if (outerStatus === 'Approved') {
                                     mode = 'view';
                                     label = 'View';
@@ -670,42 +736,78 @@
                                         Approved: { label: 'Edit', class: 'adminapprv_btn bg-primary', mode: 'edit' },
                                         Rejected: { label: 'View', class: 'btn btn-light', mode: 'view' }
                                     };
-
+        
                                     const cfg = config[approverStatus] || config['Pending'];
-
+        
                                     label = cfg.label;
                                     btnCls = cfg.class;
                                     mode = cfg.mode;
                                 }
-
+        
                                 return `
-    <button class="${btnCls} openApprovalModal"
-            data-id="${row._id}"
-            data-status="${approverStatus}"
-            data-remark="${remark}"
-            data-mode="${mode}"
-            data-outer-status="${outerStatus}">  <!-- ADD THIS -->
-        ${label}
-    </button>`;
+                                    <button class="${btnCls} openApprovalModal"
+                                            data-id="${row._id}"
+                                            data-status="${approverStatus}"
+                                            data-remark="${remark}"
+                                            data-mode="${mode}"
+                                            data-outer-status="${outerStatus}">
+                                        ${label}
+                                    </button>`;
                             }
                         },
-                        { data: "_id", render: id => `<a href="/document/${id}/approval/track" class="site-btnmd">Track</a>` },
+                        { 
+                            data: "_id", 
+                            render: id => `<a href="/document/${id}/approval/track" class="site-btnmd">Track</a>` 
+                        },
                         {
-                            data: null, render: (data, type, row) => {
+                            data: null, 
+                            render: (data, type, row) => {
                                 const latest = (row.documentApprovalAuthority || []).reduce((a, b) => new Date(a.approvedOn || a.addDate) > new Date(b.approvedOn || b.addDate) ? a : b, {});
                                 return latest?.remark ? `<p class="mb-0 text-truncate" style="max-width:150px;" title="${latest.remark}">${latest.remark}</p>` : '-';
                             }
                         }
-                    ]
+                    ],
+                    order: [[2, 'desc']],
+                    pageLength: 10,
+                    responsive: true,
+                    language: {
+                        processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
+                    }
                 });
-
-                // Filters
+        
+                // === UPDATED: Filter handlers with count updates ===
                 $('.filterbtn').on('click', function () {
                     $('.filterbtn').removeClass('active');
                     $(this).addClass('active');
                     table.ajax.reload();
+                    updateApprovalCounts();
                 });
-
-                $('#department').on('change', () => table.ajax.reload());
+        
+                $('#department').on('change', function () {
+                    table.ajax.reload();
+                    updateApprovalCounts();
+                });
+        
+                // Initial load of counts
+                updateApprovalCounts();
+        
+                // Toast notification helper (if not already defined)
+                function showToast(message, type = 'success') {
+                    const toast = document.createElement('div');
+                    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} border-0`;
+                    toast.role = 'alert';
+                    toast.ariaLive = 'assertive';
+                    toast.ariaAtomic = 'true';
+                    toast.innerHTML = `
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+                    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+                    bsToast.show();
+                    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+                }
             });
         </script>

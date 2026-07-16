@@ -13,6 +13,8 @@ import { parseDateDDMMYYYY } from "../utils/formatDate.js";
 import { API_CONFIG } from "../config/ApiEndpoints.js";
 import { generateEmailTemplate } from "../helper/emailTemplate.js";
 import { activityLogger } from "../helper/activityLogger.js";
+import mongoose from "mongoose";
+import MenuAssignment from "../models/MenuAssignment.js";
 //page routes controllers
 
 // GET /users/list
@@ -176,6 +178,33 @@ export const registerUser = async (req, res) => {
             });
         }
 
+        // Validate that designation is provided
+        if (!designation) {
+            return res.status(400).json({
+                success: false,
+                message: "Designation is required to assign menu permissions"
+            });
+        }
+
+        // Find the designation ID from the designation name or ID
+        let designationId = designation;
+        
+        // If designation is a string (name), find the designation document
+        if (typeof designation === 'string' && !mongoose.Types.ObjectId.isValid(designation)) {
+            const Designation = mongoose.model('Designation');
+            const designationDoc = await Designation.findOne({ 
+                name: { $regex: new RegExp(`^${designation}$`, 'i') } 
+            });
+            
+            if (!designationDoc) {
+                return res.status(404).json({
+                    success: false,
+                    message: `Designation "${designation}" not found`
+                });
+            }
+            designationId = designationDoc._id;
+        }
+
         const newUser = new User({
             name,
             email,
@@ -188,7 +217,7 @@ export const registerUser = async (req, res) => {
             userDetails: {
                 employee_id,
                 department,
-                designation,
+                designation: typeof designation === 'string' ? designation : designation.name, // Store the name
             },
 
             address: address?.trim() || null,
@@ -207,25 +236,35 @@ export const registerUser = async (req, res) => {
         });
 
         await newUser.save();
-        // === Assign ALL MENU PERMISSIONS ===
-        const allMenus = await Menu.find({});
-        if (allMenus.length > 0) {
-            const permissionDocs = allMenus.map(menu => ({
+
+        // === ASSIGN MENU PERMISSIONS BASED ON DESIGNATION ===
+        // Get menu assignments for this designation
+        const menuAssignments = await MenuAssignment.find({ 
+            designation_id: designationId 
+        }).populate('menu_id');
+
+        if (menuAssignments.length > 0) {
+            const permissionDocs = menuAssignments.map(assignment => ({
                 user_id: newUser._id,
-                menu_id: menu._id,
+                menu_id: assignment.menu_id._id,
                 permissions: {
-                    read: true,
-                    write: true,
-                    delete: true
+                    read: assignment.permissions?.read ?? true,
+                    write: assignment.permissions?.write ?? true,
+                    delete: assignment.permissions?.delete ?? true,
                 },
                 assigned_by: {
                     user_id: req.user._id,
                     name: req.user.name,
                     email: req.user.email,
                 },
+                assigned_date: new Date()
             }));
 
             await UserPermission.insertMany(permissionDocs);
+        } else {
+            // Optional: Assign default read-only permissions or no permissions
+            // You can also log this for monitoring
+            logger.warn(`No menu assignments found for designation: ${designation}`);
         }
 
         // Send welcome email
@@ -251,14 +290,17 @@ export const registerUser = async (req, res) => {
         await activityLogger({
             actorId: req.user._id,
             action: "ADDED_USER",
-            details: `User Added by ${req.user?.name}`,
-            meta: { email }
+            details: `User Added by ${req.user?.name} with designation ${designation}`,
+            meta: { email, designation }
         });
 
         res.status(201).json({
             success: true,
-            message: "User registered successfully and assigned all menu permissions.",
-            data: { user: newUser },
+            message: `User registered successfully and assigned menu permissions based on designation.`,
+            data: { 
+                user: newUser,
+                assigned_menus: menuAssignments.length
+            },
         });
 
     } catch (error) {
@@ -279,16 +321,45 @@ export const getAllUsers = async (req, res) => {
         const search = req.query.search || "";
         const sortBy = req.query.sortBy || "createdAt";
         const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
-
+        const designationIds = search
+        ? await Designation.find({
+              name: { $regex: search, $options: "i" }
+          }).distinct("_id")
+        : [];
+    
+    const departmentIds = search
+        ? await Department.find({
+              name: { $regex: search, $options: "i" }
+          }).distinct("_id")
+        : [];
         // Build filter
         const filter = {
             profile_type,
             $or: [
                 { name: { $regex: search, $options: "i" } },
                 { email: { $regex: search, $options: "i" } },
+                { status: { $regex: search, $options: "i" } },
+        
                 ...(search
-                    ? [{ $expr: { $regexMatch: { input: { $toString: "$phone_number" }, regex: search, options: "i" } } }]
-                    : [])
+                    ? [
+                          {
+                              $expr: {
+                                  $regexMatch: {
+                                      input: { $toString: "$phone_number" },
+                                      regex: search,
+                                      options: "i"
+                                  }
+                              }
+                          }
+                      ]
+                    : []),
+        
+                {
+                    "userDetails.designation": { $in: designationIds }
+                },
+                {
+                    "userDetails.department": { $in: departmentIds }
+                }
             ]
         };
 

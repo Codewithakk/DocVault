@@ -242,7 +242,6 @@ export const viewDocumentFiles = async (req, res) => {
         }
 
         // Check if document is deleted, archived, or expired
-        console.log("🔐 Checking permissions for document:", documentId, "User:", req.user?._id);
         let expiredMessage = null;
         let docExpired = false;
 
@@ -265,9 +264,6 @@ export const viewDocumentFiles = async (req, res) => {
             expiredMessage = "This document has expired due to compliance rules.";
             docExpired = true;
         }
-
-        // Permission check for private documents
-        // ✅ Unified permission handling (public + private)
         if (!docExpired) {
             let canView = false;
             let canEdit = false;
@@ -330,18 +326,8 @@ export const viewDocumentFiles = async (req, res) => {
                 }
             }
         
-            // ✅ Set final permissions
+            // Set final permissions
             req.filePermissions = { canView, canEdit, canDownload };
-        
-            // 🔍 Debug
-            console.log("🔐 Final Permission:", {
-                isPublic: document.ispublic,
-                userId,
-                sharedRecord,
-                canView,
-                canEdit,
-                canDownload
-            });
         }
         
 
@@ -366,13 +352,6 @@ export const viewDocumentFiles = async (req, res) => {
                     file.canView = req.filePermissions?.canView || false;
                     file.canEdit = req.filePermissions?.canEdit || false;
                     file.canDownload = req.filePermissions?.canDownload || false;
-                    // 🔍 DEBUG LOG PER FILE
-                    console.log("📁 File Permissions:", {
-                        fileName: file.originalName,
-                        canView: file.canView,
-                        canEdit: file.canEdit,
-                        canDownload: file.canDownload
-                    });
                 }
             }
         }
@@ -630,23 +609,33 @@ export const getDocuments = async (req, res) => {
 
         const userId = req.user?._id;
         const profile_type = req.user?.profile_type;
+        console.log("userId", userId)
         // --- Base filter ---
         const filter = {
             isDeleted: false,
             isArchived: false,
         };
+
         /** -------------------- DOCUMENT ID FILTER -------------------- **/
         if (documentId && mongoose.Types.ObjectId.isValid(documentId)) {
             filter._id = documentId;
         }
 
+        // --- FIXED ACCESS CONTROL ---
+        // Superadmin: can see all documents (no restrictions)
+        // Admin: can see their own documents + documents they own
+        // User: can see their own documents
+        // Vendor/Donor: can see Approved documents where they are the vendor/donor
+        
         if (profile_type !== "superadmin") {
             const accessRules = [];
 
+            // For admin and user, they can only see documents they own
             if (profile_type === "admin" || profile_type === "user") {
                 accessRules.push({ owner: userId });
             }
 
+            // For vendor, they can see approved documents where they are the vendor
             if (profile_type === "vendor") {
                 accessRules.push({
                     $and: [
@@ -656,6 +645,7 @@ export const getDocuments = async (req, res) => {
                 });
             }
 
+            // For donor, they can see approved documents where they are the donor
             if (profile_type === "donor") {
                 accessRules.push({
                     $and: [
@@ -665,9 +655,21 @@ export const getDocuments = async (req, res) => {
                 });
             }
 
-            filter.$or = accessRules;
+            // Apply access rules ONLY if we have any
+            if (accessRules.length > 0) {
+                // If we have multiple rules, use $or
+                if (accessRules.length === 1) {
+                    // If only one rule, merge it directly
+                    Object.assign(filter, accessRules[0]);
+                } else {
+                    filter.$or = accessRules;
+                }
+            }
         }
 
+        // --- IMPORTANT: If filter already has $or from access control, 
+        // we need to be careful when adding other $or conditions ---
+        
         const toArray = val => {
             if (!val) return [];
             if (Array.isArray(val)) return val;
@@ -677,22 +679,26 @@ export const getDocuments = async (req, res) => {
         // --- Search ---
         if (search?.trim()) {
             const safeSearch = search.trim();
-            filter.$and = filter.$and || [];
-            filter.$and.push({
+            const searchConditions = {
                 $or: [
-                    // Metadata fields
                     { "metadata.fileName": { $regex: safeSearch, $options: "i" } },
                     { "metadata.fileDescription": { $regex: safeSearch, $options: "i" } },
                     { "metadata.mainHeading": { $regex: safeSearch, $options: "i" } },
-
                     { description: { $regex: safeSearch, $options: "i" } },
                     { remark: { $regex: safeSearch, $options: "i" } },
                     { tags: { $in: [new RegExp(safeSearch, "i")] } },
-
                     { "files.originalName": { $regex: safeSearch, $options: "i" } },
                     { "project.projectName": { $regex: safeSearch, $options: "i" } }
                 ]
-            });
+            };
+
+            // If filter already has $or (from access control), we need to use $and
+            if (filter.$or) {
+                filter.$and = filter.$and || [];
+                filter.$and.push(searchConditions);
+            } else {
+                Object.assign(filter, searchConditions);
+            }
         }
 
         // --- Status ---
@@ -758,8 +764,6 @@ export const getDocuments = async (req, res) => {
 
                 const startDate = new Date(startYear, startMonth - 1, startDay);
                 const endDate = new Date(endYear, endMonth - 1, endDay);
-
-                // Set end date to end of day
                 endDate.setHours(23, 59, 59, 999);
 
                 if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
@@ -770,7 +774,6 @@ export const getDocuments = async (req, res) => {
                 }
             }
         }
-
         else if (date) {
             const [day, month, year] = date.split("-").map(Number);
             const selectedDate = new Date(year, month - 1, day);
@@ -780,6 +783,7 @@ export const getDocuments = async (req, res) => {
                 filter.createdAt = { $gte: selectedDate, $lt: nextDate };
             }
         }
+        
         // --- Year filter from session ---
         if (req.session?.selectedYear) {
             const year = parseInt(req.session.selectedYear, 10);
@@ -787,7 +791,6 @@ export const getDocuments = async (req, res) => {
                 const startOfYear = new Date(year, 0, 1);
                 const endOfYear = new Date(year + 1, 0, 1);
 
-                // Merge year filter with possible existing date filter
                 if (!filter.createdAt) {
                     filter.createdAt = { $gte: startOfYear, $lt: endOfYear };
                 } else {
@@ -805,7 +808,7 @@ export const getDocuments = async (req, res) => {
             if (usersByRole.length > 0) {
                 filter.owner = { $in: usersByRole.map((u) => u._id) };
             } else {
-                filter.owner = null; // no matching users
+                filter.owner = null;
             }
         }
 
@@ -898,6 +901,7 @@ export const getDocuments = async (req, res) => {
                 fileSize: formatted
             };
         });
+        
         const totalDocuments = await Document.countDocuments(filter);
 
         return successResponse(res, {
@@ -916,7 +920,203 @@ export const getDocuments = async (req, res) => {
         return errorResponse(res, error, "Failed to retrieve documents");
     }
 };
+export const getDocumentsCount = async (req, res) => { 
+    try {        
+        const { department, project, status } = req.query;
+        const userId = req.user?._id;
+        const profileType = req.user?.profile_type;
 
+        // --- Build base filter ---
+        const filter = { 
+            isDeleted: false, 
+            isArchived: false 
+        };
+
+        // --- FIXED ACCESS CONTROL (same as getDocuments) ---
+        if (profileType !== "superadmin") {
+            const accessRules = [];
+
+            if (profileType === "admin" || profileType === "user") {
+                accessRules.push({ owner: new mongoose.Types.ObjectId(userId) });
+            }
+
+            if (profileType === "vendor") {
+                accessRules.push({ 
+                    documentVendor: new mongoose.Types.ObjectId(userId),
+                    status: "Approved" 
+                });
+            }
+
+            if (profileType === "donor") {
+                accessRules.push({ 
+                    documentDonor: new mongoose.Types.ObjectId(userId),
+                    status: "Approved" 
+                });
+            }
+
+            if (accessRules.length > 0) {
+                if (accessRules.length === 1) {
+                    Object.assign(filter, accessRules[0]);
+                } else {
+                    filter.$or = accessRules;
+                }
+            }
+        }
+
+        // --- NEW: Status filter ---
+        if (status) {
+            const normalizedStatus = status.replace(/\s+/g, ' ').trim();
+            
+            // Handle special status types
+            if (normalizedStatus === "uploaded") {
+                const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                const startOfNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+                filter.createdAt = { $gte: startOfMonth, $lt: startOfNextMonth };
+            }
+            else if (normalizedStatus === "deletedarchive") {
+                delete filter.isDeleted;
+                delete filter.isArchived;
+                if (filter.$or) {
+                    // If we already have $or, combine with $and
+                    filter.$and = filter.$and || [];
+                    filter.$and.push({
+                        $or: [
+                            { isDeleted: true },
+                            { isArchived: true }
+                        ]
+                    });
+                } else {
+                    filter.$or = [
+                        { isDeleted: true },
+                        { isArchived: true }
+                    ];
+                }
+            }
+            else if (normalizedStatus === "modified") {
+                filter["currentVersionNumber"] = {
+                    $ne: mongoose.Types.Decimal128.fromString("1.0")
+                };
+            }
+            else if (normalizedStatus === "Compliance and Retention") {
+                filter["compliance.isCompliance"] = true;
+            } 
+            else {
+                // Regular status filter
+                filter.status = normalizedStatus;
+            }
+        }
+
+        // --- Department filter ---
+        if (department) {
+            const deptArray = department
+                .split(',')
+                .filter(id => mongoose.Types.ObjectId.isValid(id));
+            
+            if (deptArray.length > 0) {
+                filter.department = deptArray.length === 1 
+                    ? new mongoose.Types.ObjectId(deptArray[0]) 
+                    : { $in: deptArray.map(id => new mongoose.Types.ObjectId(id)) };
+            }
+        }
+
+        // --- Project filter ---
+        const selectedProject = project || req.session?.selectedProject;
+        
+        if (selectedProject && mongoose.Types.ObjectId.isValid(selectedProject)) {
+            filter.project = new mongoose.Types.ObjectId(selectedProject);
+        }
+
+        // --- Get ALL matching documents for debugging ---
+        const allMatchingDocs = await Document.find(filter)
+            .select('_id status name department project owner documentVendor documentDonor')
+            .lean();
+
+        if (allMatchingDocs.length > 0) {
+            allMatchingDocs.forEach((doc, index) => {
+                console.log(`  ${index + 1}. ID: ${doc._id}, Status: ${doc.status}, Name: ${doc.name || 'N/A'}`);
+            });
+        } else {
+            console.log('⚠️ No matching documents found!');
+        }
+
+        const [statusResult, complianceResult] = await Promise.all([
+            // Get all status counts in one go
+            Document.aggregate([
+                { $match: filter },
+                { 
+                    $group: { 
+                        _id: "$status", 
+                        count: { $sum: 1 } 
+                    } 
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            // Get compliance count
+            Document.countDocuments({
+                ...filter,
+                "compliance.isCompliance": true
+            })
+        ]);
+
+        // --- Build response with defaults ---
+        const statusMap = {
+            Draft: 0,
+            Pending: 0,
+            Approved: 0,
+            Rejected: 0
+        };
+
+        // Map status results
+        statusResult.forEach(({ _id, count }) => {
+            console.log(`  ↳ Processing status "${_id}": ${count} documents`);
+            if (statusMap.hasOwnProperty(_id)) {
+                statusMap[_id] = count;
+            } else {
+                console.log(`  ⚠️ Unknown status "${_id}" found - ignoring`);
+            }
+        });
+
+        // Calculate totals
+        const totalCount = statusResult.reduce((sum, item) => sum + item.count, 0);
+        const allCount = statusMap.Draft + statusMap.Pending + statusMap.Approved + statusMap.Rejected;
+
+        // --- Get detailed status breakdown with document IDs ---
+        const detailedStatusBreakdown = {};
+        
+        // If a specific status is requested, only show that status in details
+        const statusesToShow = status ? [status] : ['Draft', 'Pending', 'Approved', 'Rejected'];
+        
+        for (const statusType of statusesToShow) {
+            const docs = await Document.find({ ...filter, status: statusType })
+                .select('_id metadata status')
+                .lean();
+            
+            if (docs.length > 0) {
+                detailedStatusBreakdown[statusType] = docs.map(doc => ({
+                    id: doc._id,
+                    name: doc.metadata || 'Unnamed',
+                    status: doc.status
+                }));
+            }
+        }
+
+        // --- Response ---
+        const responseData = {
+            totalCount,
+            counts: {
+                All: allCount,
+                ...statusMap,
+                Compliance: complianceResult
+            },
+        };
+
+        return successResponse(res, responseData, "Document counts retrieved successfully");
+
+    } catch (error) {
+        console.error('Stack trace:', error.stack);
+        return errorResponse(res, error, "Failed to retrieve document counts");
+    }
+};
 export const getComplianceDocuments = async (req, res) => {
     try {
         const {

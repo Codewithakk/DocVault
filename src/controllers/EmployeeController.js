@@ -104,6 +104,7 @@ export const showEmployeeAnayticsPage = async (req, res) => {
 export const getApprovalRequests = async (req, res) => {
     try {
         const user = req.user || req.session.user;
+        console.log(req.session)
         const userId = new mongoose.Types.ObjectId(user._id);
         const profileType = user.profile_type;
         const userDepartment = user.department ? new mongoose.Types.ObjectId(user.department) : null;
@@ -228,5 +229,116 @@ export const getApprovalRequests = async (req, res) => {
     } catch (error) {
         console.error("Error in getApprovalRequests:", error);
         res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+export const getApprovalRequestsCounts = async (req, res) => {
+    try {
+        const user = req.user || req.session.user;
+        const userId = new mongoose.Types.ObjectId(user._id);
+        const profileType = user.profile_type;
+        const userDepartment = user.department
+            ? new mongoose.Types.ObjectId(user.department)
+            : null;
+
+        const { department, createdAt, startDate, endDate, documentId } = req.query;
+
+        const filter = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            wantApprovers: true,
+        };
+
+        if (profileType !== "superadmin") {
+            const accessConditions = [{ owner: userId }];
+
+            if (userDepartment) {
+                accessConditions.push({ department: userDepartment });
+            }
+
+            filter.$or = accessConditions;
+        }
+
+        if (documentId && mongoose.Types.ObjectId.isValid(documentId)) {
+            filter._id = new mongoose.Types.ObjectId(documentId);
+        }
+
+        if (department && mongoose.Types.ObjectId.isValid(department)) {
+            filter.department = new mongoose.Types.ObjectId(department);
+        }
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+
+            filter.createdAt = {
+                $gte: start,
+                $lte: end,
+            };
+        }
+
+        if (createdAt) {
+            const [day, month, year] = createdAt.split("-").map(Number);
+
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                filter.createdAt = {
+                    $gte: new Date(year, month - 1, day, 0, 0, 0),
+                    $lte: new Date(year, month - 1, day, 23, 59, 59, 999),
+                };
+            }
+        }
+
+        const [counts] = await Document.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: null,
+                    All: { $sum: 1 },
+                    Draft: {
+                        $sum: {
+                            $cond: [{ $eq: ["$status", "Draft"] }, 1, 0]
+                        }
+                    },
+                    Pending: {
+                        $sum: {
+                            $cond: [{ $eq: ["$status", "Pending"] }, 1, 0]
+                        }
+                    },
+                    Approved: {
+                        $sum: {
+                            $cond: [{ $eq: ["$status", "Approved"] }, 1, 0]
+                        }
+                    },
+                    Rejected: {
+                        $sum: {
+                            $cond: [{ $eq: ["$status", "Rejected"] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0
+                }
+            }
+        ]);
+        
+        return res.status(200).json({
+            success: true,
+            data: counts || {
+                All: 0,
+                Draft: 0,
+                Pending: 0,
+                Approved: 0,
+                Rejected: 0
+            }
+        });
+    } catch (error) {
+        console.error("Error in getApprovalRequestsCounts:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+        });
     }
 };

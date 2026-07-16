@@ -1,4 +1,13 @@
 // Global state
+
+$(document).ready(function () {
+    // Force header project select to work independently
+    if (typeof initializeHeaderComponents === 'function') {
+        // Re-initialize header components after page load
+        setTimeout(initializeHeaderComponents, 100);
+    }
+});
+
 window.selectedFolders = [];   // [{ id, name }]
 window.selectedProject = { id: null, name: null };
 window.selectedDepartment = { id: null, name: null };
@@ -91,17 +100,20 @@ $(document).ready(function () {
 
     function toggleCreateFolderBtn() {
         const projectSelected = !!$('#projectName').val() && $('#projectName').val() !== 'all';
-
-        // Enable/disable Create Folder button
+        const departmentSelected = !!$('#department').val() && $('#department').val() !== 'all';
+        const isEnabled = projectSelected && departmentSelected;
+    
+        // Update Create Folder button
         $('#createFolderBtn')
-        .toggleClass('disabled', !projectSelected)
-        .css({
-            'pointer-events': projectSelected ? 'auto' : 'none',
-            'opacity': projectSelected ? '1' : '0.5'
-        });
-
+            .prop('disabled', !isEnabled)
+            .css({
+                'opacity': isEnabled ? '1' : '0.5',
+                'cursor': isEnabled ? 'pointer' : 'not-allowed'
+            })
+            .attr('title', isEnabled ? 'Create new folder' : 'Please select both Project and Department');
+    
         // Enable/disable Upload Box
-        if (projectSelected) {
+        if (projectSelected && departmentSelected) {
             $('#uploadBox').css({ 'pointer-events': '', 'opacity': '' });
         } else {
             $('#uploadBox').css({ 'pointer-events': 'none', 'opacity': 0.6 });
@@ -124,28 +136,144 @@ $(document).ready(function () {
         const query = new URLSearchParams();
         if (departmentId && departmentId !== 'all') query.append('departmentId', departmentId);
         if (projectId && projectId !== 'all') query.append('projectId', projectId);
-        if (rootId) query.append('rootId', rootId);
+        if (rootId !== null && rootId !== undefined) {
+            query.append('rootId', rootId);
+        }
 
         try {
             const res = await fetch(`/api/folders/tree/structure?${query.toString()}`);
             const data = await res.json();
             if (!data.success) return;
 
-            // When rootId is null, render `data.tree` (top-level folders)
-            const foldersToRender = rootId
-                ? (data.tree[0]?.children || [])
-                : (data.tree || []);
+            // =============================================
+            // LOGIC: Different behavior based on filters
+            // =============================================
+            let foldersToRender = [];
+
+            if (departmentId && departmentId !== 'all') {
+                // =============================================
+                // CASE 1: DEPARTMENT SELECTED - Show ONLY root folders (top-level)
+                // =============================================
+                if (rootId === null || rootId === undefined) {
+                    // Show root level folders (where parent is null OR parent doesn't exist in the tree)
+                    const allFolders = flattenTree(data.tree);
+
+                    // Get all folder IDs that appear as children (have a parent in this tree)
+                    const childFolderIds = new Set();
+                    data.tree.forEach(folder => {
+                        if (folder.children) {
+                            folder.children.forEach(child => {
+                                childFolderIds.add(child._id);
+                            });
+                        }
+                    });
+
+                    // Show only folders that are NOT children (root folders)
+                    foldersToRender = data.tree.filter(folder => {
+                        if (folder.parent) {
+                            const parentExists = data.tree.some(f => f._id === folder.parent);
+                            const isChild = childFolderIds.has(folder._id);
+                            return !isChild && !parentExists;
+                        }
+                        return true;
+                    });
+
+                    // If no root folders found, fallback to show all folders
+                    if (foldersToRender.length === 0) {
+                        foldersToRender = data.tree || [];
+                    }
+                } else {
+                    // =============================================
+                    // FIX: When rootId is provided, show ONLY the children of that specific folder
+                    // But only if the user double-clicked to navigate into it
+                    // =============================================
+                    // Find the folder in the tree
+                    const foundFolder = findFolderInTree(data.tree, rootId);
+                    if (foundFolder) {
+                        // Show the children of the found folder
+                        foldersToRender = foundFolder.children || [];
+                    } else {
+                        foldersToRender = [];
+                    }
+                }
+            } else if (projectId && projectId !== 'all' && !departmentId) {
+                // =============================================
+                // CASE 2: ONLY PROJECT SELECTED (No Department) - Hide root folders, show children only
+                // =============================================
+                if (rootId === null || rootId === undefined) {
+                    // Hide root folders, show only children
+                    const allFolders = flattenTree(data.tree);
+                    const rootFolderIds = new Set();
+                    data.tree.forEach(folder => {
+                        rootFolderIds.add(folder._id);
+                    });
+
+                    foldersToRender = allFolders.filter(folder => {
+                        if (folder.parent) {
+                            const parentExists = rootFolderIds.has(folder.parent);
+                            const isRoot = rootFolderIds.has(folder._id);
+                            return parentExists && !isRoot;
+                        }
+                        return false;
+                    });
+
+                    if (foldersToRender.length === 0) {
+                        foldersToRender = [];
+                    }
+                } else {
+                    // When a folder is clicked, show its children
+                    const foundFolder = findFolderInTree(data.tree, rootId);
+                    foldersToRender = foundFolder?.children || [];
+                }
+            } else {
+                // =============================================
+                // CASE 3: DEFAULT - Original behavior (both or none selected)
+                // =============================================
+                foldersToRender = rootId
+                    ? (data.tree[0]?.children || [])
+                    : (data.tree || []);
+            }
+
+            // =============================================
+            // Helper: Flatten tree to get all folders
+            // =============================================
+            function flattenTree(tree) {
+                let result = [];
+                tree.forEach(folder => {
+                    result.push(folder);
+                    if (folder.children && folder.children.length > 0) {
+                        result = result.concat(flattenTree(folder.children));
+                    }
+                });
+                return result;
+            }
+
+            // =============================================
+            // Helper: Recursively find folder in tree
+            // =============================================
+            function findFolderInTree(tree, folderId) {
+                for (const folder of tree) {
+                    if (folder._id === folderId) return folder;
+                    if (folder.children && folder.children.length > 0) {
+                        const found = findFolderInTree(folder.children, folderId);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
 
             const container = $('#folderContainer').empty();
-
             let foundSelectedFolder = false;
 
             foldersToRender.forEach((folder, index) => {
                 const subCount = folder.children?.length || 0;
                 const folderCard = $(`
-                <div class="folder-card" style="width:80px;">
-                    <div class="fldricon"><img src="/img/icons/folder.png"></div>
-                    <div class="fldrname text-truncate">${folder.name}</div>
+                <div class="folder-card" style="width:80px; cursor:pointer;">
+                    <div class="fldricon">
+                        <img src="/img/icons/folder.png" alt="${folder.name}">
+                        ${subCount ? `<span class="badge bg-info">${subCount}</span>` : ''}
+                    </div>
+                    <div class="fldrname text-truncate" title="${folder.name}">${folder.name}</div>
                     ${subCount ? `<span class="badge">${subCount}</span>` : ''}
                 </div>
             `);
@@ -175,7 +303,7 @@ $(document).ready(function () {
                     updateDirectoryPath();
                 });
 
-                // Double click: open subfolder
+                // Double click: open subfolder (only if it has children)
                 if (subCount > 0) {
                     folderCard.on('dblclick', async function () {
                         const newPath = [...parentPath, { id: folder._id, name: folder.name }];
@@ -184,44 +312,82 @@ $(document).ready(function () {
                 }
 
                 container.append(folderCard);
-
-                // Auto-select first folder at root if no selection
-                if (index === 0 && !rootId && !window.isEdit && !foundSelectedFolder) {
-                    folderCard.trigger('click');
-                }
             });
-            if (!window.isEdit) {
-                const projectSelected =
-                    $('#projectName').val() &&
-                    $('#projectName').val() !== 'all';
+
+            // Add "Create Folder" button (only at root level and when department is selected)
+            if (!window.isEdit && (rootId === null || rootId === undefined)) {
+                const projectSelected = $('#projectName').val() && $('#projectName').val() !== 'all';
+                const departmentSelected = departmentId && departmentId !== 'all';
+                const isEnabled = projectSelected && departmentSelected;
             
-                    const addFolderBtn = $(`
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary ms-2"
-                            id="createFolderBtn"
-                            data-bs-toggle="modal"
-                            data-bs-target="#folder-modal"
-                            ${!projectSelected ? 'disabled' : ''}
-                            style="
-                                height: 36px;
-                                padding: 0.25rem 0.75rem;
-                                white-space: nowrap;
-                                align-self: center;
-                            "
-                        >
-                            <i class="ti ti-plus"></i> Folder
-                        </button>
-                    `);
+                const addFolderBtn = $(`
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary ms-2"
+                        id="createFolderBtn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#folder-modal"
+                        ${!isEnabled ? 'disabled' : ''}
+                        style="
+                            height: 36px;
+                            padding: 0.25rem 0.75rem;
+                            white-space: nowrap;
+                            align-self: center;
+                            ${!isEnabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}
+                        "
+                    >
+                        <i class="ti ti-plus"></i> Folder
+                    </button>
+                `);
+            
+                // Add tooltip to explain why it's disabled
+                if (!isEnabled) {
+                    addFolderBtn.attr('title', 'Please select both Project and Department to create a folder');
+                }
             
                 container.append(addFolderBtn);
             }
+
+            // =============================================
+            // AUTO-SELECT: Only for department views at root level
+            // =============================================
+            if (!rootId && !window.isEdit && !foundSelectedFolder && foldersToRender.length > 0) {
+                const firstFolder = foldersToRender[0];
+
+                window.selectedFolders = [{
+                    id: firstFolder._id,
+                    name: firstFolder.name
+                }];
+
+                $('#selectedFolderId').val(firstFolder._id);
+                updateDirectoryPath();
+            }
+
             updateDirectoryPath();
+
+            // Show message if no folders found
+            if (foldersToRender.length === 0 && !window.isEdit) {
+                let message = 'No folders found';
+                if (projectId && projectId !== 'all' && !departmentId) {
+                    message = 'No sub-folders found. Please select a department to see root folders.';
+                } else if (departmentId && departmentId !== 'all' && rootId) {
+                    message = 'No sub-folders found in this folder.';
+                }
+
+                container.append(`
+                <div class="text-center text-muted p-4 w-100">
+                    <i class="fas fa-folder-open fa-3x mb-2"></i>
+                    <p>${message}</p>
+                    ${!window.isEdit && (departmentId && departmentId !== 'all' && !rootId) ? '<small>Create a new folder using the + button above</small>' : ''}
+                </div>
+            `);
+            }
+
         } catch (err) {
             console.error("Error loading folders:", err);
+            showToast('Error loading folders: ' + err.message, 'error');
         }
     }
-
     $('#folder-modal').on('show.bs.modal', function () {
         const projectText = $('#projectName option:selected').text();
         const projectId = $('#projectName').val();
@@ -253,7 +419,8 @@ $(document).ready(function () {
         // 3. Existing folder chain
         // ---------------------------
         folders.forEach((f, i) => {
-            const fullPath = `${projectText} / ${departmentText} /${folders.slice(0, i + 1).map(ff => ff.name).join(' / ')}`;
+            // const fullPath = `${projectText} / ${departmentText} /${folders.slice(0, i + 1).map(ff => ff.name).join(' / ')}`;
+            const fullPath = `${folders.slice(0, i + 1).map(ff => ff.name).join(' / ')}`;
             const isSelected = i === folders.length - 1; // last folder selected by default
             parentFolderSelect.append(new Option(fullPath, f.id, false, isSelected));
         });
@@ -382,68 +549,97 @@ $(document).ready(function () {
             showToast("Please select a folder.", 'info');
             return;
         }
-
-        for (const file of files) {
+    
+        // Convert FileList to array for easier handling
+        const filesArray = Array.from(files);
+    
+        for (const file of filesArray) {
             const tempId = 'temp_' + Date.now() + Math.random().toString(36).substring(2, 8);
-
+    
+            // Create file item with loading state
             const fileItem = document.createElement("div");
             fileItem.className = "file-item col-sm-5 mb-3 p-3 border rounded";
             fileItem.setAttribute("data-file-id", tempId);
-
+    
             fileItem.innerHTML = `
-        <div class="file-info d-flex align-items-center">
-            <i class="fa-solid fa-file fa-2x me-3"></i>
-            <div class="flex-grow-1">
-                <h6 class="mb-0 text-truncate">${file.name}</h6>
-                <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-            </div>
-        </div>
-        <div class="file-progress mt-2">
-            <div class="progress">
-                <div class="progress-bar bg-success" role="progressbar" style="width:0%">0%</div>
-            </div>
-        </div>
-        <button type="button" class="remove-btn btn btn-sm btn-danger mt-2" data-file-id="${tempId}" disabled><i class="fa-solid fa-xmark"></i> Remove
-       </button>
-    `;
+                <div class="file-info d-flex align-items-center">
+                    <i class="fa-solid fa-file fa-2x me-3"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 text-truncate">${file.name}</h6>
+                        <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                    </div>
+                </div>
+                <div class="file-progress mt-2">
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:0%">0%</div>
+                    </div>
+                </div>
+                <button type="button" class="remove-btn btn btn-sm btn-danger mt-2" data-file-id="${tempId}" disabled>
+                    <i class="fa-solid fa-xmark"></i> Remove
+                </button>
+            `;
             fileList.appendChild(fileItem);
-
+    
             const progressBar = fileItem.querySelector(".progress-bar");
             const removeBtn = fileItem.querySelector(".remove-btn");
-
+    
             try {
                 const formData = new FormData();
                 formData.append('file', file);
-
-                const res = await fetch(`/api/tempfiles/upload/${folderId}`, { method: 'POST', body: formData });
+    
+                // Show uploading progress
+                progressBar.style.width = "50%";
+                progressBar.textContent = "Uploading...";
+    
+                const res = await fetch(`/api/tempfiles/upload/${folderId}`, { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
                 const data = await res.json();
-
-                if (!data.success) throw new Error(data.message || "Upload failed");
-
+    
+                // Check if upload was successful
+                if (!data.success) {
+                    // Remove file item immediately on failure
+                    fileItem.remove();
+                    showToast(data.message || "Upload failed", "error");
+                    continue; // Skip to next file instead of returning
+                }
+    
+                // Success - update the file item
                 const uploadedFile = data.files[0];
                 const fileId = uploadedFile.fileId;
-
+                
+                // Update with actual file ID
                 uploadedFileIds.push(fileId);
                 fileItem.setAttribute("data-file-id", fileId);
                 removeBtn.setAttribute("data-file-id", fileId);
                 removeBtn.disabled = false;
-
+    
+                // Add double-click navigation
                 fileItem.addEventListener('dblclick', () => {
                     window.location.href = `/folders/view/${fileId}`;
                 });
-
+    
+                // Update progress to complete
                 progressBar.style.width = "100%";
-                progressBar.textContent = "Uploaded";
-
-            } catch (err) {
+                progressBar.textContent = "Uploaded ✅";
                 progressBar.classList.remove("bg-success");
-                progressBar.classList.add("bg-danger");
-                progressBar.textContent = "Error";
+                progressBar.classList.add("bg-success"); // Keep green
+    
+                showToast(`${file.name} uploaded successfully!`, "success");
+    
+            } catch (err) {
                 console.error("Upload failed:", err);
-                // Remove the failed file item
-                setTimeout(() => {
-                    fileItem.remove();
-                }, 3000);
+                
+                // Remove the failed file item immediately
+                fileItem.remove();
+                
+                // Show error message
+                showToast(`Failed to upload ${file.name}: ${err.message || "Network error"}`, "error");
+                
+                // Continue with next file
+                continue;
             }
         }
     }
@@ -708,20 +904,20 @@ $(document).ready(function () {
     // Enhanced solution with better DateTimePicker integration
     function setupEnhancedDateRestrictions() {
         const today = moment().startOf('day');
-    
+
         const expiryDatePicker = $('input[name="expiryDate"]').datetimepicker({
             format: 'DD-MM-YYYY',
             useCurrent: false,
             minDate: today
         });
-    
+
         // Disable expiry date initially
         expiryDatePicker.data("DateTimePicker").disable();
-    
+
         // Handle compliance toggle
         $('input[name="compliance"]').change(function () {
             const expiryPicker = expiryDatePicker.data("DateTimePicker");
-    
+
             if ($(this).val() === 'yes') {
                 expiryPicker.enable();
                 expiryPicker.minDate(today);
@@ -748,53 +944,56 @@ $(document).ready(function () {
     function updateDirectoryPath() {
         const projectText = $('#projectName option:selected').text();
         const projectId = $('#projectName').val();
-        const departmentText = $('#department option:selected').text();
-        const departmentId = $('#department').val();
         const folders = window.selectedFolders || [];
-
+    
         const pathSegments = [];
-
-        // Project (non-clickable)
+    
+        // Project (clickable)
         if (projectText && projectText !== '-- Select Project Name --') {
-            pathSegments.push({ text: projectText, type: 'project', id: projectId });
+            pathSegments.push({
+                text: projectText,
+                type: 'project',
+                id: projectId
+            });
         }
-
-        // Department (clickable)
-        if (departmentText && departmentText !== '-- Select Department --') {
-            pathSegments.push({ text: departmentText, type: 'department', id: departmentId });
-        }
-
-        // Folders (clickable)
+    
+        // Folders
         folders.forEach(folder => {
-            pathSegments.push({ text: folder.name, type: 'folder', id: folder.id });
+            pathSegments.push({
+                text: folder.name,
+                type: 'folder',
+                id: folder.id
+            });
         });
-
+    
         const breadcrumbHtml = pathSegments.map((seg, i) => {
-            if (seg.type === 'project') {
-                return `<span class="dir-text">${seg.text}</span>`;
-            } else {
-                return `<a href="javascript:void(0)" class="dir-link" data-type="${seg.type}" data-id="${seg.id}" data-level="${i}">${seg.text}</a>`;
-            }
-        }).join(' / ');
-
+            return `
+                <a href="javascript:void(0)"
+                   class="dir-link"
+                   data-type="${seg.type}"
+                   data-id="${seg.id}"
+                   data-level="${i}">
+                    ${seg.text}
+                </a>`;
+        }).join('/');
+    
         $('#uploadDirectoryPath').html(breadcrumbHtml);
-
+    
         // Breadcrumb click
         $('#uploadDirectoryPath .dir-link').off('click').on('click', async function () {
+    
             const type = $(this).data('type');
             const id = $(this).data('id');
-            const level = $(this).data('level'); // breadcrumb index
-
-            const numFixed = 0
-                + (projectText && projectText !== '-- Select Project Name --' ? 1 : 0)
-                + (departmentText && departmentText !== '-- Select Department --' ? 1 : 0);
-
-            if (type === 'department') {
+            const level = $(this).data('level');
+    
+            if (type === 'project') {
+                // Go back to project root
                 window.selectedFolders = [];
                 $('#selectedFolderId').val('');
                 await loadFolders(null, []);
-            } else if (type === 'folder') {
-                const newPath = window.selectedFolders.slice(0, level - numFixed + 1);
+            }
+            else if (type === 'folder') {
+                const newPath = window.selectedFolders.slice(0, level);
                 window.selectedFolders = newPath;
                 $('#selectedFolderId').val(id);
                 await loadFolders(id, newPath);
@@ -809,8 +1008,6 @@ $(document).ready(function () {
         toggleCreateFolderBtn();
         loadFolders();
         updateDirectoryPath();
-
-        // Reinitialize donor and vendor when project changes
         initializeDonorSelect2();
         initializeVendorSelect2();
     });
@@ -925,52 +1122,50 @@ $(document).ready(function () {
     // --------------------------
     $('#documentForm').on('submit', async function (e) {
         e.preventDefault();
-
+    
         const submitBtn = $('#submitBtn');
-
+    
         // Prevent double click
         if (submitBtn.prop('disabled')) return;
-
+    
         // Validate fields
         if (!validateForm()) return;
-
+    
         // Update Summernote content
         $('#summernote').val($('.summernote').summernote('code'));
-
+    
         // Button loading UI
         submitBtn.prop('disabled', true).html(
             '<span class="spinner-border spinner-border-sm" role="status"></span> ' +
             (window.isEdit ? "Updating..." : "Adding...")
         );
-
+    
         try {
             const fileIdsInput = document.createElement('input');
             fileIdsInput.type = 'hidden';
             fileIdsInput.name = 'fileIds';
             fileIdsInput.value = JSON.stringify(uploadedFileIds || []);
             this.appendChild(fileIdsInput);
-
+    
             const rawFileInput = document.getElementById('fileInput');
             if (rawFileInput) {
                 rawFileInput.removeAttribute('required');
                 rawFileInput.value = '';
             }
-
+    
             // Build request
             const formData = new FormData(this);
             const url = window.isEdit
                 ? `/api/documents/${window.documentId}`
                 : `/api/documents`;
             const method = window.isEdit ? 'PATCH' : 'POST';
-
+    
             const response = await fetch(url, { method, body: formData });
-
-            // -----------------------------
+    
             // REAL ERROR PARSING (JSON/TEXT)
-            // -----------------------------
             if (!response.ok) {
                 let serverMessage = `HTTP ${response.status}`;
-
+    
                 // 1. Try JSON
                 try {
                     const json = await response.json();
@@ -985,49 +1180,70 @@ $(document).ready(function () {
                         // 3. Give up (use default)
                     }
                 }
-
+    
                 throw new Error(serverMessage);
             }
-
+    
             // Success data
             const data = await response.json();
-
+    
             if (!data.success) {
                 throw new Error(data.message || "Unknown server error");
             }
-
+    
             // Display filename
             const doc = data.data.document;
             if (doc?.metadata?.fileName) {
                 document.getElementById('successFileName').textContent =
                     doc.metadata.fileName;
             }
-
+    
+            // Get modal element
+            const modalElement = document.getElementById('data-success-modal');
+            const successModal = new bootstrap.Modal(modalElement);
+            
             // Show success modal
-            const successModal = new bootstrap.Modal(
-                document.getElementById('data-success-modal')
-            );
             successModal.show();
-
-            // If adding a new one, reload add page after closing modal
-            if (!window.isEdit) {
-                document
-                    .getElementById('data-success-modal')
-                    .addEventListener(
-                        'hidden.bs.modal',
-                        () => {
-                            window.location.href = '/documents/list';
-                        },
-                        { once: true }
-                    );
-            }
-
+    
+            // Auto close after 5 seconds and redirect
+            let redirectTimer = setTimeout(() => {
+                successModal.hide();
+            }, 2000);
+    
+            // Handle modal hidden event
+            modalElement.addEventListener('hidden.bs.modal', function onHidden() {
+                // Clear timer if modal was closed manually
+                clearTimeout(redirectTimer);
+                
+                // Remove event listener to prevent multiple calls
+                modalElement.removeEventListener('hidden.bs.modal', onHidden);
+                
+                // Redirect based on action
+                if (!window.isEdit) {
+                    window.location.href = '/documents/list';
+                } else {
+                    // For edit mode, reload current page or go to list
+                    window.location.href = '/documents/list';
+                    // OR: window.location.reload();
+                }
+            }, { once: false }); // We'll handle removal manually
+    
+            // Handle manual close button (X) or backdrop click
+            modalElement.addEventListener('hide.bs.modal', function() {
+                clearTimeout(redirectTimer);
+            }, { once: true });
+    
+            // Reset button state after successful submission
+            submitBtn
+                .prop('disabled', false)
+                .html(window.isEdit ? "Update Document" : "Add Document");
+    
         } catch (error) {
             console.error('Form submission error:', error);
-
+    
             // Show real message
             showToast(error.message || "An unknown error occurred.", "error");
-
+    
             // Enable button again
             submitBtn
                 .prop('disabled', false)

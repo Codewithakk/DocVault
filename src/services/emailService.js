@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import logger from "../utils/logger.js";
 /**
  * Send email using Brevo REST API

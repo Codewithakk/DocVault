@@ -1,33 +1,45 @@
+// header.js - Complete version with ALL functionality preserved
 
 document.addEventListener("DOMContentLoaded", function () {
     const baseUrl = window.baseUrl;
     const uploadBtn = document.querySelector("#uploadBtn");
 
-
+    // 1. Vendor/Donor hide upload button
     if (window.profile_type === "vendor" || window.profile_type === "donor") {
         if (uploadBtn) uploadBtn.style.display = "none";
     }
     
+    // 2. Modal cleanup
     document.addEventListener('hidden.bs.modal', () => {
         document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         document.body.classList.remove('modal-open');
     });
 
+    // 3. Initialize ALL header components
+    initializeHeaderComponents();
+});
 
+// Complete function with ALL original functionality
+function initializeHeaderComponents() {
+    const baseUrl = window.baseUrl;
     const $headerYearSelect = $('#selectHeaderYear');
     const $headerProjectSelect = $('#selectHeaderProject');
 
-
+    // 4. YEAR SELECT - Fully preserved
     if ($headerYearSelect.length) {
         const currentYear = new Date().getFullYear();
         const startYear = 1995;
     
         $headerYearSelect.append(new Option('All', 'all', false, false));
     
+        // for (let year = currentYear; year >= startYear; year--) {
+        //     $headerYearSelect.append(new Option(year, year, false, false));
+        // }
         for (let year = currentYear; year >= startYear; year--) {
-            $headerYearSelect.append(new Option(year, year, false, false));
-        }
-    
+            $headerYearSelect.append(
+                new Option(`FY-${year}`, year, false, false)
+            );
+        }    
         $headerYearSelect.select2({
             placeholder: 'Select Year',
             allowClear: true 
@@ -35,7 +47,6 @@ document.addEventListener("DOMContentLoaded", function () {
     
         $headerYearSelect.on('change', async function () {
             let selectedYear = $(this).val();
-
             selectedYear = (selectedYear === 'all' || !selectedYear) ? null : selectedYear;
         
             try {
@@ -55,21 +66,22 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
         
-    
-        // Load saved
+        // Load saved year
         (async function () {
-            const res = await fetch(`${baseUrl}/api/session/project`, { credentials: 'include' });
-            const data = await res.json();
-    
-            const savedYear = data.selectedYear || 'all';
-    
-            $headerYearSelect.val(savedYear).trigger('change.select2');
+            try {
+                const res = await fetch(`${baseUrl}/api/session/project`, { credentials: 'include' });
+                const data = await res.json();
+                const savedYear = data.selectedYear || 'all';
+                $headerYearSelect.val(savedYear).trigger('change.select2');
+            } catch (err) {
+                console.error('Error loading saved year:', err);
+            }
         })();
     }
     
-
-    // PROJECT SELECT
+    // 5. PROJECT SELECT - FIXED to work on document page
     if ($headerProjectSelect.length) {
+        // Initialize select2 with AJAX
         $headerProjectSelect.select2({
             placeholder: 'Select Project',
             allowClear: true,
@@ -78,12 +90,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 url: `${baseUrl}/api/projects`,
                 dataType: 'json',
                 delay: 250,
-                data: params => ({
-                    search: params.term || '',
-                    page: params.page || 1,
-                    limit: 10
-                }),
-                processResults: function (data) {
+                data: function(params) {
+                    return {
+                        search: params.term || '',
+                        page: params.page || 1,
+                        limit: 10
+                    };
+                },
+                processResults: function(data) {
                     const projects = (data.data || []).map(p => ({
                         id: p._id,
                         text: p.projectName || p.name
@@ -100,6 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
         
+        // Project change handler
         $headerProjectSelect.on('change', async function () {
             let projectId = $(this).val();
             let projectName = $(this).find('option:selected').text();
@@ -127,29 +142,38 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
         
+        // Load saved project
         (async function () {
-            const res = await fetch(`${baseUrl}/api/session/project`, { credentials: 'include' });
-            const data = await res.json();
+            try {
+                const res = await fetch(`${baseUrl}/api/session/project`, { credentials: 'include' });
+                const data = await res.json();
         
-            if (data.selectedProject) {
-                if (!$headerProjectSelect.find(`option[value="${data.selectedProject}"]`).length) {
-                    $headerProjectSelect.append(
-                        new Option(data.selectedProjectName, data.selectedProject, true, true)
-                    );
+                if (data.selectedProject) {
+                    if (!$headerProjectSelect.find(`option[value="${data.selectedProject}"]`).length) {
+                        $headerProjectSelect.append(
+                            new Option(data.selectedProjectName || 'Selected Project', data.selectedProject, true, true)
+                        );
+                    }
+                    $headerProjectSelect.val(data.selectedProject).trigger('change.select2');
+                } else {
+                    // Add 'All Projects' option if not exists
+                    if (!$headerProjectSelect.find('option[value="all"]').length) {
+                        $headerProjectSelect.append(new Option('All Projects', 'all', true, true));
+                    }
+                    $headerProjectSelect.val('all').trigger('change.select2');
                 }
-        
-                $headerProjectSelect.val(data.selectedProject).trigger('change.select2');
-            } else {
-                $headerProjectSelect.append(new Option('All Projects', 'all', true, true));
+            } catch (err) {
+                console.error('Error loading saved project:', err);
+                // Default to 'All Projects' on error
+                if (!$headerProjectSelect.find('option[value="all"]').length) {
+                    $headerProjectSelect.append(new Option('All Projects', 'all', true, true));
+                }
                 $headerProjectSelect.val('all').trigger('change.select2');
             }
         })();
-        
     }
 
-    // ---------------------------
-    // SEARCH FUNCTIONALITY
-    // ---------------------------
+    // 6. SEARCH FUNCTIONALITY - Fully preserved
     (function ($) {
         "use strict";
 
@@ -191,6 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 updateUrl({ q: searchTerm || null });
             }
         }
+
         function toggleClearButtons() {
             $('.clear-search-global').toggle(!!(($('#globalSearchInput').val() || '').trim()));
             $('.clear-search-page').toggle(!!(($('#searchInput').val() || '').trim()));
@@ -239,11 +264,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }, 500));
 
             $(document).on('click', '.clear-search-global', function () {
-                clearSearch(); $('#globalSearchForm').trigger('submit');
+                clearSearch(); 
+                $('#globalSearchForm').trigger('submit');
             });
 
             $(document).on('click', '.clear-search-page', function () {
-                clearSearch(); if (isOnDocumentsPage()) reloadTableWithSearch('');
+                clearSearch(); 
+                if (isOnDocumentsPage()) reloadTableWithSearch('');
             });
 
             $('#globalSearchInput, #searchInput').on('input', toggleClearButtons);
@@ -255,9 +282,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     })(jQuery);
 
-    // ---------------------------
-    // USER INVITE SELECT
-    // ---------------------------
+    // 7. USER INVITE SELECT - Fully preserved
     $('#userInviteSelect').select2({
         placeholder: "Select user or enter email",
         allowClear: true,
@@ -276,7 +301,6 @@ document.addEventListener("DOMContentLoaded", function () {
             data: params => ({ search: params.term }),
             processResults: data => ({
                 results: (data.users || []).map(u => {
-    
                     let label = u.name;
                     const designation = u.designation?.trim();
                     const profile = u.profile_type;
@@ -291,8 +315,8 @@ document.addEventListener("DOMContentLoaded", function () {
     
                     return {
                         id: u.email,
-                        text: label,   // dropdown text
-                        name: u.name   // selected display
+                        text: label,
+                        name: u.name
                     };
                 })
             })
@@ -311,9 +335,7 @@ document.addEventListener("DOMContentLoaded", function () {
         minimumInputLength: 0
     });
     
-    // ---------------------------
-    // TIME RADIO & ACCESS TYPE
-    // ---------------------------
+    // 8. TIME RADIO & ACCESS TYPE - Fully preserved
     document.querySelectorAll('input[name="time"]').forEach(radio => {
         radio.addEventListener('change', function () {
             if (this.id === "custom") {
@@ -330,21 +352,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const roleType = document.getElementById("roleType");
     const infoText = document.getElementById("infoText");
 
-    accessType.addEventListener("change", function () {
-        if (this.value === "anyone") {
-            roleType.classList.remove("d-none");
-            infoText.textContent = "Anyone on the internet with the link can view";
-        } else {
-            roleType.classList.add("d-none");
-            infoText.textContent = "Only people with access can open this link";
-        }
-    });
+    if (accessType) {
+        accessType.addEventListener("change", function () {
+            if (this.value === "anyone") {
+                if (roleType) roleType.classList.remove("d-none");
+                infoText.textContent = "Anyone on the internet with the link can view";
+            } else {
+                if (roleType) roleType.classList.add("d-none");
+                infoText.textContent = "Only people with access can open this link";
+            }
+        });
+    }
 
-    // ---------------------------
-    // NOTIFICATIONS
-    // ---------------------------
+    // 9. NOTIFICATIONS - Fully preserved
     const notificationBtn = document.querySelector("#notification_popup");
-    const dropdownMenu = document.querySelector(".notification-dropdown");
     const notificationContainer = document.querySelector(".noti-content .d-flex.flex-column");
     const notificationTitle = document.querySelector(".notification-title");
     const statusDot = document.querySelector(".notification-status-dot");
@@ -353,12 +374,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const maxNotifications = 10;
 
     function renderNotifications(notifications) {
+        if (!notificationContainer) return;
         notificationContainer.innerHTML = "";
         notifications.forEach(n => {
-            const createdTime = timeAgo(n.createdAt);
+            const createdTime = timeAgo ? timeAgo(n.createdAt) : n.createdAt;
             let actionUrl = "#";
             let displayButton = "";
-            if (n.type === "approval_request") { actionUrl = `/approval-requests?documentId=${n.relatedDocument._id}`; displayButton = `<span class="badge bg-success text-white px-2 py-1 ms-2">Approve</span>`; }
+            if (n.type === "approval_request") { 
+                actionUrl = `/approval-requests?documentId=${n.relatedDocument._id}`; 
+                displayButton = `<span class="badge bg-success text-white px-2 py-1 ms-2">Approve</span>`; 
+            }
             else if (n.type === "document_approved") actionUrl = `/document/${n.relatedDocument._id}/approval/track`;
             else if (n.type === "document") actionUrl = `/documents/list?documentId=${n.relatedDocument._id}`;
             else if (n.type === "approval_update") actionUrl = `/employee/approval?id=${n.relatedDocument._id}`;
@@ -391,6 +416,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function loadNotifications() {
+        if (!notificationContainer) return;
         const loader = document.createElement("p");
         loader.textContent = "Loading...";
         loader.classList.add("text-center", "text-muted", "py-2");
@@ -399,8 +425,12 @@ document.addEventListener("DOMContentLoaded", function () {
             const res = await fetch(`/api/notifications?limit=${maxNotifications}`);
             const data = await res.json();
             const notifications = data.data || [];
-            notificationTitle.textContent = `Notifications (${data.totalUnread || 0})`;
-            statusDot.style.display = (data.totalUnread || 0) > 0 ? "inline-block" : "none";
+            if (notificationTitle) {
+                notificationTitle.textContent = `Notifications (${data.totalUnread || 0})`;
+            }
+            if (statusDot) {
+                statusDot.style.display = (data.totalUnread || 0) > 0 ? "inline-block" : "none";
+            }
             loader.remove();
             renderNotifications(notifications.slice(0, maxNotifications));
         } catch (err) {
@@ -409,9 +439,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    notificationBtn.addEventListener("click", function () {
-        if (!hasLoadedOnce) { loadNotifications(); hasLoadedOnce = true; }
-    });
+    if (notificationBtn) {
+        notificationBtn.addEventListener("click", function () {
+            if (!hasLoadedOnce) { 
+                loadNotifications(); 
+                hasLoadedOnce = true; 
+            }
+        });
+    }
 
     document.addEventListener("click", function (e) {
         const link = e.target.closest(".notification-link");
@@ -422,5 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (url && url !== "#") window.location.href = url;
         }
     });
+}
 
-});
+// Export for use in other parts
+window.initializeHeaderComponents = initializeHeaderComponents;

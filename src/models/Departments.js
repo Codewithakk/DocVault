@@ -8,6 +8,13 @@ const departmentSchema = new mongoose.Schema({
         unique: true,
         maxlength: [250, "Department name cannot exceed 250 characters"]
     },
+    shortName: {
+        type: String,
+        required: [true, "Department short name is required"],
+        trim: true,
+        unique: true,
+        maxlength: [50, "Department name cannot exceed 50 characters"]
+    },
     priority: {
         type: Number,
         default: 0,
@@ -35,7 +42,8 @@ const departmentSchema = new mongoose.Schema({
     updated_date: {
         type: Date,
         default: Date.now
-    }
+    },
+    description:{ type:String, default:""}
 }, {
     timestamps: false
 });

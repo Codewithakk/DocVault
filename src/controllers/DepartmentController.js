@@ -98,7 +98,7 @@ export const getAllDepartments = async (req, res) => {
         }
 
         const departments = await Department.find(filter)
-            .select('name priority status addedBy add_date')
+            .select('name shortName priority status addedBy add_date')
             .lean();
 
         return successResponse(res, departments, 'Departments fetched successfully');
@@ -195,13 +195,15 @@ export const createDepartment = async (req, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { name, priority, status } = req.body;
+        const { shortName,name, priority, status, description } = req.body;
 
         if (!name) return res.status(400).json({ error: 'Department name is required' });
         if (priority !== undefined && priority < 1) return res.status(400).json({ error: 'Priority must be greater than 0' });
 
         const departmentData = {
             name,
+            shortName,
+            description,
             priority,
             status,
             addedBy: {
@@ -246,13 +248,15 @@ export const updateDepartment = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid department ID' });
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { name, priority, status } = req.body;
+        const { name,shortName, priority, status,description } = req.body;
 
         // Validate fields
         if (priority !== undefined && priority < 1) return res.status(400).json({ error: 'Priority must be greater than 0' });
 
         const updateData = {
             ...(name && { name }),
+            ...(shortName && { shortName }),
+            ...(description && { description }),
             ...(priority !== undefined && { priority }),
             ...(status && { status }),
             updatedBy: {

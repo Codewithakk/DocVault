@@ -118,7 +118,7 @@
 		<%- include('../../modals/deleteModal') %>
 			<script>
 				// ---------------- GLOBAL STATE ----------------
-				const folderState = { selectedFolders: [], currentFolderId: null ,  selectedFolderCardId: null};
+				const folderState = { selectedFolders: [], currentFolderId: null, selectedFolderCardId: null };
 				let pendingUploads = [];
 				const storageInfoEl = document.getElementById("storageInfo");
 				const folderInput = document.getElementById("folderInput");
@@ -268,9 +268,9 @@
 					div.className = "col-6 col-md-4 col-lg-3 mb-3";
 
 					if (type === 'folder') {
-    div.dataset.id = item._id;
+						div.dataset.id = item._id;
 
-    div.innerHTML = `
+						div.innerHTML = `
         <div class="folder-card p-3 bg-white rounded shadow-sm hover-shadow cursor-pointer d-flex flex-column justify-content-between position-relative">
             
             <!-- CHECK MARK -->
@@ -288,38 +288,38 @@
         </div>
     `;
 
-    const card = div.querySelector('.folder-card');
+						const card = div.querySelector('.folder-card');
 
-    // SINGLE CLICK
-    card.addEventListener('click', () => {
+						// SINGLE CLICK
+						card.addEventListener('click', () => {
 
-        document.querySelectorAll('.folder-card').forEach(c => {
-            c.classList.remove('border-primary');
-            const icon = c.querySelector('.check-icon');
-            if (icon) icon.classList.add('d-none');
-        });
+							document.querySelectorAll('.folder-card').forEach(c => {
+								c.classList.remove('border-primary');
+								const icon = c.querySelector('.check-icon');
+								if (icon) icon.classList.add('d-none');
+							});
 
-        // mark current
-        card.classList.add('border', 'border-primary');
-        const icon = card.querySelector('.check-icon');
-        if (icon) icon.classList.remove('d-none');
+							// mark current
+							card.classList.add('border', 'border-primary');
+							const icon = card.querySelector('.check-icon');
+							if (icon) icon.classList.remove('d-none');
 
-        // set selected folder
-        folderState.currentFolderId = item._id;
-        folderState.selectedFolderCardId = item._id;
+							// set selected folder
+							folderState.currentFolderId = item._id;
+							folderState.selectedFolderCardId = item._id;
 
-        updateUploadState();
-    });
+							updateUploadState();
+						});
 
-    // double click
-    card.addEventListener('dblclick', () => {
-        loadFolders(
-            item._id,
-            [...folderState.selectedFolders, { id: item._id, name: item.name }],
-            window.selectedProjectId
-        );
-    });
-}
+						// double click
+						card.addEventListener('dblclick', () => {
+							loadFolders(
+								item._id,
+								[...folderState.selectedFolders, { id: item._id, name: item.name }],
+								window.selectedProjectId
+							);
+						});
+					}
 					else if (type === 'file') {
 						div.innerHTML = `
     <div class="folder-card p-3 bg-white rounded shadow-sm hover-shadow position-relative d-flex flex-column justify-content-between">
@@ -354,6 +354,7 @@
 					return div;
 				}
 
+
 				async function loadFolders(parentId = null, parentPath = [], projectId = null) {
 					projectId = projectId || window.selectedProjectId;
 					if (!projectId) return showNoProject(true);
@@ -362,46 +363,127 @@
 					setLoadingState(true);
 
 					try {
-						// Fetch folder tree from server
-						const res = await fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${$('#department').val() || 'all'}`, { credentials: 'include' });
+						const departmentId = $('#department').val() || 'all';
+
+						const res = await fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${departmentId}`, {
+							credentials: 'include'
+						});
+
 						const data = await res.json();
-						if (!data.success) return setEmptyState(true);
+
+						if (!data.success || !data.tree || !Array.isArray(data.tree) || data.tree.length === 0) {
+							setEmptyState(true);
+							return;
+						}
 
 						let allFolders = normalizeFolders(data.tree || []);
-						const subfolders = getSubfolders(allFolders, parentId);
-						const currentFolder = parentId ? findFolderById(allFolders, parentId) : null;
-						const files = currentFolder?.files || [];
+
+						let foldersToShow = [];
+						let filesToShow = [];
+
+						// =============================================
+						// LOGIC: Different behavior based on filters
+						// =============================================
+
+						if (!parentId) {
+							// ==================== TOP LEVEL ====================
+
+							if (departmentId === 'all' || !departmentId || departmentId === '') {
+								// =============================================
+								// CASE 1: NO DEPARTMENT SELECTED → Show children of ALL root folders
+								// =============================================
+								// Find the root folder that has children (the main project folder)
+								const rootFolderWithChildren = allFolders.find(f => f.children && f.children.length > 0);
+
+								if (rootFolderWithChildren) {
+									foldersToShow = rootFolderWithChildren.children || [];
+									filesToShow = rootFolderWithChildren.files || [];
+
+									// Set initial path to show project name
+									// folderState.selectedFolders = [{
+									// 	id: rootFolderWithChildren._id,
+									// 	name: rootFolderWithChildren.name
+									// }];
+									folderState.selectedFolders = [];
+								} else {
+									// If no folder has children, show all root folders
+									foldersToShow = allFolders;
+									folderState.selectedFolders = [];
+								}
+							} else {
+								// =============================================
+								// CASE 2: DEPARTMENT SELECTED → Show ONLY root folders (top-level)
+								// =============================================
+								// Filter to show only root folders (folders that are NOT children)
+								const childFolderIds = new Set();
+								allFolders.forEach(folder => {
+									if (folder.children) {
+										folder.children.forEach(child => {
+											childFolderIds.add(child._id);
+										});
+									}
+								});
+
+								// Show only folders that are NOT children (root folders)
+								foldersToShow = allFolders.filter(folder => {
+									if (folder.parent) {
+										const parentExists = allFolders.some(f => f._id === folder.parent);
+										const isChild = childFolderIds.has(folder._id);
+										return !isChild && !parentExists;
+									}
+									return true; // No parent means it's a root folder
+								});
+
+								// If no root folders found, fallback to show all folders
+								if (foldersToShow.length === 0) {
+									foldersToShow = allFolders;
+								}
+
+								folderState.selectedFolders = [];
+							}
+						} else {
+							// ==================== INSIDE A FOLDER (always normal) ====================
+							// When a specific folder is clicked, show its children
+							const subfolders = getSubfolders(allFolders, parentId);
+							foldersToShow = subfolders;
+
+							const currentFolder = findFolderById(allFolders, parentId);
+							filesToShow = currentFolder?.files || [];
+
+							// Update selected folders path
+							folderState.selectedFolders = parentPath;
+						}
 
 						setLoadingState(false);
 
-						if (!subfolders.length && !files.length) {
+						if (!foldersToShow.length && !filesToShow.length) {
 							setEmptyState(true);
 						} else {
 							setEmptyState(false);
 							elements.container.innerHTML = '';
 
-							// Render folders
-							subfolders.forEach(f => elements.container.appendChild(renderFolderCard(f, 'folder')));
-							// Render files
-							files.forEach(f => elements.container.appendChild(renderFolderCard(f, 'file')));
+							foldersToShow.forEach(f => {
+								elements.container.appendChild(renderFolderCard(f, 'folder'));
+							});
+
+							filesToShow.forEach(f => {
+								elements.container.appendChild(renderFolderCard(f, 'file'));
+							});
 						}
 
-						folderState.selectedFolders = parentPath;
-						folderState.currentFolderId = parentId;
+						// Update current folder ID
+						folderState.currentFolderId = parentId || null;
 
-						// Track folder visit if this is an actual folder
-						if (parentId) {
-							trackFolderVisit(parentId);
-						}
+						if (parentId) trackFolderVisit(parentId);
 
-						renderBreadcrumb(parentPath);
+						renderBreadcrumb(folderState.selectedFolders);
 
 					} catch (err) {
 						console.error("Error loading folders:", err);
 						setLoadingState(false);
+						setEmptyState(true);
 					}
 				}
-
 				// Helper function to track folder visit via API
 				async function trackFolderVisit(folderId) {
 					if (!folderId) return;
@@ -437,73 +519,64 @@
 					return null;
 				}
 
-
 				function renderBreadcrumb(parentPath) {
 					const breadcrumbEl = document.getElementById("breadcrumb");
 					if (!breadcrumbEl) return;
 
 					breadcrumbEl.innerHTML = '';
 
-					// --- 1. Project ---
-					if (window.selectedProjectName) {
-						const projectLink = document.createElement('a');
-						projectLink.href = "javascript:void(0);";
-						projectLink.dataset.id = 'PROJECT'; // special ID for project
-						projectLink.textContent = window.selectedProjectName;
-						breadcrumbEl.appendChild(projectLink);
+					const departmentId = $('#department').val() || 'all';
+					const isNoDepartmentMode = (departmentId === 'all' || departmentId);
+
+					// Root / Initial View Link
+					const rootLink = document.createElement('a');
+					rootLink.href = "javascript:void(0);";
+					const projectName = $('#projectName').find(':selected').text();
+                    rootLink.textContent =  projectName && projectName !== '-- Select Project --'  ? projectName  : (isNoDepartmentMode ? 'Main Folders' : 'All Folders');
+					rootLink.dataset.id = "ROOT";
+					breadcrumbEl.appendChild(rootLink);
+
+					// Folder hierarchy
+					if (parentPath && parentPath.length > 0) {
+						// For no department mode, the first item is the root folder
+						// We skip it if it's the root folder
+						const startIndex = (isNoDepartmentMode && parentPath.length > 0) ? 0 : 0;
+
+						parentPath.forEach((item, index) => {
+							const separator = document.createElement('span');
+							separator.textContent = ' / ';
+							breadcrumbEl.appendChild(separator);
+
+							const link = document.createElement('a');
+							link.href = "javascript:void(0);";
+							link.dataset.id = item.id;
+							link.textContent = item.name;
+
+							if (index === parentPath.length - 1) {
+								link.style.fontWeight = 'bold';
+								link.style.color = '#007bff';
+							}
+
+							breadcrumbEl.appendChild(link);
+						});
 					}
 
-					// // --- 2. Department ---
-					const deptData = $('#department').select2('data')[0];
-					if (deptData && deptData.text && deptData.text !== '-- Select Department --') {
-						const separator1 = document.createElement('span');
-						separator1.textContent = ' / ';
-						breadcrumbEl.appendChild(separator1);
-
-						const deptLink = document.createElement('a');
-						deptLink.href = "javascript:void(0);";
-						deptLink.dataset.id = 'DEPARTMENT'; // special ID for department
-						deptLink.textContent = deptData.text;
-						breadcrumbEl.appendChild(deptLink);
-					}
-
-					// --- 3. Folder hierarchy ---
-					parentPath.forEach((item, index) => {
-						const separator = document.createElement('span');
-						separator.textContent = ' / ';
-						breadcrumbEl.appendChild(separator);
-
-						const link = document.createElement('a');
-						link.href = "javascript:void(0);";
-						link.dataset.id = item.id;
-						link.textContent = item.name;
-						breadcrumbEl.appendChild(link);
-					});
-
-					// --- Highlight current folder ---
-					if (folderState.currentFolderId) {
-						const selectedItem = breadcrumbEl.querySelector(`a[data-id="${folderState.currentFolderId}"]`);
-						if (selectedItem) selectedItem.style.fontWeight = 'bold';
-					}
-
-					// --- Click navigation ---
+					// Click Handler
 					breadcrumbEl.querySelectorAll('a').forEach(link => {
 						link.addEventListener('click', (e) => {
 							e.preventDefault();
 							const id = e.target.dataset.id;
 
-							if (id === 'PROJECT') {
-								// Reload top-level folders for project
+							if (id === "ROOT") {
+								// Go back to initial view
 								folderState.currentFolderId = null;
-								loadFolders(null, [], window.selectedProjectId);
-							} else if (id === 'DEPARTMENT') {
-								// Reload top-level folders for selected department
-								folderState.currentFolderId = null;
+								folderState.selectedFolders = [];
 								loadFolders(null, [], window.selectedProjectId);
 							} else {
-								// Folder click
+								// Normal folder navigation
 								const idx = parentPath.findIndex(p => p.id === id);
 								const newParentPath = idx >= 0 ? parentPath.slice(0, idx + 1) : [];
+
 								folderState.currentFolderId = id;
 								loadFolders(id, newParentPath, window.selectedProjectId);
 							}
@@ -915,6 +988,7 @@
 
 					$('#department').on('change', async function () {
 						const projectId = window.selectedProjectId;
+						if (!projectId) return;
 						const departmentId = $('#department').val();
 
 						if (!projectId || !departmentId) return;
@@ -938,7 +1012,8 @@
 								showToast(`Default folder created: ${ensureData.folder.name}`, "success");
 							}
 						}
-
+						folderState.currentFolderId = null;
+						folderState.selectedFolders = [];
 						// Reload folder view
 						loadFolders(null, [], projectId);
 					});

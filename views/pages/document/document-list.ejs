@@ -18,47 +18,106 @@
                         </ol>
                     </nav>
                 </div>
-                <div class="rtbtn">
-                    <!-- Search -->
-                    <div class="me-auto d-flex align-items-center" id="header-search">
-                        <div class="input-group" style="width: 300px;">
-                            <input type="text" id="searchInput" class="form-control"
-                                placeholder="Search by doc, tag, metadata..">
-                            <span class="input-group-text"><i class="ti ti-search"></i></span>
-                        </div>
-                    </div>
-                    <!-- /Search -->
-                </div>
             </div>
             <!-- /Breadcrumb -->
             <div class="filter-container mb-3">
                 <!-- Row 1: Tabs aligned left -->
                 <% if (user.profile_type !=='donor' && user.profile_type !=='vendor' ) { %>
-
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <button type="button" class="btn btn-primary rounded-pill status-tab">All</button>
-                        <button type="button" class="btn btn-outline-primary rounded-pill status-tab">Pending</button>
-                        <button type="button" class="btn btn-outline-primary rounded-pill status-tab">Rejected</button>
-                        <button type="button" class="btn btn-outline-primary rounded-pill status-tab">Approved</button>
-                        <button type="button" class="btn btn-outline-primary rounded-pill status-tab">Draft</button>
-                        <button type="button" class="btn btn-outline-primary rounded-pill status-tab">
-                            Compliance and Retention
+                    <div class="d-flex flex-wrap gap-3 mb-2">
+                        <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-primary text-primary">
+                                <i class="ti ti-folder fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">All</h5>
+                                <h4 class="fs-21 mb-1">15</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
+                        </button>
+                        <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-warning text-warning">
+                                <i class="ti ti-clock fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">Pending</h5>
+                                <h4 class="fs-21 mb-1">5</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
+                        </button>
+                        <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-success text-success">
+                                <i class="ti ti-folder-check fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">Approved</h5>
+                                <h4 class="fs-21 mb-1">10</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
+                        </button>
+                        <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-danger text-danger">
+                                <i class="ti ti-folder-x fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">Rejected</h5>
+                                <h4 class="fs-21 mb-1">0</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
+                        </button>
+                        <!-- <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-primary text-primary">
+                                <i class="ti ti-folder-pause fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">Draft</h5>
+                                <h4 class="fs-21 mb-1">1</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
+                        </button> -->
+                        <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
+                            <span class="avatar avatar-lg bg-soft-info text-info">
+                                <i class="ti ti-shield-check fs-24"></i>
+                            </span>
+                            <div class="fltrtxt text-start">
+                                <h5 class="fs-14 mb-1 fw-medium">Compliance and Retention</h5>
+                                <h4 class="fs-21 mb-1">0</h4>
+                                <p class="text-gray-7 fw-normal">Documents</p>
+                            </div>                            
                         </button>
                     </div>
+
+                    <!-- <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">All</button>
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">Pending</button>
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">Rejected</button>
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">Approved</button>
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">Draft</button>
+                        <button type="button" class="btn btn-outline-primary rounded-3 status-tab">
+                            Compliance and Retention
+                        </button> 
+                    </div> -->
                     <% } %>
                         <!-- Row 2: Filters & buttons aligned right -->
-                        <div class="d-flex gap-2 justify-content-end align-items-end">
+                        <div class="d-flex my-4 gap-2 justify-content-start align-items-end">
+                            <div class="rtbtn">
+                                <!-- Search -->
+                                <div class="me-auto d-flex align-items-center" id="header-search">
+                                    <div class="input-group" >
+                                        <input type="text" id="searchInput" class="form-control" placeholder="Search by doc, tag, metadata.." style="width: 300px;">
+                                        <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    </div>
+                                </div>
+                                <!-- /Search -->
+                            </div>
                             <div class="mb-0">
                                 <select id="department" class="form-select select2" style="width: 200px;">
                                     <option value="">-- Select Department --</option>
                                 </select>
                             </div>
                             <div class="mb-0 position-relative">
-                                <!-- Filter Button -->
-                                <div class="mb-0 position-relative">
                                     <!-- Filter Button -->
                                     <button class="btn btn-outline-primary" id="columnFilterBtn">
-                                        <i class="ti ti-adjustments"></i>
+                                        <i class="ti ti-filter"></i> Filters
                                     </button>
 
                                     <!-- Filter Dropdown -->
@@ -99,8 +158,6 @@
                                             <button class="btn btn-sm" id="clearFilter">Clear</button>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- Filter dropdown here -->
                             </div>
                             <div class="position-relative mb-0">
 
@@ -171,16 +228,12 @@
             <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
             <script src="/js/components/shareDocument.js"></script>
             <script>
- 
-
                 (function ($) {
                     "use strict";
-
-
+            
                     const urlParams = new URLSearchParams(window.location.search);
                     const departmentIdFromUrl = urlParams.get('departmentId'); 
-
-
+            
                     const initialStatus = "<%= status %>";
                     const documentId = "<%= documentId %>";
                     const project = "<%= project %>";
@@ -205,17 +258,77 @@
                         default: "/img/icons/fn1.png"
                     };
                     let selectedDateRange = null;
-
+            
+                    // === DOCUMENT COUNTS INTEGRATION ===
+                    async function updateDocumentCounts() {
+                        try {
+                            const department = $('#department').val() || '';
+                            const status = getCurrentStatus() || '';
+                            
+                            // Build query parameters
+                            let queryParams = new URLSearchParams();
+                            if (department) queryParams.append('department', department);
+                            if (status) queryParams.append('status', status);
+                            
+                            // Add date range if selected
+                            if (selectedDateRange && selectedDateRange.start && selectedDateRange.end) {
+                                const formatDate = (date) => {
+                                    const d = date.getDate().toString().padStart(2, '0');
+                                    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+                                    const y = date.getFullYear();
+                                    return `${d}-${m}-${y}`;
+                                };
+                                queryParams.append('dateRange', `${formatDate(selectedDateRange.start)} to ${formatDate(selectedDateRange.end)}`);
+                            }
+            
+                            const url = `/api/documents-count`;
+                            const response = await fetch(url);
+                            const result = await response.json();
+            
+                            if (result.success) {
+                                const counts = result.data.counts;
+                                
+                                // Update status count badges
+                                document.querySelectorAll('.status-tab').forEach(btn => {
+                                    const label = btn.querySelector('h5.fs-14')?.textContent?.trim() || '';
+                                    const countElement = btn.querySelector('h4.fs-21');
+                                    
+                                    if (countElement) {
+                                        let count = 0;
+                                        if (label === 'All') count = counts.All || 0;
+                                        else if (label === 'Pending') count = counts.Pending || 0;
+                                        else if (label === 'Approved') count = counts.Approved || 0;
+                                        else if (label === 'Rejected') count = counts.Rejected || 0;
+                                        else if (label === 'Draft') count = counts.Draft || 0;
+                                        else if (label === 'Compliance and Retention') {
+                                            // For compliance, we might need a different endpoint or calculation
+                                            // For now, we'll keep it as 0 or you can calculate from filtered data
+                                            count = 0;
+                                        }
+                                        countElement.textContent = count;
+                                    }
+                                });
+                                
+                                // Update total documents count in breadcrumb
+                                const totalDocElement = document.querySelector('.totalDoc');
+                                if (totalDocElement) {
+                                    totalDocElement.textContent = counts.All || 0;
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error fetching document counts:', error);
+                        }
+                    }
+            
                     const fp = flatpickr("#documentDate", {
                         mode: "range",
                         dateFormat: "d-m-Y",
-                        allowInput: false,           // ← Blocks typing completely
+                        allowInput: false,
                         clickOpens: true,
                         locale: {
                             rangeSeparator: " to "
                         },
-
-                        // When user selects both dates
+            
                         onChange: function (selectedDates, dateStr, instance) {
                             if (selectedDates.length === 2) {
                                 selectedDateRange = {
@@ -223,11 +336,11 @@
                                     end: selectedDates[1]
                                 };
                                 document.getElementById("clearDateRange").style.display = "block";
-                                table.ajax.reload(); // Refresh table with new date range
+                                table.ajax.reload();
+                                updateDocumentCounts(); // Update counts when date range changes
                             }
                         },
-
-                        // When user clears or closes without full range
+            
                         onClose: function (selectedDates) {
                             if (selectedDates.length < 2 && selectedDates.length > 0) {
                                 setTimeout(() => {
@@ -238,94 +351,82 @@
                                 selectedDateRange = null;
                                 document.getElementById("clearDateRange").style.display = "none";
                                 table.ajax.reload();
+                                updateDocumentCounts();
                             }
                         }
                     });
-
+            
                     // Clear button functionality
                     document.getElementById("clearDateRange").addEventListener("click", function () {
                         fp.clear();
                         selectedDateRange = null;
                         this.style.display = "none";
                         table.ajax.reload();
+                        updateDocumentCounts();
                     });
+            
                     // Initialize status tabs based on query parameter
                     function initializeStatusTabs() {
-
-                        // Remove active class from all tabs first
-                        $('.status-tab').removeClass('btn-primary').addClass('btn-outline-primary');
-
+                        $('.status-tab').removeClass('btn-outline-info btn-active').addClass('btn-outline-light');
+            
                         if (initialStatus === "all" || !initialStatus) {
-                            // Set "All" as active
                             $('.status-tab').each(function () {
-                                if ($(this).text().trim() === 'All') {
-                                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                                if ($(this).find('h5').text().trim() === 'All') {
+                                    $(this).removeClass('btn-outline-light').addClass('btn-outline-info btn-active');
                                     return false;
                                 }
                             });
                         } else {
-                            // Find and activate the matching tab
                             let found = false;
                             $('.status-tab').each(function () {
-                                const tabText = $(this).text().trim();
-                                const statusText = initialStatus;
-
-                                // Handle special case for "Compliance and Retention"
-                                if (statusText === 'Compliance and Retention' && tabText.includes('Compliance')) {
-                                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-                                    found = true;
-                                    return false;
-                                }
-                                // Exact match for other statuses
-                                else if (tabText === statusText) {
-                                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                                const tabText = $(this).find('h5').text().trim();
+                                if (tabText === initialStatus) {
+                                    $(this).removeClass('btn-outline-light').addClass('btn-outline-info btn-active');
                                     found = true;
                                     return false;
                                 }
                             });
-
-                            // If no exact match found, default to "All"
+            
                             if (!found) {
                                 $('.status-tab').each(function () {
-                                    if ($(this).text().trim() === 'All') {
-                                        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                                    if ($(this).find('h5').text().trim() === 'All') {
+                                        $(this).removeClass('btn-outline-light').addClass('btn-outline-info btn-active');
                                         return false;
                                     }
                                 });
                             }
                         }
                     }
-                    // Get current active status for API calls
+            
                     let currentStatus = initialStatus || 'all';
-
+            
                     function getCurrentStatus() {
                         const statusForApi = currentStatus === 'All' || currentStatus === 'all' ? '' : currentStatus;
                         return statusForApi;
                     }
-
-
+            
                     // Initialize
                     $(document).ready(function () {
                         initializeStatusTabs();
+                        // Initial load of counts
+                        setTimeout(updateDocumentCounts, 500);
                     });
-
+            
                     document.getElementById("columnFilterBtn").addEventListener("click", function () {
                         const dropdown = document.querySelector(".filter-dropdown");
                         dropdown.classList.toggle("d-none");
                     });
-
+            
                     document.addEventListener("click", function (event) {
                         const dropdown = document.querySelector(".filter-dropdown");
                         const button = document.getElementById("columnFilterBtn");
-
+            
                         if (!dropdown.contains(event.target) && !button.contains(event.target)) {
                             dropdown.classList.add("d-none");
                         }
                     });
-
-                    // -------------------------
+            
                     // Initialize Select2 with Clear Option
-                    // -------------------------
                     function initSelect2(selector, url, placeholder, textKey) {
                         $(selector).select2({
                             placeholder: placeholder,
@@ -344,38 +445,35 @@
                                 }
                             }
                         });
-
-                        // Reset selection when clearing
+            
                         $(selector).on('select2:select', function (e) {
                             if (!e.params.data.id) {
                                 $(this).val(null).trigger('change');
                             }
                         });
                     }
-
+            
                     // Initialize Select2  
                     initSelect2('#department', `${baseUrl}/api/departments/search`, 'Select Department', 'name');
                     if (departmentIdFromUrl) {
-                    $.ajax({
-                        url: `${baseUrl}/api/departments/${departmentIdFromUrl}`,
-                        type: 'GET',
-                        success: function (res) {
-                            if (res?.data) {
-                                const option = new Option(
-                                    res.data.name,
-                                    res.data._id,
-                                    true,
-                                    true
-                                );
-                                $('#department').append(option).trigger('change');
+                        $.ajax({
+                            url: `${baseUrl}/api/departments/${departmentIdFromUrl}`,
+                            type: 'GET',
+                            success: function (res) {
+                                if (res?.data) {
+                                    const option = new Option(
+                                        res.data.name,
+                                        res.data._id,
+                                        true,
+                                        true
+                                    );
+                                    $('#department').append(option).trigger('change');
+                                }
                             }
-                        }
-                    });
+                        });
                     }
-
-                    // -------------------------
+            
                     // Initialize DataTable
-                    // -------------------------
                     const table = $('#documents_table').DataTable({
                         serverSide: true,
                         processing: true,
@@ -384,13 +482,12 @@
                             type: 'GET',
                             data: function (d) {
                                 const filterColumns = [];
-
+            
                                 $('.filter-dropdown .form-check-input:checked').each(function () {
                                     filterColumns.push($(this).val());
                                 });
-
+            
                                 const searchValue = $('#searchInput').val()?.trim() || '';
-                                // Properly format date range for backend
                                 let dateRangeParam = null;
                                 if (selectedDateRange) {
                                     const formatDate = (date) => {
@@ -403,14 +500,13 @@
                                 }
                                 const orderColumn = d.order[0]?.column;
                                 const orderDir = d.order[0]?.dir || 'desc';
-
+            
                                 return {
                                     page: (d.start / d.length) + 1,
                                     limit: d.length,
                                     status: getCurrentStatus(),
                                     department: $('#department').val(),
                                     dateRange: dateRangeParam,
-                                    // date: selectedDate,
                                     search: searchValue,
                                     orderColumn,
                                     filterColumns,
@@ -439,7 +535,6 @@
                             { title: 'Vendor', orderable: true },
                             { title: 'Description', orderable: false },
                             { title: 'Remark', orderable: false },
-                            // { title: 'Signature', orderable: false },
                             { title: 'Status', orderable: true },
                             { title: 'Approvers', orderable: false },
                         ],
@@ -458,31 +553,34 @@
                             $('#documents_table_wrapper .dataTables_info').addClass('text-start mt-2');
                         }
                     });
-
+            
+                    // Update counts after table draw
+                    table.on('draw.dt', function () {
+                        updateDocumentCounts();
+                    });
+            
                     $('#documents_table').on('draw.dt', function () {
                         const tooltipTriggerList = [].slice.call(document.querySelectorAll('#documents_table [title]'));
                         tooltipTriggerList.map(function (tooltipTriggerEl) {
                             return new bootstrap.Tooltip(tooltipTriggerEl);
                         });
                     });
-
-                    // -------------------------
+            
                     // Status Tab Handling with URL Update
-                    // -------------------------
                     $('.status-tab').on('click', function () {
-                        $('.status-tab').removeClass('btn-primary').addClass('btn-outline-primary');
-                        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-
-                        const selectedStatus = $(this).text().trim();
+                        $('.status-tab').removeClass('btn-outline-info btn-active').addClass('btn-outline-light');
+                        $(this).removeClass('btn-outline-light').addClass('btn-outline-info btn-active');
+            
+                        const selectedStatus = $(this).find("h5").text().trim();
                         const statusParam = selectedStatus === 'All' ? 'all' : selectedStatus;
-
+            
                         currentStatus = selectedStatus;
-
+            
                         updateUrlParameter('status', statusParam);
                         table.ajax.reload();
+                        updateDocumentCounts(); // Update counts when status changes
                     });
-
-
+            
                     function updateUrlParameter(key, value) {
                         const url = new URL(window.location);
                         if (value === 'all' || value === '') {
@@ -492,44 +590,46 @@
                         }
                         window.history.pushState({}, '', url);
                     }
+            
                     window.addEventListener('popstate', function () {
                         const urlParams = new URLSearchParams(window.location.search);
                         const statusFromUrl = urlParams.get('status') || 'all';
-
+            
                         currentStatus = statusFromUrl;
                         initializeStatusTabs();
                         table.ajax.reload();
+                        updateDocumentCounts();
                     });
-
-
-                    // -------------------------
+            
                     // Other Event Handlers
-                    // -------------------------
                     $("#applyFilter").on("click", function () {
                         $(".filter-dropdown").addClass("d-none");
                         table.ajax.reload();
+                        updateDocumentCounts();
                     });
-
+            
                     $("#clearFilter").on("click", function () {
                         $('.filter-dropdown .form-check-input').prop("checked", false);
                         $(".filter-dropdown").addClass("d-none");
                         table.ajax.reload();
+                        updateDocumentCounts();
                     });
-
+            
                     $('#department').on('change', function () {
                         table.ajax.reload();
+                        updateDocumentCounts();
                     });
-
+            
                     $('#searchInput').on('input', debounce(() => {
                         table.ajax.reload();
                     }, 500));
-
+            
                     $('#searchInput').on('keypress', function (e) {
                         if (e.which === 13) {
                             table.ajax.reload();
                         }
                     });
-
+            
                     function debounce(fn, delay = 500) {
                         let timer;
                         return function (...args) {
@@ -537,30 +637,27 @@
                             timer = setTimeout(() => fn.apply(this, args), delay);
                         };
                     }
-
-                    // -------------------------
+            
                     // Render each row
-                    // -------------------------
                     function renderRow(doc) {
                         const currentUserId = "<%= user._id %>";
                         const currentUserProfileType = "<%= user.profile_type %>";
-
-                        // New Logic: Full access if Owner OR Superadmin
+            
                         const isOwner = doc.owner && doc.owner._id === currentUserId;
                         const isSuperAdmin = currentUserProfileType === 'superadmin';
                         const hasFullAccess = isOwner || isSuperAdmin;
-
+            
                         var fileSizeKB = doc.files?.fileSize || 'N/A';
                         const lastModified = formatDateTime(doc.updatedAt);
-
+            
                         const owner = doc.owner
                             ? (() => {
                                 const imgSrc = doc.owner.profile_image || '/img/users/user-08.jpg';
                                 return `
-        <div class="avatar-group">
-          <img src="${imgSrc}" class="avatar" data-name="${doc.owner.name}" title="${doc.owner.name}" />
-        </div>
-      `;
+                                    <div class="avatar-group">
+                                        <img src="${imgSrc}" class="avatar" data-name="${doc.owner.name}" title="${doc.owner.name}" />
+                                    </div>
+                                `;
                             })()
                             : '-';
                         const departmentName = doc.department?.name || '-';
@@ -572,22 +669,22 @@
                                 return text.length > 100 ? text.substring(0, 30) + '....' : text;
                             })()
                             : '-';
-
+            
                         const metadata = doc.metadata ? `${doc.metadata.fileName || '-'}, ${doc.metadata.fileDescription || '-'}` : '-';
                         const sharedWith = doc.sharedWithUsers?.length
                             ? (() => {
                                 const users = doc.sharedWithUsers.slice(0, 3);
                                 const remaining = doc.sharedWithUsers.length - users.length;
-
+            
                                 const avatars = users.map(u => {
                                     const imgSrc = u.profile_image || '/img/users/user-01.jpg';
                                     return `<img src="${imgSrc}" class="avatar" data-name="${u.name}" title="${u.name}" />`;
                                 }).join('');
-
+            
                                 const more = remaining > 0
                                     ? `<div class="avatar avatar-more">+${remaining}</div>`
                                     : '';
-
+            
                                 return `<div class="avatar-group">${avatars}${more}</div>`;
                             })()
                             : '-';
@@ -601,19 +698,18 @@
                             'underreview': 'bg-soft-warning',
                             'archived': 'bg-soft-secondary'
                         }[(doc.status || '').toLowerCase().replace(/\s+/g, '')] || 'bg-soft-secondary';
-
+            
                         const currentVersionLabel = doc.currentVersionLabel
                             ? parseFloat(doc.currentVersionLabel)
                             : null;
-
+            
                         const currentVersion = currentVersionLabel !== null
                             ? `v${currentVersionLabel.toFixed(1)}`
                             : '-';
-
+            
                         let allVersions = [];
-
+            
                         if (currentVersionLabel !== null) {
-
                             let v = 1.0;
                             while (v <= currentVersionLabel + 0.00001) {
                                 allVersions.push(`v${v.toFixed(1)}`);
@@ -622,54 +718,54 @@
                             }
                         }
                         const versionDisplay = `
-                                             <div>
-                                                <div><strong>Current Version:</strong> ${currentVersion}</div>
-                                                <div><strong>Versions:</strong> ${allVersions.join(', ')}</div>
-                                             </div>`;
+                            <div>
+                                <div><strong>Current Version:</strong> ${currentVersion}</div>
+                                <div><strong>Versions:</strong> ${allVersions.join(', ')}</div>
+                            </div>`;
                         const filesInfo = doc?.files
                             ? `<div class="d-flex align-items-center">
-                    <span class="avatar rounded bg-light me-2">
-                        <img src="${fileIcons[doc?.files?.originalName?.split('.')?.pop()?.toLowerCase()] || fileIcons.default}" style="height:30px;">
-                    </span>
-                    <div>
-                         <p class="mb-0 text-dark">${doc?.metadata?.fileName || 'N/A'}</p>
-                        <small class="text-muted">${doc?.files.fileSize}</small>
-                    </div>
-                </div>`
+                                    <span class="avatar rounded bg-light me-2">
+                                        <img src="${fileIcons[doc?.files?.originalName?.split('.')?.pop()?.toLowerCase()] || fileIcons.default}" style="height:30px;">
+                                    </span>
+                                    <div>
+                                         <p class="mb-0 text-dark">${doc?.metadata?.fileName || 'N/A'}</p>
+                                        <small class="text-muted">${doc?.files.fileSize}</small>
+                                    </div>
+                                </div>`
                             : '-';
                         let dropdown;
                         if (hasFullAccess) {
                             dropdown = `
-            <div class="btn-group" role="group">
-                <button type="button" class="btn border-0" data-bs-toggle="dropdown"><i class="ti ti-settings"></i></button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
-                    <li><a class="dropdown-item" href="/documents/edit/${doc._id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
-                    <li>
-                        <a class="dropdown-item share-btn" href="#" data-doc-id="${doc._id}"  data-file-id="${doc.files?._id || ''}"  data-bs-toggle="modal" data-bs-target="#sharedoc-modal">
-                            <i class="ti ti-share"></i> Share
-                        </a>
-                    </li>
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-id="${doc._id}" data-bs-target="#versionhistory-modal"><i class="ti ti-history"></i> Version History</a></li>
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-file-id="${doc._id || ''}" data-bs-target="#downloaddoc-modal"><i class="ti ti-download"></i> Download</a></li>
-                    <li><a class="dropdown-item btn-delete" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal"><i class="ti ti-trash"></i> Move to Trash</a></li>
-                    <li><a class="dropdown-item archive-document" href="#"  data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal"><i class="ti ti-archive"></i> Move to Archive</a></li>
-                </ul>
-            </div>
-        `;
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown"><i class="ti ti-settings"></i></button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
+                                        <li><a class="dropdown-item" href="/documents/edit/${doc._id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
+                                        <li>
+                                            <a class="dropdown-item share-btn" href="#" data-doc-id="${doc._id}"  data-file-id="${doc.files?._id || ''}"  data-bs-toggle="modal" data-bs-target="#sharedoc-modal">
+                                                <i class="ti ti-share"></i> Share
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-id="${doc._id}" data-bs-target="#versionhistory-modal"><i class="ti ti-history"></i> Version History</a></li>
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-file-id="${doc._id || ''}" data-bs-target="#downloaddoc-modal"><i class="ti ti-download"></i> Download</a></li>
+                                        <li><a class="dropdown-item btn-delete" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal"><i class="ti ti-trash"></i> Move to Trash</a></li>
+                                        <li><a class="dropdown-item archive-document" href="#"  data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal"><i class="ti ti-archive"></i> Move to Archive</a></li>
+                                    </ul>
+                                </div>
+                            `;
                         } else {
                             dropdown = `
-            <div class="btn-group" role="group">
-                <button type="button" class="btn border-0" data-bs-toggle="dropdown">
-                    <i class="ti ti-settings"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
-                </ul>
-            </div>
-        `;
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                                        <i class="ti ti-settings"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
+                                    </ul>
+                                </div>
+                            `;
                         }
-
+            
                         return [
                             dropdown,
                             filesInfo,
@@ -685,58 +781,52 @@
                             vendor,
                             description,
                             doc.comment || '-',
-                            // doc.signature?.fileUrl ? `<img src="${doc.signature.fileUrl}" style="height:40px;">` : '-',
                             `<span class="badge ${statusClass}">${doc.status}</span>`,
                             doc.wantApprovers
                                 ? `<button class="btn btn-sm btn-primary add-approver-btn" data-bs-toggle="modal" data-bs-target="#addMemberModal" data-id="${doc._id}">View</button>`
                                 : `<button class="btn btn-sm btn-secondary" disabled>No Action</button>`,
                         ];
                     }
-                    $("#applyFilter").on("click", function () {
-                        $(".filter-dropdown").addClass("d-none");
-                        table.ajax.reload();
-                    });
-
-                    $("#clearFilter").on("click", function () {
-                        $('.filter-dropdown .form-check-input').prop("checked", false);
-                        $(".filter-dropdown").addClass("d-none");
-                        table.ajax.reload();
-                    });
-
-                    // -------------------------
-                    // Filters & Tabs
-                    // ------------------------
-
-                    $('#department').on('change', function () {
-                        table.ajax.reload();
-                    });
-
-                    $('#searchInput').on('input', debounce(() => {
-                        table.ajax.reload();
-                    }, 500));
-
-                    $('#searchInput').on('keypress', function (e) {
-                        if (e.which === 13) {
-                            table.ajax.reload();
-                        }
-                    });
-
-                    function debounce(fn, delay = 500) {
-                        let timer;
-                        return function (...args) {
-                            clearTimeout(timer);
-                            timer = setTimeout(() => fn.apply(this, args), delay);
-                        };
+            
+                    // Helper function to format date time
+                    function formatDateTime(dateStr) {
+                        if (!dateStr) return '-';
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        }) + ' ' + date.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
                     }
-
-                    // -------------------------
+            
+                    // Toast notification helper
+                    function showToast(message, type = 'success') {
+                        const toast = document.createElement('div');
+                        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} border-0`;
+                        toast.role = 'alert';
+                        toast.ariaLive = 'assertive';
+                        toast.ariaAtomic = 'true';
+                        toast.innerHTML = `
+                            <div class="d-flex">
+                                <div class="toast-body">${message}</div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        `;
+                        document.body.appendChild(toast);
+                        const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+                        bsToast.show();
+                        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+                    }
+            
                     // Delete document
-                    // -------------------------
                     $(document).on('click', '.btn-delete', function (e) {
                         e.preventDefault();
                         const docId = $(this).data('id');
                         $('#trashdoc-modal').modal('show');
-
+            
                         $('#confirm-trash-folder').off('click').on('click', function () {
                             $.ajax({
                                 url: `${baseUrl}/api/documents/${docId}`,
@@ -744,38 +834,33 @@
                                 success: function (response) {
                                     $('#trashdoc-modal').modal('hide');
                                     table.ajax.reload();
-                                    // show server message if available
+                                    updateDocumentCounts();
                                     showToast(response.message || 'Document moved to trash!', 'success');
                                 },
                                 error: function (xhr) {
                                     let msg = 'Error moving document to trash.';
                                     if (xhr.responseJSON && xhr.responseJSON.message) {
-                                        msg = xhr.responseJSON.message; // display actual server message
+                                        msg = xhr.responseJSON.message;
                                     }
                                     showToast(msg, 'error');
                                 }
                             });
                         });
                     });
-
-                    // -------------------------
+            
                     // Archive Document
-                    // -------------------------
                     $(document).on('click', '.archive-document', function (e) {
                         e.preventDefault();
-
+            
                         const docId = $(this).data('id');
                         const docName = $(this).closest('tr').find('td:nth-child(2) p').text().trim() || 'this document';
                         const isArchived = true;
-
-                        // Update modal text before showing
+            
                         $('#archivedoc-modal .modal-body').text(`Are you sure you want to archive ${docName}?`);
                         $('#archivedoc-modal .modal-title').html(`<img src="/img/icons/archvbin.png"> <br>Move to Archive`);
-
-                        // Show modal
+            
                         $('#archivedoc-modal').modal('show');
-
-                        // Confirm action on "Yes, Move"
+            
                         $('#archivedoc-modal .btn-primary').off('click').on('click', function () {
                             $.ajax({
                                 url: `${baseUrl}/api/documents/${docId}/archive?isArchived=${isArchived}`,
@@ -783,6 +868,7 @@
                                 success: function (response) {
                                     $('#archivedoc-modal').modal('hide');
                                     table.ajax.reload(null, false);
+                                    updateDocumentCounts();
                                     showToast(response.message || 'Document moved to archive successfully!', 'success');
                                 },
                                 error: function (xhr) {
@@ -795,7 +881,7 @@
                             });
                         });
                     });
-
+            
                     // Function to load users for invite dropdown
                     function loadUsersForInvite() {
                         $.ajax({
@@ -804,7 +890,7 @@
                             success: function (response) {
                                 const select = $('#userInviteSelect');
                                 select.empty();
-
+            
                                 if (response.data && response.data.length) {
                                     response.data.forEach(user => {
                                         select.append(`<option value="${user.email}">${user.name} (${user.email})</option>`);
@@ -816,63 +902,58 @@
                             }
                         });
                     }
-                    /* ----------------------------------------
-                       Initialize Approver Modal for View Only
-                    ---------------------------------------- */
+            
+                    // Initialize Approver Modal for View Only
                     $(document).on('click', '.add-approver-btn', async function () {
                         const documentId = $(this).data('id');
                         await loadApprovers(documentId);
                     });
-
-                    /* ---------------------------------------- 
-                       Load Approvers (GET only)
-                    ---------------------------------------- */
+            
+                    // Load Approvers (GET only)
                     async function loadApprovers(documentId) {
                         const tableBody = document.querySelector('#approverTable tbody');
                         tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>`;
-
+            
                         try {
                             const res = await fetch(`/api/documents/${documentId}/approval/track`);
                             const data = await res.json();
-
+            
                             if (!data.success) {
                                 tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${data.message || 'No approvers found'}</td></tr>`;
                                 return;
                             }
-
+            
                             const approvals = data.data?.approvals || [];
                             const documentData = data.data?.document || {};
                             const projectId = documentData._id || '';
-
+            
                             tableBody.innerHTML = '';
-
+            
                             if (approvals.length === 0) {
                                 tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No approvers found.</td></tr>`;
                                 return;
                             }
-
+            
                             const highestPriority = Math.min(...approvals.map(a => a.priority ?? Infinity));
-
+            
                             approvals.forEach((approval, index) => {
                                 const approver = approval.userId || {};
                                 const userDetails = approver.userDetails || {};
                                 const department = userDetails.department?.name || '-';
                                 const approverDesignation = approval.designation?.name || '-';
-
+            
                                 const approverName = approver.name || 'Unknown';
                                 const roleInfo = `${approverDesignation} – ${department}`;
-
+            
                                 const priority = approval.priority ?? '-';
                                 const status = approval.status || 'Pending';
                                 const isMailSent = approval.isMailSent ?? false;
-
-                                // ---- STATUS BADGE ----
+            
                                 let statusBadge = `<span class="badge bg-secondary">${status}</span>`;
                                 if (status === 'Pending') statusBadge = `<span class="badge bg-warning text-dark">Pending</span>`;
                                 if (status === 'Approved') statusBadge = `<span class="badge bg-success">Approved</span>`;
                                 if (status === 'Rejected') statusBadge = `<span class="badge bg-danger">Rejected</span>`;
-
-                                // ---- ACTION BUTTONS ----
+            
                                 let actionCellContent = '';
                                 if (approval.isApproved) {
                                     actionCellContent = `<span class="text-success small">Already Approved</span>`;
@@ -880,40 +961,36 @@
                                     actionCellContent = `<span class="text-muted small">Mail not send</span>`;
                                 } else {
                                     actionCellContent = `<button class="btn btn-sm btn-success send-mail"
-                    data-project-id="${projectId}"
-                    data-approver-id="${approver._id}">Send Mail</button>`;
+                                        data-project-id="${projectId}"
+                                        data-approver-id="${approver._id}">Send Mail</button>`;
                                 }
-                                // ---- Render Row ----
+            
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${approverName}<br><small class="text-muted">${roleInfo}</small></td>
-                <td>${priority}</td>
-                <td>${statusBadge}</td>
-                <td>${approval.remark || '-'}</td>
-                <td>${actionCellContent}</td>
-            `;
+                                    <td>${index + 1}</td>
+                                    <td>${approverName}<br><small class="text-muted">${roleInfo}</small></td>
+                                    <td>${priority}</td>
+                                    <td>${statusBadge}</td>
+                                    <td>${approval.remark || '-'}</td>
+                                    <td>${actionCellContent}</td>
+                                `;
                                 tableBody.appendChild(row);
                             });
-
+            
                         } catch (err) {
                             console.error('Error loading approvals:', err);
                             tableBody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error loading approvals.</td></tr>`;
                         }
                     }
-
-
-                    /* -----------------------------------------------------------------
-            2. SEND APPROVAL-MAIL – read IDs from button data-attributes
-         ----------------------------------------------------------------- */
+            
+                    // Send Approval Mail
                     $(document).on('click', '.send-mail', async function () {
                         const $btn = $(this);
                         const $row = $btn.closest('tr');
-
-                        // ---- Prevent double-click ----
+            
                         if ($btn.prop('disabled')) return;
                         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
-
+            
                         const projectId = $btn.data('project-id');
                         const approverId = $btn.data('approver-id');
                         try {
@@ -921,13 +998,11 @@
                                 method: 'GET',
                                 credentials: 'include'
                             });
-
+            
                             const json = await res.json();
-
+            
                             if (res.ok && json.success) {
                                 showToast(json.message || 'Approval mail sent!', 'success');
-
-                                // Mark button as sent
                                 $btn.removeClass('btn-success')
                                     .addClass('btn-outline-success')
                                     .prop('disabled', true)

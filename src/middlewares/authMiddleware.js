@@ -1,5 +1,5 @@
 import SharedWith from "../models/SharedWith.js";
-import User from "../models/User.js"; // note the .js extension
+import User from "../models/User.js";
 import logger from "../utils/logger.js";
 
 /**
@@ -15,7 +15,6 @@ export const authenticate = async (req, res, next) => {
             }
         }
 
-        // Fetch fresh user data from DB
         const user = await User.findById(req.session.user._id).select("-password -raw_password");
         if (!user) {
             if (req.originalUrl.startsWith("/api")) {

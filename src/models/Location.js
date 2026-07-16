@@ -6,7 +6,8 @@ const { Schema } = mongoose;
 ========================= */
 const countrySchema = new Schema(
   {
-    name: { type: String, required: true, trim: true, unique: true }
+    name: { type: String, required: true, trim: true, unique: true },
+    status: { type: String, enum:['Active','Inactive' ], default:"Actvie"},
   },
   { timestamps: true }
 );
@@ -21,7 +22,8 @@ const stateSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Country",
       required: true
-    }
+    },
+    status: { type: String, enum:['Active','Inactive' ], default:"Actvie"},
   },
   { timestamps: true }
 );
@@ -38,7 +40,10 @@ const citySchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "State",
       required: true
-    }
+    },
+    status: { type: String, enum:['Active','Inactive' ], default:"Actvie"},
+    latitude: { type: Number, default: 0},
+    longitude: { type: Number, default: 0},
   },
   { timestamps: true }
 );

@@ -18,46 +18,57 @@
 </head>
 
 <body>
-    <div class="container mt-4" style="padding: 0px 100px">
-        <div class="row">
-            <div class="col-sm-5">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-sm-6">
                 <div class="login_illstration">
-                    <div class="loginlogo">
+                    <!-- <div class="loginlogo">
                         <img src="<%= logo %>">
-                    </div>
+                    </div> -->
                     <div class="main_illustration">
-                        <img src="<%= banner %>">
+                        <img src="<%= banner %>" style="height:100vh;">
                     </div>
                 </div>
             </div>
-            <div class="col-sm-2">&nbsp;</div>
-            <div class="col-sm-5">
+            <div class="col-sm-5 ps-5">
                 <div class="loginforms">
-                    <h2>
-                        Welcome to <%= companyName || "E- Sangrah" %>!
-                    </h2>
-                    <p class="subtext">
-                        <%= metaTitle || "Where you can manage your files in one software" %>
-                    </p>
+                    <div class="loginheadwrap">
+                        <div class="lgnhdicon bg-soft-infos">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="lgnhdtxt">
+                            <h2>
+                                Welcome to <%= companyName || "E- Sangrah" %>!
+                            </h2>
+                            <p class="subtext">
+                                <%= metaTitle || "Where you can manage your files in one software" %>
+                            </p>
+                        </div>
+                    </div>                    
                     <div class="mb-4">
                         <label for="emailInput" class="form-label">Email ID</label>
-                        <input type="email" class="form-control" id="emailInput" placeholder="name@example.com"
-                            autocomplete="username">
+                        <div class="fieldwrap">
+                            <i class="fa fa-envelope"></i>
+                            <input type="email" class="form-control" id="emailInput" placeholder="name@example.com"  autocomplete="username">
+                        </div>
                     </div>
                     <div class="mb-4 password-box">
                         <label for="passwordInput" class="form-label">Enter your Password</label>
-                        <input type="password" class="form-control" id="passwordInput" placeholder="eg. Abc@1254"
-                            autocomplete="new-password">
-                        <span class="password-toggle" data-target="passwordInput">
-                            <i class="fa fa-eye"></i>
-                        </span>
+                        <div class="fieldwrap">
+                            <i class="fa fa-lock"></i>
+                            <input type="password" class="form-control" id="passwordInput" placeholder="eg. Abc@1254"
+                                autocomplete="new-password">
+                            <span class="password-toggle" data-target="passwordInput">
+                                <i class="fa fa-eye"></i>
+                            </span>
+                        </div>
                         <div class="forgetlink">
                             <a href="forgot-password">Forgot Password?</a>
                         </div>
                     </div>
                     <!-- OTP Input Section -->
                     <div class="otp-section mt-3" style="display:none;">
-                        <h5 class="mb-3">Enter OTP</h5>
+                        <h5 class="mb-4">Enter OTP</h5>
                         <div class="d-flex mb-3 otp-inputs gap-2">
                             <input type="text" maxlength="1" class="form-control otp-input">
                             <input type="text" maxlength="1" class="form-control otp-input">
@@ -70,7 +81,7 @@
                     </div>
 
                     <div class="submitrow">
-                        <button type="button" id="loginBtn" class="btn submitbtn">Submit</button>
+                        <button type="button" id="loginBtn" class="btn submitbtn"> <i class="fa fa-lock me-2"></i> Login</button>
                         <div id="loginMessage" class="mt-2"></div>
                     </div>
                 </div>
