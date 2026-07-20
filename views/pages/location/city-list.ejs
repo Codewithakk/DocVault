@@ -31,11 +31,11 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>Sr No.</th>
+                                <th>Action</th>
                                 <th>Name</th>
                                 <th>State</th>
                                 <th>Country</th>
                                 <th>Created At</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="cityTableBody"></tbody>
@@ -360,10 +360,6 @@ function loadCities() {
                         recordsFiltered: res.total,
                         data: res.data.map((c, index) => ([
                             data.start + index + 1,
-                            c.name,
-                            c.state?.name || '-',
-                            c.state?.country?.name || '-',
-                            formatDateTime(c.createdAt),
                             `
                             <a href="#" class="text-primary edit me-2"
                                data-item='${encodeURIComponent(JSON.stringify(c))}'>
@@ -373,7 +369,11 @@ function loadCities() {
                                data-id="${c._id}">
                                 <i class="ti ti-trash"></i>
                             </a>
-                            `
+                            `,
+                            c.name,
+                            c.state?.name || '-',
+                            c.state?.country?.name || '-',
+                            formatDateTime(c.createdAt),
                         ]))
                     });
                 },

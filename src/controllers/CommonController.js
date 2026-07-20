@@ -20,6 +20,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "stream";
 import Project from "../models/Project.js";
 import DocumentVersion from "../models/DocumentVersion.js";
+import { bytesToGB } from "../helper/Common.js";
 
 function formatHeader(text) {
     if (!text) return "";
@@ -1125,10 +1126,6 @@ export const myStorage = async (req, res) => {
         
         // Get year from session or use current year
         let year = req.session?.selectedYear ? Number(req.session.selectedYear) : new Date().getFullYear();
-        
-        console.log('Year being used:', year);
-        console.log('User ID:', userId);
-
         const MAX_STORAGE = 200 * 1024 * 1024 * 1024;
 
         // Build match query WITHOUT date filter first to debug
@@ -1248,8 +1245,6 @@ export const myStorage = async (req, res) => {
         // Calculate totals
         const totalUsed = documentsStorage + mediaStorage + othersStorage;
         const remainingStorage = Math.max(0, MAX_STORAGE - totalUsed);
-        
-        const bytesToGB = (b) => parseFloat((b / (1024 * 1024 * 1024)).toFixed(2));
         
         const usedGB = bytesToGB(totalUsed);
         const remainingGB = bytesToGB(remainingStorage);

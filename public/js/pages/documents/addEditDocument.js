@@ -1,21 +1,30 @@
-// Global state
+// =============================================
+// DOCUMENT ADD/EDIT - COMPLETE SCRIPT
+// =============================================
 
+// Global state
 $(document).ready(function () {
     // Force header project select to work independently
     if (typeof initializeHeaderComponents === 'function') {
-        // Re-initialize header components after page load
         setTimeout(initializeHeaderComponents, 100);
     }
 });
 
-window.selectedFolders = [];   // [{ id, name }]
+window.selectedFolders = [];
 window.selectedProject = { id: null, name: null };
 window.selectedDepartment = { id: null, name: null };
 window.selectedProjectManager = { id: null, name: null };
+window.uploadedFilesMetadata = []; // Store metadata for ALL uploaded files
+window.folderTreeData = []; // Store the complete folder tree data
+window.uploadedFileIds = []; // Store server-side file IDs
 
 const folderForm = document.getElementById('folderForm');
 const folderContainer = document.getElementById('folderContainer');
 const selectedFolderInput = document.getElementById('selectedFolderId');
+
+// =============================================
+// UTILITY FUNCTIONS
+// =============================================
 
 function debounce(fn, delay) {
     let timer;
@@ -24,6 +33,479 @@ function debounce(fn, delay) {
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
 }
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// =============================================
+// DYNAMIC FOLDER TREE FUNCTIONS
+// =============================================
+
+/**
+ * Fetch and build the dynamic folder tree
+ */
+async function buildDynamicFolderTree() {
+    const projectId = $('#projectName').val();
+    const departmentId = $('#department').val();
+    
+    // Reset tree and grid if nothing selected
+    if ((!projectId || projectId === 'all') || (!departmentId || departmentId === 'all')) {
+        $('#dynamicFolderTree').html('<li class="text-muted p-3">Please select project and department</li>');
+        $('#dynamicFolderGrid').html('<p class="text-muted p-3">Please select project and department</p>');
+        window.folderTreeData = [];
+        return;
+    }
+    
+    const query = new URLSearchParams();
+    if (departmentId && departmentId !== 'all') query.append('departmentId', departmentId);
+    if (projectId && projectId !== 'all') query.append('projectId', projectId);
+    
+    try {
+        // Show loaders
+        $('#folderTreeLoader').removeClass('d-none');
+        $('#folderGridLoader').removeClass('d-none');
+        
+        const res = await fetch(`/api/folders/tree/structure?${query.toString()}`);
+        const data = await res.json();
+        
+        if (!data.success || !data.tree || data.tree.length === 0) {
+            $('#dynamicFolderTree').html('<li class="text-muted p-3">No folders found</li>');
+            $('#dynamicFolderGrid').html('<p class="text-muted p-3">No folders found</p>');
+            return;
+        }
+        
+        window.folderTreeData = data.tree;
+        
+        // Build tree view
+        renderFolderTree(data.tree);
+        
+        // Build grid view
+        renderFolderGrid(data.tree);
+        
+    } catch (err) {
+        console.error("Error building folder tree:", err);
+        $('#dynamicFolderTree').html('<li class="text-danger p-3">Error loading folders</li>');
+        $('#dynamicFolderGrid').html('<p class="text-danger p-3">Error loading folders</p>');
+    } finally {
+        $('#folderTreeLoader').addClass('d-none');
+        $('#folderGridLoader').addClass('d-none');
+    }
+}
+
+/**
+ * Render the folder tree recursively
+ */
+function renderFolderTree(treeData, parentElement = null, level = 0) {
+    const container = parentElement || $('#dynamicFolderTree');
+    
+    if (!parentElement) {
+        container.empty();
+    }
+    
+    treeData.forEach(folder => {
+        const hasChildren = folder.children && folder.children.length > 0;
+        const folderId = folder._id;
+        const folderName = folder.name;
+        
+        // Create folder node
+        const li = document.createElement('li');
+        li.className = 'folder-tree-item';
+        
+        const nodeDiv = document.createElement('div');
+        nodeDiv.className = 'folder-node';
+        nodeDiv.setAttribute('data-folder', folderId);
+        nodeDiv.onclick = function(e) { selectFolderFromTree(e, folder); };
+        
+        // Build folder node HTML
+        let nodeHTML = '';
+        
+        if (hasChildren) {
+            nodeHTML += `
+                <button type="button" class="folder-toggle expanded" onclick="toggleFolderTree(event, '${folderId}')">
+                    <i class="ti ti-chevron-right"></i>
+                </button>
+            `;
+        } else {
+            nodeHTML += `<div style="width:15px;"></div>`;
+        }
+        
+        nodeHTML += `
+            <i class="folder-icon ${level === 0 ? 'root' : 'sub'} ti ti-folder"></i>
+            <div class="folder-content">
+                <div class="folder-info">
+                    <div class="folder-name">${folderName}</div>
+                    ${hasChildren ? `<div class="folder-count">${folder.children.length} sub-folders</div>` : ''}
+                </div>
+            </div>
+        `;
+        
+        nodeDiv.innerHTML = nodeHTML;
+        li.appendChild(nodeDiv);
+        
+        // Create nested UL for children
+        if (hasChildren) {
+            const nestedUl = document.createElement('ul');
+            nestedUl.className = 'folder-nested';
+            nestedUl.id = `nested-tree-${folderId}`;
+            li.appendChild(nestedUl);
+            
+            // Recursively render children
+            renderFolderTree(folder.children, nestedUl, level + 1);
+        }
+        
+        container.append(li);
+    });
+}
+
+/**
+ * Render the folder grid (Frequently Used section)
+ */
+function renderFolderGrid(treeData) {
+    const gridContainer = $('#dynamicFolderGrid');
+    gridContainer.empty();
+    
+    // Flatten tree to get all folders for grid
+    const allFolders = flattenFolderTree(treeData);
+    
+    if (allFolders.length === 0) {
+        gridContainer.html('<p class="text-muted p-3">No folders available</p>');
+        return;
+    }
+    
+    // Display all folders or limit to first 8 for "Frequently Used"
+    const displayFolders = allFolders.slice(0, 8);
+    
+    displayFolders.forEach(folder => {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.setAttribute('data-folder', folder._id);
+        card.onclick = function(e) { selectFolderFromGrid(e, folder); };
+        
+        const subCount = folder.children ? folder.children.length : 0;
+        
+        card.innerHTML = `
+            <div class="fldicn">
+                <i class="folder-card-icon ti ti-folder" style="color: var(--folder-yellow);"></i>
+            </div>
+            <div class="frq_fldrtxt">
+                <div class="folder-card-name">${folder.name}</div>
+                <div class="folder-card-count">${subCount} Documents</div>
+            </div>
+        `;
+        
+        gridContainer.append(card);
+    });
+}
+
+/**
+ * Flatten folder tree to array
+ */
+function flattenFolderTree(tree, result = []) {
+    tree.forEach(folder => {
+        result.push(folder);
+        if (folder.children && folder.children.length > 0) {
+            flattenFolderTree(folder.children, result);
+        }
+    });
+    return result;
+}
+
+/**
+ * Toggle folder tree expansion
+ */
+function toggleFolderTree(event, folderId) {
+    event.stopPropagation();
+    const btn = event.currentTarget;
+    const nested = document.getElementById(`nested-tree-${folderId}`);
+    
+    if (btn && nested) {
+        btn.classList.toggle('expanded');
+        nested.classList.toggle('collapsed');
+    }
+}
+
+/**
+ * Select folder from tree
+ */
+function selectFolderFromTree(event, folder) {
+    event.stopPropagation();
+    
+    // Remove selected class from all tree nodes
+    document.querySelectorAll('#dynamicFolderTree .folder-node').forEach(node => {
+        node.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked node
+    const clickedNode = event.currentTarget;
+    clickedNode.classList.add('selected');
+    
+    // Update selection
+    updateFolderSelection(folder);
+}
+
+/**
+ * Select folder from grid
+ */
+function selectFolderFromGrid(event, folder) {
+    event.stopPropagation();
+    
+    // Remove selected class from all grid cards
+    document.querySelectorAll('#dynamicFolderGrid .folder-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    const clickedCard = event.currentTarget;
+    clickedCard.classList.add('selected');
+    
+    // Update selection
+    updateFolderSelection(folder);
+}
+
+/**
+ * Update folder selection logic
+ */
+function updateFolderSelection(folder) {
+    // Find the full path to this folder
+    const folderPath = findFolderPath(folder._id);
+    
+    // Update global state
+    window.selectedFolders = folderPath;
+    $('#selectedFolderId').val(folder._id);
+    
+    // Update UI
+    updateDynamicBreadcrumb(folderPath);
+    updateDirectoryPath();
+    updateFolderBreadcrumb();
+    
+    // Also update the folder container
+    loadFoldersIntoContainer(folder._id, folderPath);
+    
+    // Update grid/tree cross-selection
+    updateGridSelection(folder._id);
+    updateTreeSelection(folder._id);
+}
+
+/**
+ * Find the path from root to a specific folder
+ */
+function findFolderPath(folderId, treeData = null, currentPath = []) {
+    if (!treeData) {
+        treeData = window.folderTreeData;
+    }
+    
+    for (const folder of treeData) {
+        const newPath = [...currentPath, { id: folder._id, name: folder.name }];
+        
+        if (folder._id === folderId) {
+            return newPath;
+        }
+        
+        if (folder.children && folder.children.length > 0) {
+            const found = findFolderPath(folderId, folder.children, newPath);
+            if (found) return found;
+        }
+    }
+    
+    return currentPath;
+}
+
+/**
+ * Update tree selection from grid
+ */
+function updateTreeSelection(folderId) {
+    document.querySelectorAll('#dynamicFolderTree .folder-node').forEach(node => {
+        node.classList.remove('selected');
+    });
+    
+    const treeNode = document.querySelector(`#dynamicFolderTree .folder-node[data-folder="${folderId}"]`);
+    if (treeNode) {
+        treeNode.classList.add('selected');
+        treeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+/**
+ * Update grid selection from tree
+ */
+function updateGridSelection(folderId) {
+    document.querySelectorAll('#dynamicFolderGrid .folder-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    const card = document.querySelector(`#dynamicFolderGrid .folder-card[data-folder="${folderId}"]`);
+    if (card) {
+        card.classList.add('selected');
+    }
+}
+
+/**
+ * Update the dynamic breadcrumb
+ */
+function updateDynamicBreadcrumb(folderPath) {
+    const breadcrumbNav = $('#dynamicBreadcrumb');
+    
+    if (!folderPath || folderPath.length === 0) {
+        breadcrumbNav.html(`
+            <i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem;"></i>
+            <span class="text-muted">Select a folder</span>
+        `);
+        return;
+    }
+    
+    let html = '<i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem;"></i>';
+    
+    folderPath.forEach((folder, index) => {
+        if (index < folderPath.length - 1) {
+            html += `<a href="javascript:void(0)" onclick="navigateToFolder('${folder.id}')">${folder.name}</a>`;
+            html += '<span class="breadcrumb-separator"> > </span>';
+        } else {
+            html += `<span class="active">${folder.name}</span>`;
+        }
+    });
+    
+    breadcrumbNav.html(html);
+}
+
+/**
+ * Navigate to a specific folder in the breadcrumb
+ */
+function navigateToFolder(folderId) {
+    const folder = findFolderById(folderId);
+    if (folder) {
+        updateFolderSelection(folder);
+    }
+}
+
+/**
+ * Find folder by ID in tree data
+ */
+function findFolderById(folderId, treeData = null) {
+    if (!treeData) {
+        treeData = window.folderTreeData;
+    }
+    
+    for (const folder of treeData) {
+        if (folder._id === folderId) return folder;
+        
+        if (folder.children && folder.children.length > 0) {
+            const found = findFolderById(folderId, folder.children);
+            if (found) return found;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Load folders into the folder container
+ */
+async function loadFoldersIntoContainer(folderId, folderPath) {
+    await loadFolders(folderId, folderPath);
+}
+
+// =============================================
+// METADATA DISPLAY - SHOW ALL UPLOADED FILES
+// =============================================
+
+/**
+ * Update metadata display to show ALL uploaded files
+ */
+function updateMetadataDisplay() {
+    const metadataContainer = $('#metadataDisplay');
+    if (!metadataContainer.length) return;
+    
+    if (window.uploadedFilesMetadata.length === 0) {
+        metadataContainer.html('<p class="text-muted">No files uploaded yet</p>');
+        return;
+    }
+    
+    let html = '<div class="table-responsive" style="max-height: 400px; overflow-y: auto;">';
+    html += '<table class="table table-sm table-hover mb-0">';
+    html += `
+        <thead class="table-light sticky-top">
+            <tr>
+                <th>#</th>
+                <th>File Name</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th>Uploaded By</th>
+                <th>Upload Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    window.uploadedFilesMetadata.forEach((file, index) => {
+        const fileTypeIcon = getFileTypeIcon(file.fileType);
+        const fileStatus = file.fileId && !file.fileId.startsWith('temp_') ? 'Uploaded' : 'Pending';
+        const statusBadgeClass = fileStatus === 'Uploaded' ? 'bg-success' : 'bg-warning';
+        
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>
+                    <i class="${fileTypeIcon} me-2"></i>
+                    <strong>${file.fileName}</strong>
+                </td>
+                <td><span class="badge bg-info">${file.fileType.split('/').pop().toUpperCase()}</span></td>
+                <td>${file.fileSize}</td>
+                <td>${file.uploadedBy}</td>
+                <td><small>${file.uploadDate}</small></td>
+                <td><span class="badge ${statusBadgeClass}">${fileStatus}</span></td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    
+    // Add summary footer
+    const uploadedCount = window.uploadedFilesMetadata.filter(f => f.fileId && !f.fileId.startsWith('temp_')).length;
+    const pendingCount = window.uploadedFilesMetadata.filter(f => f.fileId && f.fileId.startsWith('temp_')).length;
+    
+    html += `
+        <div class="d-flex justify-content-between align-items-center mt-2 p-2 bg-light rounded">
+            <div>
+                <span class="badge bg-primary me-2">Total: ${window.uploadedFilesMetadata.length}</span>
+                <span class="badge bg-success me-2">Uploaded: ${uploadedCount}</span>
+                ${pendingCount > 0 ? `<span class="badge bg-warning">Pending: ${pendingCount}</span>` : ''}
+            </div>
+            <small class="text-muted">Last updated: ${new Date().toLocaleTimeString()}</small>
+        </div>
+    `;
+    
+    metadataContainer.html(html);
+}
+
+/**
+ * Get file type icon based on MIME type
+ */
+function getFileTypeIcon(fileType) {
+    if (!fileType) return 'ti ti-file';
+    
+    if (fileType.includes('pdf')) return 'ti ti-file-text';
+    if (fileType.includes('word') || fileType.includes('document')) return 'ti ti-file-word';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'ti ti-file-spreadsheet';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'ti ti-file-powerpoint';
+    if (fileType.includes('image')) return 'ti ti-photo';
+    if (fileType.includes('video')) return 'ti ti-video';
+    if (fileType.includes('audio')) return 'ti ti-music';
+    if (fileType.includes('zip') || fileType.includes('compressed')) return 'ti ti-file-zip';
+    if (fileType.includes('csv')) return 'ti ti-file-spreadsheet';
+    if (fileType.includes('text')) return 'ti ti-file-text';
+    
+    return 'ti ti-file';
+}
+
+// =============================================
+// INITIALIZATION
+// =============================================
 
 $(document).ready(function () {
     // --------------------------
@@ -39,6 +521,33 @@ $(document).ready(function () {
                 name: window.documentData.folderId.name || 'Selected Folder'
             }];
             $('#selectedFolderId').val(window.documentData.folderId._id || window.documentData.folderId);
+        }
+
+        // Initialize metadata if exists
+        if (window.documentData.metadata) {
+            populateMetadataFields(window.documentData.metadata);
+        }
+
+        // Initialize uploaded files metadata if editing
+        if (window.documentData.files && window.documentData.files.length > 0) {
+            window.uploadedFilesMetadata = window.documentData.files.map(file => ({
+                fileName: file.originalName || file.name || 'Unknown',
+                fileType: file.mimetype || file.type || 'Unknown',
+                fileSize: formatFileSize(file.size || 0),
+                uploadedBy: file.uploadedBy?.name || 'Unknown',
+                uploadDate: file.createdAt ? new Date(file.createdAt).toLocaleString() : 'Unknown',
+                fileId: file._id || file.id
+            }));
+            updateMetadataDisplay();
+        }
+    }
+
+    // --------------------------
+    // Populate metadata fields
+    // --------------------------
+    function populateMetadataFields(metadata) {
+        if (metadata.fileName) {
+            $('input[name="metadata[fileName]"]').val(metadata.fileName);
         }
     }
 
@@ -66,6 +575,7 @@ $(document).ready(function () {
         format: 'DD-MM-YYYY',
         useCurrent: false
     });
+
     // --------------------------
     // Date Restrictions for Compliance
     // --------------------------
@@ -74,8 +584,8 @@ $(document).ready(function () {
     // --------------------------
     // Compliance radio buttons
     // --------------------------
-    $('input[name="compliance"]').change(function () {
-        if ($(this).val() === 'yes') {
+    $('#complianceSwitch').change(function () {
+        if ($(this).is(':checked')) {
             $('#expiryDateContainer').show();
             $('input[name="expiryDate"]').prop('required', true);
         } else {
@@ -98,12 +608,14 @@ $(document).ready(function () {
         $('#metadata-modal').modal('hide');
     });
 
+    // --------------------------
+    // Toggle Create Folder Button
+    // --------------------------
     function toggleCreateFolderBtn() {
         const projectSelected = !!$('#projectName').val() && $('#projectName').val() !== 'all';
         const departmentSelected = !!$('#department').val() && $('#department').val() !== 'all';
         const isEnabled = projectSelected && departmentSelected;
     
-        // Update Create Folder button
         $('#createFolderBtn')
             .prop('disabled', !isEnabled)
             .css({
@@ -112,7 +624,6 @@ $(document).ready(function () {
             })
             .attr('title', isEnabled ? 'Create new folder' : 'Please select both Project and Department');
     
-        // Enable/disable Upload Box
         if (projectSelected && departmentSelected) {
             $('#uploadBox').css({ 'pointer-events': '', 'opacity': '' });
         } else {
@@ -120,11 +631,13 @@ $(document).ready(function () {
         }
     }
 
+    // --------------------------
+    // Load Folders
+    // --------------------------
     async function loadFolders(rootId = null, parentPath = []) {
         const departmentId = $('#department').val();
         const projectId = $('#projectName').val();
 
-        // Reset if nothing selected
         if ((!projectId || projectId === 'all') && (!departmentId || departmentId === 'all')) {
             $('#folderContainer').empty();
             window.selectedFolders = [];
@@ -145,20 +658,11 @@ $(document).ready(function () {
             const data = await res.json();
             if (!data.success) return;
 
-            // =============================================
-            // LOGIC: Different behavior based on filters
-            // =============================================
             let foldersToRender = [];
 
             if (departmentId && departmentId !== 'all') {
-                // =============================================
-                // CASE 1: DEPARTMENT SELECTED - Show ONLY root folders (top-level)
-                // =============================================
                 if (rootId === null || rootId === undefined) {
-                    // Show root level folders (where parent is null OR parent doesn't exist in the tree)
                     const allFolders = flattenTree(data.tree);
-
-                    // Get all folder IDs that appear as children (have a parent in this tree)
                     const childFolderIds = new Set();
                     data.tree.forEach(folder => {
                         if (folder.children) {
@@ -168,7 +672,6 @@ $(document).ready(function () {
                         }
                     });
 
-                    // Show only folders that are NOT children (root folders)
                     foldersToRender = data.tree.filter(folder => {
                         if (folder.parent) {
                             const parentExists = data.tree.some(f => f._id === folder.parent);
@@ -178,30 +681,19 @@ $(document).ready(function () {
                         return true;
                     });
 
-                    // If no root folders found, fallback to show all folders
                     if (foldersToRender.length === 0) {
                         foldersToRender = data.tree || [];
                     }
                 } else {
-                    // =============================================
-                    // FIX: When rootId is provided, show ONLY the children of that specific folder
-                    // But only if the user double-clicked to navigate into it
-                    // =============================================
-                    // Find the folder in the tree
                     const foundFolder = findFolderInTree(data.tree, rootId);
                     if (foundFolder) {
-                        // Show the children of the found folder
                         foldersToRender = foundFolder.children || [];
                     } else {
                         foldersToRender = [];
                     }
                 }
             } else if (projectId && projectId !== 'all' && !departmentId) {
-                // =============================================
-                // CASE 2: ONLY PROJECT SELECTED (No Department) - Hide root folders, show children only
-                // =============================================
                 if (rootId === null || rootId === undefined) {
-                    // Hide root folders, show only children
                     const allFolders = flattenTree(data.tree);
                     const rootFolderIds = new Set();
                     data.tree.forEach(folder => {
@@ -221,22 +713,15 @@ $(document).ready(function () {
                         foldersToRender = [];
                     }
                 } else {
-                    // When a folder is clicked, show its children
                     const foundFolder = findFolderInTree(data.tree, rootId);
                     foldersToRender = foundFolder?.children || [];
                 }
             } else {
-                // =============================================
-                // CASE 3: DEFAULT - Original behavior (both or none selected)
-                // =============================================
                 foldersToRender = rootId
                     ? (data.tree[0]?.children || [])
                     : (data.tree || []);
             }
 
-            // =============================================
-            // Helper: Flatten tree to get all folders
-            // =============================================
             function flattenTree(tree) {
                 let result = [];
                 tree.forEach(folder => {
@@ -248,9 +733,6 @@ $(document).ready(function () {
                 return result;
             }
 
-            // =============================================
-            // Helper: Recursively find folder in tree
-            // =============================================
             function findFolderInTree(tree, folderId) {
                 for (const folder of tree) {
                     if (folder._id === folderId) return folder;
@@ -280,7 +762,6 @@ $(document).ready(function () {
 
                 folderCard.data('folder', folder);
 
-                // Auto-select if in edit mode and this is the selected folder
                 const isSelectedFolder = window.isEdit &&
                     window.documentData &&
                     window.documentData.folderId &&
@@ -293,7 +774,6 @@ $(document).ready(function () {
                     foundSelectedFolder = true;
                 }
 
-                // Single click: select folder
                 folderCard.on('click', function () {
                     $('.folder-card').removeClass('active border-primary').addClass('border');
                     folderCard.addClass('active border-primary');
@@ -301,20 +781,20 @@ $(document).ready(function () {
                     window.selectedFolders = [...parentPath, { id: folder._id, name: folder.name }];
                     $('#selectedFolderId').val(folder._id);
                     updateDirectoryPath();
+                    updateFolderBreadcrumb();
                 });
 
-                // Double click: open subfolder (only if it has children)
                 if (subCount > 0) {
                     folderCard.on('dblclick', async function () {
                         const newPath = [...parentPath, { id: folder._id, name: folder.name }];
                         await loadFolders(folder._id, newPath);
+                        updateFolderBreadcrumb();
                     });
                 }
 
                 container.append(folderCard);
             });
 
-            // Add "Create Folder" button (only at root level and when department is selected)
             if (!window.isEdit && (rootId === null || rootId === undefined)) {
                 const projectSelected = $('#projectName').val() && $('#projectName').val() !== 'all';
                 const departmentSelected = departmentId && departmentId !== 'all';
@@ -340,7 +820,6 @@ $(document).ready(function () {
                     </button>
                 `);
             
-                // Add tooltip to explain why it's disabled
                 if (!isEnabled) {
                     addFolderBtn.attr('title', 'Please select both Project and Department to create a folder');
                 }
@@ -348,24 +827,20 @@ $(document).ready(function () {
                 container.append(addFolderBtn);
             }
 
-            // =============================================
-            // AUTO-SELECT: Only for department views at root level
-            // =============================================
             if (!rootId && !window.isEdit && !foundSelectedFolder && foldersToRender.length > 0) {
                 const firstFolder = foldersToRender[0];
-
                 window.selectedFolders = [{
                     id: firstFolder._id,
                     name: firstFolder.name
                 }];
-
                 $('#selectedFolderId').val(firstFolder._id);
                 updateDirectoryPath();
+                updateFolderBreadcrumb();
             }
 
             updateDirectoryPath();
+            updateFolderBreadcrumb();
 
-            // Show message if no folders found
             if (foldersToRender.length === 0 && !window.isEdit) {
                 let message = 'No folders found';
                 if (projectId && projectId !== 'all' && !departmentId) {
@@ -388,6 +863,75 @@ $(document).ready(function () {
             showToast('Error loading folders: ' + err.message, 'error');
         }
     }
+
+    // --------------------------
+    // Update Folder Breadcrumb
+    // --------------------------
+    function updateFolderBreadcrumb() {
+        const breadcrumbNav = document.querySelector('.breadcrumb-nav');
+        if (!breadcrumbNav) return;
+
+        const projectText = $('#projectName option:selected').text();
+        const departmentText = $('#department option:selected').text();
+        const folders = window.selectedFolders || [];
+
+        let html = '<i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem;"></i>';
+
+        const pathSegments = [];
+
+        if (projectText && projectText !== '-- Select Project Name --') {
+            pathSegments.push({ name: projectText, type: 'project' });
+        }
+
+        if (departmentText && departmentText !== '-- Select Department --') {
+            pathSegments.push({ name: departmentText, type: 'department' });
+        }
+
+        folders.forEach(folder => {
+            pathSegments.push({ name: folder.name, type: 'folder', id: folder.id });
+        });
+
+        pathSegments.forEach((segment, index) => {
+            if (index < pathSegments.length - 1) {
+                html += `<a href="javascript:void(0)" class="breadcrumb-link" data-type="${segment.type}" data-id="${segment.id || ''}">${segment.name}</a>`;
+                html += '<span class="breadcrumb-separator"> > </span>';
+            } else {
+                html += `<span class="active">${segment.name}</span>`;
+            }
+        });
+
+        breadcrumbNav.innerHTML = html;
+
+        breadcrumbNav.querySelectorAll('.breadcrumb-link').forEach(link => {
+            link.addEventListener('click', async function(e) {
+                e.preventDefault();
+                const type = this.dataset.type;
+                const id = this.dataset.id;
+
+                if (type === 'folder' && id) {
+                    const index = window.selectedFolders.findIndex(f => f.id === id);
+                    if (index !== -1) {
+                        const newPath = window.selectedFolders.slice(0, index + 1);
+                        window.selectedFolders = newPath;
+                        $('#selectedFolderId').val(id);
+                        await loadFolders(id, newPath);
+                        updateDirectoryPath();
+                        updateFolderBreadcrumb();
+                    }
+                } else if (type === 'project' || type === 'department') {
+                    window.selectedFolders = [];
+                    $('#selectedFolderId').val('');
+                    await loadFolders(null, []);
+                    updateDirectoryPath();
+                    updateFolderBreadcrumb();
+                }
+            });
+        });
+    }
+
+    // --------------------------
+    // Folder Modal
+    // --------------------------
     $('#folder-modal').on('show.bs.modal', function () {
         const projectText = $('#projectName option:selected').text();
         const projectId = $('#projectName').val();
@@ -398,45 +942,29 @@ $(document).ready(function () {
         const parentFolderSelect = $('#parentFolder');
         parentFolderSelect.empty();
 
-        // ---------------------------
-        // 1. Top-Level (no parent)
-        // ---------------------------
         parentFolderSelect.append(
             new Option('-- Top-Level (No Parent) --', '', false, false)
         );
 
-        // ---------------------------
-        // 2. Project / Department
-        // ---------------------------
         if (projectId && projectId !== 'all' && departmentId && departmentId !== 'all') {
-            const isSelected = folders.length === 0; // select if no folder selected
+            const isSelected = folders.length === 0;
             parentFolderSelect.append(
                 new Option(`${projectText} / ${departmentText}`, 'root', false, isSelected)
             );
         }
 
-        // ---------------------------
-        // 3. Existing folder chain
-        // ---------------------------
         folders.forEach((f, i) => {
-            // const fullPath = `${projectText} / ${departmentText} /${folders.slice(0, i + 1).map(ff => ff.name).join(' / ')}`;
             const fullPath = `${folders.slice(0, i + 1).map(ff => ff.name).join(' / ')}`;
-            const isSelected = i === folders.length - 1; // last folder selected by default
+            const isSelected = i === folders.length - 1;
             parentFolderSelect.append(new Option(fullPath, f.id, false, isSelected));
         });
 
-        // Trigger change for select2
         parentFolderSelect.trigger('change');
     });
 
-    // Run on page load
-    initializeEditData();
-    toggleCreateFolderBtn();
-    loadFolders();
-    updateDirectoryPath();
-
     // --------------------------
     // Handle folder creation
+    // --------------------------
     $('#createFolderForm').on('submit', async function (e) {
         e.preventDefault();
 
@@ -445,12 +973,11 @@ $(document).ready(function () {
         const departmentId = $('#department').val();
         let parentId = $('#parentFolder').val();
 
-        // If the user selected "Root" or no parent, set null for top-level
         if (!parentId || parentId === '') {
             parentId = null;
         }
         else if (parentId === 'root') parentId = null;
-        // Validation
+
         if (!folderName || !projectId || !departmentId) {
             showToast('Please select Project, Department, and provide folder name.', 'error');
             return;
@@ -469,16 +996,13 @@ $(document).ready(function () {
             $('#folder-modal').modal('hide');
             $('#createFolderForm')[0].reset();
 
-            // Reload current folder to show new folder at the end
             let newPath = [];
 
             if (parentId) {
-                // If creating inside a subfolder, find the path to parent
                 const parentIndex = window.selectedFolders.findIndex(f => f.id === parentId);
                 if (parentIndex >= 0) {
                     newPath = window.selectedFolders.slice(0, parentIndex + 1);
                 } else {
-                    // If parent is selected from modal but not in selectedFolders
                     newPath = [...window.selectedFolders];
                     const parentName = $('#parentFolder option:selected').text();
                     if (parentName) {
@@ -487,9 +1011,11 @@ $(document).ready(function () {
                 }
             }
 
-            // Reload the parent folder and auto-select it
             await loadFolders(parentId, newPath);
-            // Inside the success block, after loadFolders
+            
+            // Refresh the dynamic tree
+            await buildDynamicFolderTree();
+
             const container = $('#folderContainer');
             const newFolderCard = container.find('.folder-card').filter(function () {
                 return $(this).find('.fldrname').text() === folderName;
@@ -499,10 +1025,10 @@ $(document).ready(function () {
                 newFolderCard.trigger('click');
             }
 
-            // Update selected folder to parent folder
             window.selectedFolders = newPath;
             $('#selectedFolderId').val(parentId);
             updateDirectoryPath();
+            updateFolderBreadcrumb();
 
             showToast('Folder created successfully!', 'success');
         } catch (err) {
@@ -510,28 +1036,27 @@ $(document).ready(function () {
         }
     });
 
+    // --------------------------
+    // File Upload Handling
+    // --------------------------
     const uploadBox = document.getElementById("uploadBox");
     const fileInput = document.getElementById("fileInput");
     const fileList = document.getElementById("fileList");
-    let uploadedFileIds = []; // store server-side file IDs
+    window.uploadedFileIds = [];
 
-    // Modal elements
     const trashModal = new bootstrap.Modal(document.getElementById("trashdoc-modal"));
     const trashModalTitle = document.querySelector("#trashdocLabel");
     const trashModalBody = document.querySelector("#trashdoc-modal .modal-body");
     const confirmTrashBtn = document.getElementById("confirm-trash-folder");
 
-    let fileToDelete = null; // store fileItem being deleted
+    let fileToDelete = null;
 
-    // Click to open file dialog
     uploadBox.addEventListener("click", () => fileInput.click());
 
-    // File input change
     fileInput.addEventListener("change", async (e) => {
         await handleFileUpload(e.target.files);
     });
 
-    // Drag & drop
     uploadBox.addEventListener("dragover", e => {
         e.preventDefault();
         uploadBox.classList.add("dragover");
@@ -539,10 +1064,10 @@ $(document).ready(function () {
     uploadBox.addEventListener("dragleave", () => uploadBox.classList.remove("dragover"));
     uploadBox.addEventListener("drop", async e => {
         e.preventDefault();
+        uploadBox.classList.remove("dragover");
         await handleFileUpload(e.dataTransfer.files);
     });
 
-    // Handle file uploads
     async function handleFileUpload(files) {
         const folderId = document.getElementById('selectedFolderId').value;
         if (!folderId) {
@@ -550,13 +1075,11 @@ $(document).ready(function () {
             return;
         }
     
-        // Convert FileList to array for easier handling
         const filesArray = Array.from(files);
     
         for (const file of filesArray) {
             const tempId = 'temp_' + Date.now() + Math.random().toString(36).substring(2, 8);
     
-            // Create file item with loading state
             const fileItem = document.createElement("div");
             fileItem.className = "file-item col-sm-5 mb-3 p-3 border rounded";
             fileItem.setAttribute("data-file-id", tempId);
@@ -575,7 +1098,7 @@ $(document).ready(function () {
                     </div>
                 </div>
                 <button type="button" class="remove-btn btn btn-sm btn-danger mt-2" data-file-id="${tempId}" disabled>
-                    <i class="fa-solid fa-xmark"></i> Remove
+                 Remove
                 </button>
             `;
             fileList.appendChild(fileItem);
@@ -587,7 +1110,6 @@ $(document).ready(function () {
                 const formData = new FormData();
                 formData.append('file', file);
     
-                // Show uploading progress
                 progressBar.style.width = "50%";
                 progressBar.textContent = "Uploading...";
     
@@ -598,53 +1120,71 @@ $(document).ready(function () {
                 
                 const data = await res.json();
     
-                // Check if upload was successful
                 if (!data.success) {
-                    // Remove file item immediately on failure
                     fileItem.remove();
+                    
+                    // Remove from metadata if it was added
+                    window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== tempId);
+                    updateMetadataDisplay();
+                    
                     showToast(data.message || "Upload failed", "error");
-                    continue; // Skip to next file instead of returning
+                    continue;
                 }
     
-                // Success - update the file item
                 const uploadedFile = data.files[0];
                 const fileId = uploadedFile.fileId;
                 
-                // Update with actual file ID
-                uploadedFileIds.push(fileId);
+                window.uploadedFileIds.push(fileId);
                 fileItem.setAttribute("data-file-id", fileId);
                 removeBtn.setAttribute("data-file-id", fileId);
                 removeBtn.disabled = false;
     
-                // Add double-click navigation
                 fileItem.addEventListener('dblclick', () => {
                     window.location.href = `/folders/view/${fileId}`;
                 });
     
-                // Update progress to complete
                 progressBar.style.width = "100%";
-                progressBar.textContent = "Uploaded ✅";
+                progressBar.textContent = "Uploaded";
                 progressBar.classList.remove("bg-success");
-                progressBar.classList.add("bg-success"); // Keep green
+                progressBar.classList.add("bg-success");
     
+                // Update metadata - replace temp entry with actual file ID
+                const tempIndex = window.uploadedFilesMetadata.findIndex(f => f.fileId === tempId);
+                if (tempIndex !== -1) {
+                    window.uploadedFilesMetadata[tempIndex].fileId = fileId;
+                } else {
+                    // Add new metadata if temp wasn't added
+                    window.uploadedFilesMetadata.push({
+                        fileName: file.name,
+                        fileType: file.type || 'Unknown',
+                        fileSize: formatFileSize(file.size),
+                        uploadedBy: 'Current User',
+                        uploadDate: new Date().toLocaleString(),
+                        fileId: fileId
+                    });
+                }
+                
+                updateMetadataDisplay();
+                
                 showToast(`${file.name} uploaded successfully!`, "success");
     
             } catch (err) {
                 console.error("Upload failed:", err);
                 
-                // Remove the failed file item immediately
                 fileItem.remove();
                 
-                // Show error message
+                // Remove from metadata
+                window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== tempId);
+                updateMetadataDisplay();
+                
                 showToast(`Failed to upload ${file.name}: ${err.message || "Network error"}`, "error");
                 
-                // Continue with next file
                 continue;
             }
         }
     }
 
-    // Remove file handler using modal
+    // Remove file handler
     fileList.addEventListener("click", function (e) {
         const btn = e.target.closest(".remove-btn");
         if (!btn) return;
@@ -655,7 +1195,6 @@ $(document).ready(function () {
         const fileId = btn.getAttribute("data-file-id");
         if (!fileToDelete || !fileId) return;
 
-        // Update modal content
         trashModalTitle.innerHTML = `
     <img src="/img/icons/bin.png" class="me-2" style="width:24px; height:24px;">
     Delete File
@@ -668,18 +1207,21 @@ $(document).ready(function () {
         trashModal.show();
     });
 
-    // Confirm deletion
     confirmTrashBtn.addEventListener("click", async () => {
         if (!fileToDelete) return;
 
         const fileId = fileToDelete.getAttribute("data-file-id");
 
         try {
-            if (uploadedFileIds.includes(fileId)) {
+            if (window.uploadedFileIds.includes(fileId)) {
                 const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message || "Delete failed");
-                uploadedFileIds = uploadedFileIds.filter(id => id !== fileId);
+                window.uploadedFileIds = window.uploadedFileIds.filter(id => id !== fileId);
+                
+                // Remove from metadata
+                window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== fileId);
+                updateMetadataDisplay();
             }
 
             fileToDelete.remove();
@@ -693,16 +1235,16 @@ $(document).ready(function () {
         }
     });
 
+    // --------------------------
+    // Select2 Initializations
+    // --------------------------
     $('#parentFolder').select2({
-        dropdownParent: $('#folder-modal'), // ensures it stays inside modal
+        dropdownParent: $('#folder-modal'),
         width: '100%',
         placeholder: "-- Root (No Parent) --",
         allowClear: true
     });
 
-    // --------------------------
-    // Project Name Select2
-    // --------------------------
     $("#projectName").select2({
         placeholder: "-- Select Project Name --",
         allowClear: true,
@@ -733,15 +1275,10 @@ $(document).ready(function () {
 
     if (!window.isEdit && window.selectedProject && window.selectedProject.id) {
         const userProj = window.selectedProject;
-
         const option = new Option(userProj.name, userProj.id, true, true);
         $('#projectName').append(option).trigger('change');
     }
 
-
-    // --------------------------
-    // Department Select2
-    // --------------------------
     $("#department").select2({
         placeholder: "-- Select Department --",
         allowClear: true,
@@ -761,7 +1298,6 @@ $(document).ready(function () {
         }
     });
 
-    // Pre-select department if editing
     if (window.isEdit && window.documentData && window.documentData.department) {
         const departmentOption = new Option(
             window.documentData.department.name,
@@ -770,49 +1306,6 @@ $(document).ready(function () {
             true
         );
         $('#department').append(departmentOption).trigger('change');
-    }
-
-    // --------------------------
-    // Project Manager Select2 (UPDATED)
-    // --------------------------
-    $('#projectManager').select2({
-        placeholder: '-- Select Project Manager --',
-        allowClear: true,
-        ajax: {
-            url: '/api/projects/projectManagers/search',
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                const projectId = $('#projectName').val();
-                return {
-                    q: params.term || '',
-                    page: params.page || 1,
-                    limit: 10,
-                    projectId: projectId && projectId !== 'all' ? projectId : ''
-                };
-            },
-            processResults: function (data, params) {
-                const results = (data.data || []).map(manager => ({
-                    id: manager._id,
-                    text: manager.name
-                }));
-
-                return {
-                    results,
-                    pagination: { more: false } // no pagination in your API
-                };
-            },
-            cache: true
-        },
-        minimumInputLength: 0
-    });
-
-
-    // Pre-select projectManager if editing
-    if (window.isEdit && window.documentData && window.documentData.projectManager) {
-        const manager = window.documentData.projectManager;
-        const option = new Option(manager.name, manager._id, true, true);
-        $('#projectManager').append(option).trigger('change');
     }
 
     function initializeDonorSelect2() {
@@ -829,8 +1322,8 @@ $(document).ready(function () {
                         search: params.term || '',
                         page: params.page || 1,
                         limit: 10,
-                        projectId: projectId, // filter by selected project
-                        profile_type: 'donor' // filter for donor users
+                        projectId: projectId,
+                        profile_type: 'donor'
                     };
                 },
                 processResults: function (data, params) {
@@ -846,7 +1339,6 @@ $(document).ready(function () {
             minimumInputLength: 0
         });
 
-        // Pre-select donor if editing
         if (window.isEdit && window.documentData && window.documentData.documentDonor) {
             const donorOption = new Option(
                 window.documentData.documentDonor.name,
@@ -872,8 +1364,8 @@ $(document).ready(function () {
                         search: params.term || '',
                         page: params.page || 1,
                         limit: 10,
-                        projectId: projectId, // filter by selected project
-                        profile_type: 'vendor' // filter for vendor users
+                        projectId: projectId,
+                        profile_type: 'vendor'
                     };
                 },
                 processResults: function (data, params) {
@@ -889,7 +1381,6 @@ $(document).ready(function () {
             minimumInputLength: 0
         });
 
-        // Pre-select vendor if editing
         if (window.isEdit && window.documentData && window.documentData.documentVendor) {
             const vendorOption = new Option(
                 window.documentData.documentVendor.name,
@@ -901,7 +1392,9 @@ $(document).ready(function () {
         }
     }
 
-    // Enhanced solution with better DateTimePicker integration
+    // --------------------------
+    // Date Restrictions
+    // --------------------------
     function setupEnhancedDateRestrictions() {
         const today = moment().startOf('day');
 
@@ -911,14 +1404,12 @@ $(document).ready(function () {
             minDate: today
         });
 
-        // Disable expiry date initially
         expiryDatePicker.data("DateTimePicker").disable();
 
-        // Handle compliance toggle
-        $('input[name="compliance"]').change(function () {
+        $('#complianceSwitch').change(function () {
             const expiryPicker = expiryDatePicker.data("DateTimePicker");
 
-            if ($(this).val() === 'yes') {
+            if ($(this).is(':checked')) {
                 expiryPicker.enable();
                 expiryPicker.minDate(today);
             } else {
@@ -928,19 +1419,9 @@ $(document).ready(function () {
         });
     }
 
-
-    // Remove existing files in edit mode
-    document.querySelectorAll('.remove-btn[data-file-id]').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const fileId = this.getAttribute('data-file-id');
-            const fileItem = this.closest('.file-item');
-            fetch(`/api/files/${fileId}`, { method: 'DELETE' })
-                .then(res => res.json())
-                .then(data => data.success ? fileItem.remove() : showToast('Error deleting file: ' + data.message))
-                .catch(err => { showToast('Error deleting file' + err, 'error'); });
-        });
-    });
-
+    // --------------------------
+    // Update Directory Path
+    // --------------------------
     function updateDirectoryPath() {
         const projectText = $('#projectName option:selected').text();
         const projectId = $('#projectName').val();
@@ -948,7 +1429,6 @@ $(document).ready(function () {
     
         const pathSegments = [];
     
-        // Project (clickable)
         if (projectText && projectText !== '-- Select Project Name --') {
             pathSegments.push({
                 text: projectText,
@@ -957,7 +1437,6 @@ $(document).ready(function () {
             });
         }
     
-        // Folders
         folders.forEach(folder => {
             pathSegments.push({
                 text: folder.name,
@@ -975,11 +1454,10 @@ $(document).ready(function () {
                    data-level="${i}">
                     ${seg.text}
                 </a>`;
-        }).join('/');
+        }).join(' / ');
     
         $('#uploadDirectoryPath').html(breadcrumbHtml);
     
-        // Breadcrumb click
         $('#uploadDirectoryPath .dir-link').off('click').on('click', async function () {
     
             const type = $(this).data('type');
@@ -987,27 +1465,34 @@ $(document).ready(function () {
             const level = $(this).data('level');
     
             if (type === 'project') {
-                // Go back to project root
                 window.selectedFolders = [];
                 $('#selectedFolderId').val('');
                 await loadFolders(null, []);
+                updateDirectoryPath();
+                updateFolderBreadcrumb();
             }
             else if (type === 'folder') {
                 const newPath = window.selectedFolders.slice(0, level);
                 window.selectedFolders = newPath;
                 $('#selectedFolderId').val(id);
                 await loadFolders(id, newPath);
+                updateDirectoryPath();
+                updateFolderBreadcrumb();
             }
         });
     }
 
-    // Call on page load and on select change
+    // --------------------------
+    // Event Handlers
+    // --------------------------
     $('#projectName, #department').on('change select2:select select2:clear', function () {
         window.selectedFolders = [];
         $('#selectedFolderId').val('');
         toggleCreateFolderBtn();
         loadFolders();
+        buildDynamicFolderTree(); // Build the dynamic tree
         updateDirectoryPath();
+        updateFolderBreadcrumb();
         initializeDonorSelect2();
         initializeVendorSelect2();
     });
@@ -1015,126 +1500,29 @@ $(document).ready(function () {
     $('#projectName').on('change', function () {
         const projectId = $(this).val();
         if (!projectId || projectId === 'all') {
-            // Reset department if no project selected
             $('#department').val(null).trigger('change');
             $('#documentDonor').val(null).trigger('change');
             $('#documentVendor').val(null).trigger('change');
         }
 
-        // Always reinitialize donor and vendor when project changes
         initializeDonorSelect2();
         initializeVendorSelect2();
     });
 
     // --------------------------
-    // Initialize Donor and Vendor Select2
-    // --------------------------
-    initializeDonorSelect2();
-    initializeVendorSelect2();
-
-    // --------------------------
-    // Signature handling (Upload + Draw)
-    // --------------------------
-    // const fileSign = document.getElementById('fileSign');
-    // const uploadSignBtn = document.getElementById('uploadSignBtn');
-    // const drawSignBtn = document.getElementById('drawSignBtn');
-    // const signaturePreview = document.getElementById('signaturePreview');
-    // const signatureData = document.getElementById('signatureData');
-
-    // // 1. Upload signature from system
-    // uploadSignBtn.addEventListener('click', () => fileSign.click());
-    // fileSign.addEventListener('change', function () {
-    //     if (this.files && this.files[0]) {
-    //         const reader = new FileReader();
-    //         reader.onload = function (e) {
-    //             signaturePreview.innerHTML = `<img src="${e.target.result}" alt="Signature" style="max-height:100%; max-width:100%; object-fit:contain;">`;
-    //             signatureData.value = e.target.result; // save base64
-    //             uploadSignBtn.textContent = "Update Signature";
-    //         };
-    //         reader.readAsDataURL(this.files[0]);
-    //     }
-    // });
-
-    // // 2. Draw signature on canvas
-    // const modalEl = document.getElementById('signatureModal');
-    // const modal = new bootstrap.Modal(modalEl);
-    // const canvas = document.getElementById('sigCanvas');
-    // const ctx = canvas.getContext('2d');
-    // let drawing = false, paths = [], currentPath = [];
-
-    // function resizeCanvas() {
-    //     canvas.width = canvas.offsetWidth;
-    //     canvas.height = canvas.offsetHeight;
-    //     redraw();
-    // }
-    // function redraw() {
-    //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    //     ctx.lineWidth = 2; ctx.strokeStyle = '#000';
-    //     paths.forEach(path => {
-    //         ctx.beginPath();
-    //         ctx.moveTo(path[0].x, path[0].y);
-    //         path.forEach(p => ctx.lineTo(p.x, p.y));
-    //         ctx.stroke();
-    //     });
-    //     if (currentPath.length > 1) {
-    //         ctx.beginPath();
-    //         ctx.moveTo(currentPath[0].x, currentPath[0].y);
-    //         currentPath.forEach(p => ctx.lineTo(p.x, p.y));
-    //         ctx.stroke();
-    //     }
-    // }
-    // function addPoint(e) {
-    //     const rect = canvas.getBoundingClientRect();
-    //     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    //     const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    //     currentPath.push({ x, y });
-    // }
-    // function startDraw(e) { e.preventDefault(); drawing = true; currentPath = []; addPoint(e); }
-    // function draw(e) { if (!drawing) return; e.preventDefault(); addPoint(e); redraw(); }
-    // function endDraw(e) { if (!drawing) return; drawing = false; if (currentPath.length > 0) paths.push([...currentPath]); currentPath = []; redraw(); }
-
-    // canvas.addEventListener('mousedown', startDraw);
-    // canvas.addEventListener('mousemove', draw);
-    // canvas.addEventListener('mouseup', endDraw);
-    // canvas.addEventListener('mouseleave', endDraw);
-    // canvas.addEventListener('touchstart', startDraw);
-    // canvas.addEventListener('touchmove', draw);
-    // canvas.addEventListener('touchend', endDraw);
-
-    // $('#undoSignBtn').on('click', () => { paths.pop(); redraw(); });
-    // $('#clearSignBtn').on('click', () => { paths = []; redraw(); });
-
-    // $('#saveSignBtn').on('click', () => {
-    //     if (paths.length === 0) { showToast('Please draw a signature first.', 'info'); return; }
-    //     const dataURL = canvas.toDataURL('image/png');
-    //     signaturePreview.innerHTML = `<img src="${dataURL}" style="max-height:100%; max-width:100%; object-fit:contain;">`;
-    //     signatureData.value = dataURL;
-    //     modal.hide();
-    // });
-
-    // drawSignBtn.addEventListener('click', () => modal.show());
-    // modalEl.addEventListener('shown.bs.modal', resizeCanvas);
-    // $(window).on('resize', resizeCanvas);
-
-    // --------------------------
-    // Form submission
+    // Form Submission
     // --------------------------
     $('#documentForm').on('submit', async function (e) {
         e.preventDefault();
     
         const submitBtn = $('#submitBtn');
     
-        // Prevent double click
         if (submitBtn.prop('disabled')) return;
     
-        // Validate fields
         if (!validateForm()) return;
     
-        // Update Summernote content
         $('#summernote').val($('.summernote').summernote('code'));
     
-        // Button loading UI
         submitBtn.prop('disabled', true).html(
             '<span class="spinner-border spinner-border-sm" role="status"></span> ' +
             (window.isEdit ? "Updating..." : "Adding...")
@@ -1144,7 +1532,7 @@ $(document).ready(function () {
             const fileIdsInput = document.createElement('input');
             fileIdsInput.type = 'hidden';
             fileIdsInput.name = 'fileIds';
-            fileIdsInput.value = JSON.stringify(uploadedFileIds || []);
+            fileIdsInput.value = JSON.stringify(window.uploadedFileIds || []);
             this.appendChild(fileIdsInput);
     
             const rawFileInput = document.getElementById('fileInput');
@@ -1153,7 +1541,6 @@ $(document).ready(function () {
                 rawFileInput.value = '';
             }
     
-            // Build request
             const formData = new FormData(this);
             const url = window.isEdit
                 ? `/api/documents/${window.documentId}`
@@ -1162,78 +1549,61 @@ $(document).ready(function () {
     
             const response = await fetch(url, { method, body: formData });
     
-            // REAL ERROR PARSING (JSON/TEXT)
             if (!response.ok) {
                 let serverMessage = `HTTP ${response.status}`;
     
-                // 1. Try JSON
                 try {
                     const json = await response.json();
                     if (json?.message) serverMessage = json.message;
                     else serverMessage = JSON.stringify(json);
                 } catch {
-                    // 2. Try plain text
                     try {
                         const text = await response.text();
                         if (text) serverMessage = text;
                     } catch {
-                        // 3. Give up (use default)
+                        // Use default
                     }
                 }
     
                 throw new Error(serverMessage);
             }
     
-            // Success data
             const data = await response.json();
     
             if (!data.success) {
                 throw new Error(data.message || "Unknown server error");
             }
     
-            // Display filename
             const doc = data.data.document;
             if (doc?.metadata?.fileName) {
                 document.getElementById('successFileName').textContent =
                     doc.metadata.fileName;
             }
     
-            // Get modal element
             const modalElement = document.getElementById('data-success-modal');
             const successModal = new bootstrap.Modal(modalElement);
             
-            // Show success modal
             successModal.show();
     
-            // Auto close after 5 seconds and redirect
             let redirectTimer = setTimeout(() => {
                 successModal.hide();
             }, 2000);
     
-            // Handle modal hidden event
             modalElement.addEventListener('hidden.bs.modal', function onHidden() {
-                // Clear timer if modal was closed manually
                 clearTimeout(redirectTimer);
-                
-                // Remove event listener to prevent multiple calls
                 modalElement.removeEventListener('hidden.bs.modal', onHidden);
                 
-                // Redirect based on action
                 if (!window.isEdit) {
                     window.location.href = '/documents/list';
                 } else {
-                    // For edit mode, reload current page or go to list
                     window.location.href = '/documents/list';
-                    // OR: window.location.reload();
                 }
-            }, { once: false }); // We'll handle removal manually
+            }, { once: false });
     
-            // Handle manual close button (X) or backdrop click
             modalElement.addEventListener('hide.bs.modal', function() {
                 clearTimeout(redirectTimer);
             }, { once: true });
     
-            // Reset button state after successful submission
             submitBtn
                 .prop('disabled', false)
                 .html(window.isEdit ? "Update Document" : "Add Document");
@@ -1241,36 +1611,28 @@ $(document).ready(function () {
         } catch (error) {
             console.error('Form submission error:', error);
     
-            // Show real message
             showToast(error.message || "An unknown error occurred.", "error");
     
-            // Enable button again
             submitBtn
                 .prop('disabled', false)
                 .html(window.isEdit ? "Update Document" : "Add Document");
         }
     });
 
-
-    // Custom form validation function
+    // --------------------------
+    // Form Validation
+    // --------------------------
     function validateForm() {
         const projectName = $('#projectName').val();
         const department = $('#department').val();
-        const projectManager = $('#projectManager').val();
-        const documentDate = $('input[name="documentDate"]').val();
-        const documentDonor = $('#documentDonor').val();
-        const documentVendor = $('#documentVendor').val();
         const folderId = $('#selectedFolderId').val();
 
-        // Check if files are uploaded (only for new documents)
-        if (!window.isEdit && uploadedFileIds.length === 0) {
+        if (!window.isEdit && window.uploadedFileIds.length === 0) {
             showToast('Please upload at least one file.', 'error');
-            // Scroll to upload section
             document.getElementById('uploadBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return false;
         }
 
-        // Validate other required fields
         if (!projectName || projectName === 'all') {
             showToast('Please select a project name.', 'error');
             $('#projectName').focus();
@@ -1283,30 +1645,6 @@ $(document).ready(function () {
             return false;
         }
 
-        // if (!projectManager || projectManager === 'all') {
-        //     showToast('Please select a project manager.', 'error');
-        //     $('#projectManager').focus();
-        //     return false;
-        // }
-
-        // if (!documentDate) {
-        //     showToast('Please select a document date.', 'error');
-        //     $('input[name="documentDate"]').focus();
-        //     return false;
-        // }
-
-        // if (!documentDonor || documentDonor === 'all') {
-        //     showToast('Please select a donor.', 'error');
-        //     $('#documentDonor').focus();
-        //     return false;
-        // }
-
-        // if (!documentVendor || documentVendor === 'all') {
-        //     showToast('Please select a vendor.', 'error');
-        //     $('#documentVendor').focus();
-        //     return false;
-        // }
-
         if (!folderId) {
             showToast('Please select a folder.', 'error');
             $('#folderContainer').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1315,4 +1653,16 @@ $(document).ready(function () {
 
         return true;
     }
+
+    // --------------------------
+    // Initialize Everything
+    // --------------------------
+    initializeEditData();
+    toggleCreateFolderBtn();
+    loadFolders();
+    buildDynamicFolderTree();
+    updateDirectoryPath();
+    updateFolderBreadcrumb();
+    initializeDonorSelect2();
+    initializeVendorSelect2();
 });

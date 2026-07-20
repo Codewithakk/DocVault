@@ -4,6 +4,7 @@ import Designation from '../models/Designation.js';
 import Menu from '../models/Menu.js';
 import MenuAssignment from '../models/MenuAssignment.js';
 import { activityLogger } from "../helper/activityLogger.js";
+import { validationResult } from 'express-validator';
 //Page Controllers
 
 // Render Add Designation page
@@ -195,6 +196,13 @@ export const createDesignation = async (req, res) => {
             status: req.body.status || 'Active',
             description: req.body.description || '',
             isDonorOrVendor: req.body.isDonorOrVendor || false,
+            // New permission fields
+            ownFiles: req.body.ownFiles || false,
+            ownFolders: req.body.ownFolders || false,
+            teamFiles: req.body.teamFiles || false,
+            deptFiles: req.body.deptFiles || false,
+            otherDepts: req.body.otherDepts || false,
+            allOrgs: req.body.allOrgs || false,
             added_by: {
                 user_id: req.user._id,
                 name: req.user.name,
@@ -210,7 +218,7 @@ export const createDesignation = async (req, res) => {
         const designation = new Designation(designationData);
         await designation.save();
 
-        //If designation is donor/vendor → DO NOT assign menus  
+        // If designation is donor/vendor → DO NOT assign menus  
         if (!designation.isDonorOrVendor) {
             const allMenus = await Menu.find({}, '_id').lean();
 
@@ -253,6 +261,13 @@ export const createDesignation = async (req, res) => {
 export const updateDesignation = async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Check validation results
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return failResponse(res, errors.array()[0].msg, 400);
+        }
+        
         if (!mongoose.Types.ObjectId.isValid(id))
             return failResponse(res, 'Invalid designation ID', 400);
 
@@ -270,18 +285,35 @@ export const updateDesignation = async (req, res) => {
             return failResponse(res, "Only superadmin can modify donor/vendor flag", 403);
         }
 
+        // Build update data with only provided fields
         const updateData = {
-            name: req.body.name,
-            priority: req.body.priority,
-            status: req.body.status,
-            description: req.body.description,
-            isDonorOrVendor: req.body.isDonorOrVendor,
             updated_by: {
                 user_id: req.user._id,
                 name: req.user.name,
                 email: req.user.email
             }
         };
+
+        // Add fields only if they exist in request body
+        if (req.body.name !== undefined) updateData.name = req.body.name;
+        if (req.body.priority !== undefined) updateData.priority = req.body.priority;
+        if (req.body.status !== undefined) updateData.status = req.body.status;
+        if (req.body.description !== undefined) updateData.description = req.body.description;
+        
+        // Handle boolean fields - convert string to boolean if needed
+        const booleanFields = ['isDonorOrVendor', 'ownFiles', 'ownFolders', 'teamFiles', 'deptFiles', 'otherDepts', 'allOrgs'];
+        booleanFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                // Convert string to boolean if necessary
+                if (req.body[field] === 'true') {
+                    updateData[field] = true;
+                } else if (req.body[field] === 'false') {
+                    updateData[field] = false;
+                } else {
+                    updateData[field] = req.body[field];
+                }
+            }
+        });
 
         const updated = await Designation.findByIdAndUpdate(id, updateData, {
             new: true,
@@ -291,6 +323,9 @@ export const updateDesignation = async (req, res) => {
         return successResponse(res, updated, 'Designation updated successfully');
 
     } catch (err) {
+        if (err.code === 11000 && err.keyValue?.name) {
+            return failResponse(res, 'Designation name already exists', 400);
+        }
         return errorResponse(res, err);
     }
 };

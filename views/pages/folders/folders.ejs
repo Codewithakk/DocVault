@@ -663,7 +663,6 @@
 				} else {
 					queryParams.append("show", folderState.parentOnly ? "true" : "false");
 				}
-		
 				if (forceRefetch) {
 					queryParams.append("_ts", Date.now());
 				}
@@ -943,10 +942,38 @@
 						</div>
 						
 						<div class="foldertxts">
-							<p class="mb-2"> <i class="ti ti-file me-2 fs-16"></i> ${folder?.totalDocument || 0} Documents</p>
-							<p class="mb-2"> <i class="ti ti-user me-2 fs-16"></i> ${folder?.departmentId?.name || 'N/A'} Department</p>
-							<p class="mb-2"> <strong>Modified:</strong> ${folder.updatedAt ? new Date(folder.updatedAt).toLocaleString('en-US', { month: 'long', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'} </p>
-						</div>
+							<p class="mb-2 d-flex align-items-center gap-3">
+							<span>
+								<i class="ti ti-folder me-1 fs-16 text-warning"></i>
+								${folder?.totalFolders ?? 0} Folders
+							</span>
+
+							<span>
+								<i class="ti ti-files me-1 fs-16 text-primary"></i>
+								${folder?.totalDocument ?? 0} Files
+							</span>
+						</p>
+						<p class="mb-2">
+							<i class="ti ti-building me-2 fs-16 text-success"></i>
+							${folder?.departmentId?.shortName || folder?.departmentId?.name || 'N/A'} Department
+						</p>
+
+						<p class="mb-2">
+							<i class="ti ti-calendar-time me-2 fs-16 text-muted"></i>
+							${
+								folder.updatedAt
+									? new Date(folder.updatedAt).toLocaleString("en-US", {
+										month: "long",
+										day: "2-digit",
+										year: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+										hour12: true
+									})
+									: "N/A"
+							}
+						</p>
+					</div>
 						
 						<div class="folder_links">
 							<button type="button" class="btn border-0" data-bs-toggle="dropdown">
@@ -1024,44 +1051,58 @@
 											style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
 									</div>
 									<div class="file-info" style="flex-direction:column;align-items:start;">
-										<p class="mb-1 fw-semibold text-dark" style="font-size:1rem; margin:0;" title="${file.originalName}">
+										<p class="mb-1 fw-semibold text-dark" title="${file.originalName}">
 											${file.originalName}
 										</p>
-										<p class="mb-0 badge bg-soft-primary text-primary" style="font-size:0.75rem;">
+										<p class="mb-0 badge bg-soft-primary text-primary">
 											${(file.size / 1024).toFixed(1)} KB
 										</p>
 									</div>
 								</div>
+
 								<div class="foldertxts">
 									<p class="mb-2">
 										<strong>Uploaded on:</strong>
-										${file.updatedAt
-											? new Date(file.updatedAt).toLocaleString('en-US', {
-												month: 'long',
-												day: '2-digit',
-												year: 'numeric',
-												hour: '2-digit',
-												minute: '2-digit',
-												hour12: true
-											})
-											: 'N/A'}
+										${
+											file.updatedAt
+												? new Date(file.updatedAt).toLocaleString("en-US", {
+													month: "long",
+													day: "2-digit",
+													year: "numeric",
+													hour: "2-digit",
+													minute: "2-digit",
+													hour12: true
+												})
+												: "N/A"
+										}
 									</p>
 								</div>
+
 								<div class="folder_links ms-auto">
 									<button type="button" class="btn border-0" data-bs-toggle="dropdown">
 										<i class="ti ti-dots"></i>
 									</button>
+
 									<ul class="dropdown-menu">
-										<li><a class="dropdown-item" href="/api/download/file/${file._id}">
-											<i class="ti ti-download"></i> Download
-										</a></li>
-										<li><a class="dropdown-item" href="/folders/view/${file._id}" target="_blank">
-											<i class="ti ti-eye"></i> View
-										</a></li>
+										<li>
+											<a class="dropdown-item" href="/api/download/file/${file._id}">
+												<i class="ti ti-download"></i> Download
+											</a>
+										</li>
+
+										<li>
+											<a class="dropdown-item" href="/folders/view/${file._id}" target="_blank">
+												<i class="ti ti-eye"></i> View
+											</a>
+										</li>
 									</ul>
 								</div>
 							`;
-
+							// Double click anywhere on the card to open the file
+							fileDiv.addEventListener("dblclick", (e) => {
+								if (e.target.closest(".folder_links")) return;
+								window.open(`/folders/view/${file._id}`, "_blank");
+							});
 							elements.container.appendChild(fileDiv);
 						});
 		

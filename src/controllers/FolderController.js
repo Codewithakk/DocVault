@@ -22,6 +22,9 @@ import { getSessionFilters } from '../helper/sessionHelpers.js';
 import { generateEmailTemplate } from '../helper/emailTemplate.js';
 import { activityLogger } from "../helper/activityLogger.js";
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Designation from '../models/Designation.js';
+import { formatStorage } from '../helper/Common.js';
+import { formatDate, formatFileSize, getFileExtension, getFileIconClass, getFileTypeDisplay, getSharingStatus, isItemShared } from '../helper/CommonHelper.js';
 //Page controlers
 
 // Folder list by ID
@@ -162,6 +165,27 @@ export const showviewFoldersPage = async (req, res) => {
 
             user: req.user,
             message: "Server error"
+        });
+    }
+};
+
+export const showFoldersandFilesPage = async (req, res) => {
+    try {
+        res.render("pages/folders/viewAllFoldersFiles", {
+            pageTitle: "Folder Permission Logs",
+            pageDescription: "Track folder-level permission changes and access events.",
+            metaKeywords: "folder permission logs, folder access logs, esangrah audit",
+            canonicalUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+            user: req.user
+        });
+
+    } catch (err) {
+        logger.error("Folder and Files logs render error:", err);
+        res.status(500).render("pages/error", {
+            pageTitle: "Error",
+            pageDescription: "Unable to load folder permission logs.",
+            user: req.user,
+            message: "Unable to load folder permission logs"
         });
     }
 };
@@ -487,7 +511,92 @@ export const getAllFolders = async (req, res) => {
     }
 };
 
+export const folderSummary = async (req, res) => {
+    try {
+        const { departmentId } = req.query;
+        const selectedYear = req.session?.selectedYear || null;
+        const selectedProjectId = req.session?.selectedProject || null;
+        
+        // Base filters
+        const folderFilter = {
+            status: "active",
+            deletedAt: null
+        };
 
+        const fileFilter = {
+            status: "active"
+        };
+
+        // Department filter
+        if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
+            const deptId = new mongoose.Types.ObjectId(departmentId);
+            folderFilter.departmentId = deptId;
+            fileFilter.departmentId = deptId;
+        }
+
+        // Project filter
+        if (selectedProjectId && mongoose.Types.ObjectId.isValid(selectedProjectId)) {
+            const projId = new mongoose.Types.ObjectId(selectedProjectId);
+            folderFilter.projectId = projId;
+            fileFilter.projectId = projId;
+        }
+
+        // Year filter
+        if (selectedYear) {
+            const startDate = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
+            const endDate = new Date(`${Number(selectedYear) + 1}-01-01T00:00:00.000Z`);
+            folderFilter.createdAt = { $gte: startDate, $lt: endDate };
+            fileFilter.createdAt = { $gte: startDate, $lt: endDate };
+        }
+
+        // Execute all queries in parallel
+        const [
+            totalFolders,
+            totalFiles,
+            storageResult,
+            permissions
+        ] = await Promise.all([
+            Folder.countDocuments(folderFilter),
+            File.countDocuments(fileFilter),
+            File.aggregate([
+                { $match: fileFilter },
+                {
+                    $group: {
+                        _id: null,
+                        totalSize: {
+                            $sum: { $ifNull: ["$fileSize", 0] }
+                        }
+                    }
+                }
+            ]),
+            Designation.countDocuments({ status: "Active" })
+        ]);
+
+        // Storage calculations
+        const totalBytes = storageResult.length ? storageResult[0].totalSize : 0;
+        const totalStorageGB = 200;
+    
+        const storage = formatStorage(totalBytes);
+
+        return res.status(200).json({
+            success: true,
+            message: "Dashboard summary fetched successfully",
+            data: {
+                totalFolders,
+                totalFiles,
+                storage,
+                permissions
+            }
+        });
+    } catch (error) {
+        logger.error("Error fetching dashboard summary:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve dashboard summary",
+            error: error.message
+        });
+    }
+};
 // List folders with optional content (files/documents)
 export const listFolders = async (req, res) => {
     try {
@@ -1007,7 +1116,6 @@ export const uploadToFolder = async (req, res) => {
         res.status(500).json({ success: false, message: "File upload failed" });
     }
 };
-
 export const getFoldersCount = async (req, res) => {
     try {
         const { departmentId, projectId } = req.query;
@@ -1030,21 +1138,22 @@ export const getFoldersCount = async (req, res) => {
             finalProjectId = new mongoose.Types.ObjectId(selectedProjectId);
         }
 
-        const baseMatch = {
+        // Base match for folders
+        const folderMatch = {
             isArchived: false,
             isDeleted: false,
             parent: { $exists: true, $ne: null }
         };
 
         if (finalProjectId) {
-            baseMatch.projectId = finalProjectId;
+            folderMatch.projectId = finalProjectId;
         }
 
         if (departmentId && departmentId !== "all") {
-            baseMatch.departmentId = new mongoose.Types.ObjectId(departmentId);
+            folderMatch.departmentId = new mongoose.Types.ObjectId(departmentId);
         }
 
-        // Permission filtering
+        // Permission filtering for folders
         if (profileType !== "superadmin") {
             const accessConditions = [
                 { owner: userId },
@@ -1075,88 +1184,45 @@ export const getFoldersCount = async (req, res) => {
                 });
             }
 
-            baseMatch.$or = accessConditions;
+            folderMatch.$or = accessConditions;
         }
 
-        const counts = await Folder.aggregate([
-            {
-                $match: baseMatch
-            },
-            {
-                $lookup: {
-                    from: "documents",
-                    let: { folderId: "$_id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $eq: ["$folderId", "$$folderId"]
-                                },
-                                isDeleted: false,
-                                isArchived: false,
-                            }
-                        }
-                    ],
-                    as: "documents"
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-            
-                    totalFolders: { $sum: 1 },
-            
-                    withDocuments: {
-                        $sum: {
-                            $size: "$documents"
-                        }
-                    },
-            
-                    emptyFolders: {
-                        $sum: {
-                            $cond: [
-                                { $eq: [{ $size: "$documents" }, 0] },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-            
-                    sharedFolders: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $or: [
-                                        { $gt: [{ $size: "$permissions" }, 0] },
-                                        {
-                                            $ne: [
-                                                "$owner",
-                                                new mongoose.Types.ObjectId(userId)
-                                            ]
-                                        }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
-                        }
-                    }
-                }
-            }
-        ]);
+        // Get all folder IDs that match the criteria
+        const folders = await Folder.find(folderMatch).select('_id permissions owner').lean();
+        const folderIds = folders.map(f => f._id);
 
-        const result = counts.length
-            ? counts[0]
-            : {
-                  totalFolders: 0,
-                  withDocuments: 0,
-                  emptyFolders: 0,
-                  sharedFolders: 0
-              };
+        // 1. TOTAL FOLDERS - From Folder schema
+        const totalFolders = folderIds.length;
+
+        // 2. SHARED FOLDERS - From Folder schema (has permissions for this user)
+        const sharedFolders = folders.filter(f => 
+            f.permissions && f.permissions.some(p => 
+                p.principal && p.principal.toString() === userId.toString()
+            )
+        ).length;
+
+        // 3. WITH DOCUMENTS - From File schema (folders with active files)
+        const activeFiles = await File.find({
+            folder: { $in: folderIds },
+            status: "active"
+        }).distinct('folder');
+        
+        const withDocuments = activeFiles.length;
+
+        // 4. EMPTY FOLDERS - From Folder schema (no active files)
+        const foldersWithFiles = new Set(activeFiles.map(id => id.toString()));
+        const emptyFolders = folders.filter(f => 
+            !foldersWithFiles.has(f._id.toString())
+        ).length;
 
         return res.status(200).json({
             success: true,
-            data: result
+            data: {
+                totalFolders,
+                withDocuments,
+                emptyFolders,
+                sharedFolders
+            }
         });
 
     } catch (err) {
@@ -1168,6 +1234,187 @@ export const getFoldersCount = async (req, res) => {
         });
     }
 };
+// export const getFoldersCount = async (req, res) => {
+//     try {
+//         const { departmentId, projectId } = req.query;
+//         const userId = req.user?._id;
+//         const profileType = req.user?.profile_type;
+//         const { selectedProjectId } = getSessionFilters(req);
+
+//         if (!userId) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Unauthorized",
+//             });
+//         }
+
+//         let finalProjectId = null;
+
+//         if (projectId && projectId !== "all") {
+//             finalProjectId = new mongoose.Types.ObjectId(projectId);
+//         } else if (selectedProjectId && selectedProjectId !== "all") {
+//             finalProjectId = new mongoose.Types.ObjectId(selectedProjectId);
+//         }
+
+//         const baseMatch = {
+//             isArchived: false,
+//             isDeleted: false,
+//             parent: { $exists: true, $ne: null }
+//         };
+
+//         if (finalProjectId) {
+//             baseMatch.projectId = finalProjectId;
+//         }
+
+//         if (departmentId && departmentId !== "all") {
+//             baseMatch.departmentId = new mongoose.Types.ObjectId(departmentId);
+//         }
+
+//         // Permission filtering
+//         if (profileType !== "superadmin") {
+//             const accessConditions = [
+//                 { owner: userId },
+//                 { "permissions.principal": userId }
+//             ];
+
+//             if (profileType === "vendor") {
+//                 const vendorFolderIds = await Document.distinct("folderId", {
+//                     documentVendor: userId,
+//                     isDeleted: false,
+//                     isArchived: false,
+//                 });
+
+//                 accessConditions.push({
+//                     _id: { $in: vendorFolderIds }
+//                 });
+//             }
+
+//             if (profileType === "donor") {
+//                 const donorFolderIds = await Document.distinct("folderId", {
+//                     documentDonor: userId,
+//                     isDeleted: false,
+//                     isArchived: false,
+//                 });
+
+//                 accessConditions.push({
+//                     _id: { $in: donorFolderIds }
+//                 });
+//             }
+
+//             baseMatch.$or = accessConditions;
+//         }
+
+//         const counts = await Folder.aggregate([
+//             {
+//                 $match: baseMatch
+//             },
+//             {
+//                 $lookup: {
+//                     from: "documents",
+//                     let: { folderId: "$_id" },
+//                     pipeline: [
+//                         {
+//                             $match: {
+//                                 $expr: {
+//                                     $eq: ["$folderId", "$$folderId"]
+//                                 },
+//                                 isDeleted: false,
+//                                 isArchived: false,
+//                             }
+//                         }
+//                     ],
+//                     as: "documents"
+//                 }
+//             },
+//             {
+//                 $group: {
+//                     _id: null,
+            
+//                     totalFolders: { $sum: 1 },
+            
+//                     withDocuments: {
+//                         $sum: {
+//                             $size: "$documents"
+//                         }
+//                     },
+            
+//                     emptyFolders: {
+//                         $sum: {
+//                             $cond: [
+//                                 {
+//                                     $and: [
+//                                         { $eq: [{ $size: "$documents" }, 0] },
+//                                         {
+//                                             $eq: [
+//                                                 {
+//                                                     $size: {
+//                                                         $ifNull: ["$files", []]
+//                                                     }
+//                                                 },
+//                                                 0
+//                                             ]
+//                                         }
+//                                     ]
+//                                 },
+//                                 1,
+//                                 0
+//                             ]
+//                         }
+//                     },
+//                     sharedFolders: {
+//                         $sum: {
+//                             $cond: [
+//                                 {
+//                                     $gt: [
+//                                         {
+//                                             $size: {
+//                                                 $filter: {
+//                                                     input: "$permissions",
+//                                                     as: "permission",
+//                                                     cond: {
+//                                                         $eq: [
+//                                                             "$$permission.principal",
+//                                                             new mongoose.Types.ObjectId(userId)
+//                                                         ]
+//                                                     }
+//                                                 }
+//                                             }
+//                                         },
+//                                         0
+//                                     ]
+//                                 },
+//                                 1,
+//                                 0
+//                             ]
+//                         }
+//                     }
+//                 }
+//             }
+//         ]);
+
+//         const result = counts.length
+//             ? counts[0]
+//             : {
+//                   totalFolders: 0,
+//                   withDocuments: 0,
+//                   emptyFolders: 0,
+//                   sharedFolders: 0
+//               };
+
+//         return res.status(200).json({
+//             success: true,
+//             data: result
+//         });
+
+//     } catch (err) {
+//         console.error("Get folders count error:", err);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Server error while fetching folders count",
+//             error: process.env.NODE_ENV === "development" ? err.message : undefined,
+//         });
+//     }
+// };
 // Get folder tree structure including files with selected fields
 
 // export const getFolderTree = async (req, res) => {
@@ -1759,6 +2006,14 @@ export const getFolderTree = async (req, res) => {
             },
             {
                 $lookup: {
+                    from: "users",
+                    localField: "files.uploadedBy",
+                    foreignField: "_id",
+                    as: "uploadedUsers"
+                }
+            },
+            {
+                $lookup: {
                     from: "documents",
                     let: { folderId: "$_id" },
                     pipeline: [
@@ -1804,6 +2059,25 @@ export const getFolderTree = async (req, res) => {
                                 _id: "$$f._id",
                                 file: "$$f.file",
                                 originalName: "$$f.originalName",
+                                uploadedBy: {
+                                    $let: {
+                                        vars: {
+                                            user: {
+                                                $arrayElemAt: [
+                                                    {
+                                                        $filter: {
+                                                            input: "$uploadedUsers",
+                                                            as: "u",
+                                                            cond: { $eq: ["$$u._id", "$$f.uploadedBy"] }
+                                                        }
+                                                    },
+                                                    0
+                                                ]
+                                            }
+                                        },
+                                        in: "$$user.name"
+                                    }
+                                },
                                 fileType: "$$f.fileType",
                                 fileUrl: "$$f.s3Url",
                                 status: "$$f.status",
@@ -1940,11 +2214,6 @@ export const getFolderTree = async (req, res) => {
         const hasDepartmentFilter = departmentId && departmentId !== "all";
 
         if (!hasDepartmentFilter) {
-            /* -----------------------------------
-             * APPLY PARENT-ONLY FILTER
-             * Show only folders that have a parent (are not root folders)
-             * Only activates when parentOnly query parameter is present
-             * ----------------------------------- */
             if (parentOnly !== undefined) {
                 const filterByParent = (folders) => {
                     const filteredFolders = folders.filter(folder => {
@@ -1972,12 +2241,15 @@ export const getFolderTree = async (req, res) => {
 
                 const matchesShow = (folder) => {
                     const hasDocuments = folder.totalDocument > 0;
-                    const isShared = folder.permissions && folder.permissions.length > 0;
+                    const hasFiles = (folder.files?.length || 0) > 0; 
+                    const isShared = folder.permissions?.some(
+                        p => p.principal?.toString() === userId.toString()
+                    );
                     const isNotOwner = folder.owner?.toString() !== userId.toString();
 
                     switch (show) {
                         case 'Empty':
-                            return !hasDocuments;
+                            return !hasDocuments && !hasFiles;
                         case 'Shared':
                             return isShared || isNotOwner;
                         case 'Total':
@@ -3341,5 +3613,408 @@ export const deleteFolderPermission = async (req, res) => {
         res.status(200).json({ success: true, message: "Permission log deleted" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const allFoldersFiles = async (req, res) => { 
+    try {
+        const user = req.user;
+        const ownerId = user._id;
+        const profileType = user.profile_type;
+        const selectedProjectId = req.session.selectedProject || null;
+
+        // Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        
+        // Filter parameters
+        const search = req.query.search || "";
+        const sortBy = req.query.sortBy || "updatedAt";
+        const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+        const departmentId = req.query.department || null;
+        const itemType = req.query.itemType || "all";
+        const viewFilter = req.query.viewFilter || null;
+
+        // Base filters for folders (has isDeleted field)
+        const folderBaseFilters = {
+            isDeleted: false,
+            ...(departmentId && departmentId !== 'null' && { departmentId }),
+            ...(selectedProjectId && { projectId: selectedProjectId })
+        };
+
+        // Base filters for files (no isDeleted field)
+        const fileBaseFilters = {
+            ...(departmentId && departmentId !== 'null' && { departmentId }),
+            ...(selectedProjectId && { projectId: selectedProjectId })
+        };
+
+        // Build queries for folders and files
+        const folderQuery = {
+            ...folderBaseFilters,
+            ...(profileType !== "superadmin" && { 
+                $or: [
+                    { owner: ownerId },
+                    { "permissions.principal": ownerId }
+                ]
+            })
+        };
+
+        // ✅ FIXED: File query using status: "active" instead of isDeleted
+        const fileQuery = {
+            status: "active",  // Files use status field, not isDeleted
+            ...fileBaseFilters,
+            ...(profileType !== "superadmin" && { 
+                $or: [
+                    { uploadedBy: ownerId },
+                    { "permissions.principal": ownerId }
+                ]
+            })
+        };
+
+        // Add search
+        if (search) {
+            folderQuery.$or = [
+                { name: { $regex: search, $options: "i" } },
+                { "metadata.tags": { $regex: search, $options: "i" } },
+                { "metadata.description": { $regex: search, $options: "i" } },
+                { slug: { $regex: search, $options: "i" } }
+            ];
+            fileQuery.$or = [
+                { originalName: { $regex: search, $options: "i" } },
+                { fileType: { $regex: search, $options: "i" } },
+                { hash: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        // Determine which queries to run
+        let folderItems = [];
+        let fileItems = [];
+        let folderTotal = 0;
+        let fileTotal = 0;
+
+        const queryPromises = [];
+
+        // Fetch folders if needed
+        if (itemType === "all" || itemType === "folder") {
+            queryPromises.push(
+                Folder.find(folderQuery)
+                    .populate("departmentId", "name description")
+                    .populate("projectId", "projectName")
+                    .populate("owner", "name email profile_image")
+                    .populate("createdBy", "name")
+                    .populate("updatedBy", "name")
+                    .lean()
+                    .then(items => {
+                        folderItems = items;
+                        return Folder.countDocuments(folderQuery);
+                    })
+                    .then(count => {
+                        folderTotal = count;
+                    })
+            );
+        }
+
+        // Fetch files if needed
+        if (itemType === "all" || itemType === "file") {
+            queryPromises.push(
+                File.find(fileQuery)
+                    .populate("departmentId", "name description")
+                    .populate("projectId", "projectName")
+                    .populate("uploadedBy", "name email profile_image")
+                    .populate("folder", "name slug path")
+                    .lean()
+                    .then(items => {
+                        fileItems = items;
+                        return File.countDocuments(fileQuery);
+                    })
+                    .then(count => {
+                        fileTotal = count;
+                    })
+            );
+        }
+
+        await Promise.all(queryPromises);
+
+        // Transform items to unified format with all formatting applied
+        const unifiedItems = [];
+
+        // Add folders
+        folderItems.forEach(folder => {
+            const permissions = folder.permissions || [];
+            const isShared = isItemShared(permissions);
+            const sharingStatus = getSharingStatus(permissions);
+            
+            unifiedItems.push({
+                _id: folder._id,
+                itemType: 'folder',
+                name: folder.name,
+                displayName: folder.name,
+                slug: folder.slug,
+                path: folder.path,
+                depth: folder.depth,
+                owner: folder.owner,
+                ownerName: folder.owner?.name || 'Unknown',
+                ownerEmail: folder.owner?.email || '',
+                ownerImage: folder.owner?.profile_image || null,
+                projectId: folder.projectId,
+                projectName: folder.projectId?.projectName || 'N/A',
+                departmentId: folder.departmentId,
+                departmentName: folder.departmentId?.name || 'N/A',
+                departmentDescription: folder.departmentId?.description || '',
+                size: folder.size || 0,
+                formattedSize: formatFileSize(folder.size || 0),
+                status: folder.status,
+                isDeleted: folder.isDeleted,
+                deletedAt: folder.deletedAt,
+                isArchived: folder.isArchived,
+                parent: folder.parent,
+                ancestors: folder.ancestors,
+                permissions: permissions,
+                isShared: isShared,
+                sharingStatus: sharingStatus,
+                createdBy: folder.createdBy,
+                createdByName: folder.createdBy?.name || 'Unknown',
+                updatedBy: folder.updatedBy,
+                updatedByName: folder.updatedBy?.name || 'Unknown',
+                createdAt: folder.createdAt,
+                updatedAt: folder.updatedAt,
+                formattedCreatedAt: formatDate(folder.createdAt),
+                formattedUpdatedAt: formatDate(folder.updatedAt),
+                lastViewedAt: folder.lastViewedAt || folder.updatedAt,
+                formattedLastViewedAt: formatDate(folder.lastViewedAt || folder.updatedAt),
+                fileCount: folder.files?.length || 0,
+                itemCount: folder.files?.length || 0,
+                icon: 'ti ti-folder',
+                iconClass: 'text-warning',
+                type: 'Folder',
+                typeBadge: 'Folder',
+                typeColor: 'primary',
+                _folderData: {
+                    files: folder.files,
+                    metadata: folder.metadata
+                }
+            });
+        });
+
+        // Add files
+        fileItems.forEach(file => {
+            const permissions = file.permissions || [];
+            const isShared = isItemShared(permissions);
+            const sharingStatus = getSharingStatus(permissions);
+            const fileType = file.fileType || 'application/octet-stream';
+            const displayType = getFileTypeDisplay(fileType);
+            const iconClass = getFileIconClass(fileType);
+            const extension = getFileExtension(file.originalName, fileType);
+            
+            unifiedItems.push({
+                _id: file._id,
+                itemType: 'file',
+                name: file.originalName,
+                displayName: file.originalName,
+                originalName: file.originalName,
+                file: file.file,
+                s3Url: file.s3Url,
+                fileType: fileType,
+                displayType: displayType,
+                extension: extension,
+                version: file.version || 1,
+                uploadedBy: file.uploadedBy,
+                uploadedByName: file.uploadedBy?.name || 'Unknown',
+                uploadedByEmail: file.uploadedBy?.email || '',
+                uploadedByImage: file.uploadedBy?.profile_image || null,
+                folder: file.folder,
+                folderName: file.folder?.name || 'Root',
+                folderPath: file.folder?.path || '/',
+                projectId: file.projectId,
+                projectName: file.projectId?.projectName || 'N/A',
+                departmentId: file.departmentId,
+                departmentName: file.departmentId?.name || 'N/A',
+                departmentDescription: file.departmentId?.description || '',
+                fileSize: file.fileSize || 0,
+                size: file.fileSize || 0,
+                formattedSize: formatFileSize(file.fileSize || 0),
+                hash: file.hash,
+                uploadedAt: file.uploadedAt,
+                formattedUploadedAt: formatDate(file.uploadedAt),
+                isPrimary: file.isPrimary || false,
+                status: file.status,
+                document: file.document,
+                permissions: permissions,
+                isShared: isShared,
+                sharingStatus: sharingStatus,
+                createdAt: file.createdAt,
+                updatedAt: file.updatedAt,
+                formattedCreatedAt: formatDate(file.createdAt),
+                formattedUpdatedAt: formatDate(file.updatedAt),
+                lastViewedAt: file.lastViewedAt || file.updatedAt,
+                formattedLastViewedAt: formatDate(file.lastViewedAt || file.updatedAt),
+                icon: iconClass,
+                iconClass: iconClass,
+                type: displayType,
+                typeBadge: displayType,
+                typeColor: fileType.startsWith('image/') ? 'success' : 
+                           fileType === 'application/pdf' ? 'danger' :
+                           fileType.startsWith('video/') ? 'info' :
+                           fileType.startsWith('audio/') ? 'warning' : 'secondary',
+                _fileData: {
+                    activityLog: file.activityLog,
+                    version: file.version
+                }
+            });
+        });
+
+        // Apply view filter (sort by last viewed or last modified)
+        let sortKey = sortBy;
+        if (viewFilter === 'lastView') {
+            sortKey = 'lastViewedAt';
+        } else if (viewFilter === 'lastModified') {
+            sortKey = 'updatedAt';
+        }
+
+        // Sort unified items
+        unifiedItems.sort((a, b) => {
+            const aVal = a[sortKey] || a.updatedAt || a.createdAt;
+            const bVal = b[sortKey] || b.updatedAt || b.createdAt;
+            if (!aVal && !bVal) return 0;
+            if (!aVal) return sortOrder === 1 ? -1 : 1;
+            if (!bVal) return sortOrder === 1 ? 1 : -1;
+            
+            if (sortOrder === 1) {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+
+        // Calculate totals
+        const total = folderTotal + fileTotal;
+        const totalPages = Math.ceil(total / limit);
+
+        // Paginate unified items
+        const startIndex = (page - 1) * limit;
+        const paginatedItems = unifiedItems.slice(startIndex, startIndex + limit);
+
+        // Format items for the table - ALL formatting is done on backend
+        const tableItems = paginatedItems.map(item => {
+            if (item.itemType === 'folder') {
+                return {
+                    _id: item._id,
+                    itemType: 'folder',
+                    name: item.name,
+                    displayName: item.displayName,
+                    owner: item.owner,
+                    ownerName: item.ownerName,
+                    ownerInitials: getInitials(item.ownerName),
+                    ownerImage: item.ownerImage,
+                    department: item.departmentName,
+                    departmentId: item.departmentId,
+                    type: 'Folder',
+                    typeBadge: 'Folder',
+                    typeColor: 'primary',
+                    size: '-',
+                    formattedSize: '-',
+                    modified: item.formattedUpdatedAt,
+                    modifiedRaw: item.updatedAt,
+                    createdAt: item.formattedCreatedAt,
+                    createdAtRaw: item.createdAt,
+                    updatedAt: item.formattedUpdatedAt,
+                    updatedAtRaw: item.updatedAt,
+                    lastViewedAt: item.formattedLastViewedAt,
+                    lastViewedAtRaw: item.lastViewedAt,
+                    fileCount: item.fileCount,
+                    itemCount: item.fileCount,
+                    path: item.path,
+                    permissions: item.permissions,
+                    isShared: item.isShared,
+                    sharingStatus: item.sharingStatus,
+                    icon: 'ti ti-folder',
+                    iconClass: 'text-warning',
+                    status: item.status,
+                    isArchived: item.isArchived
+                };
+            } else {
+                // File
+                return {
+                    _id: item._id,
+                    itemType: 'file',
+                    name: item.name,
+                    displayName: item.displayName,
+                    originalName: item.originalName,
+                    owner: item.uploadedBy,
+                    ownerName: item.uploadedByName,
+                    ownerInitials: getInitials(item.uploadedByName),
+                    ownerImage: item.uploadedByImage,
+                    department: item.departmentName,
+                    departmentId: item.departmentId,
+                    type: item.displayType,
+                    typeBadge: item.displayType,
+                    typeColor: item.typeColor,
+                    size: item.formattedSize,
+                    formattedSize: item.formattedSize,
+                    sizeRaw: item.fileSize,
+                    modified: item.formattedUpdatedAt,
+                    modifiedRaw: item.updatedAt,
+                    createdAt: item.formattedCreatedAt,
+                    createdAtRaw: item.createdAt,
+                    updatedAt: item.formattedUpdatedAt,
+                    updatedAtRaw: item.updatedAt,
+                    lastViewedAt: item.formattedLastViewedAt,
+                    lastViewedAtRaw: item.lastViewedAt,
+                    s3Url: item.s3Url,
+                    fileType: item.fileType,
+                    displayType: item.displayType,
+                    extension: item.extension,
+                    version: item.version,
+                    folderName: item.folderName,
+                    folderPath: item.folderPath,
+                    permissions: item.permissions,
+                    isShared: item.isShared,
+                    sharingStatus: item.sharingStatus,
+                    icon: item.icon,
+                    iconClass: item.iconClass,
+                    status: item.status,
+                    isPrimary: item.isPrimary,
+                    hash: item.hash
+                };
+            }
+        });
+
+        // Helper function
+        function getInitials(name) {
+            if (!name) return '??';
+            const parts = name.split(' ');
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        return res.json({
+            success: true,
+            items: tableItems,
+            total: total,
+            page: page,
+            totalPages: totalPages,
+            limit: limit,
+            stats: {
+                folders: folderTotal,
+                files: fileTotal,
+                total: total
+            },
+            filters: {
+                search: search,
+                department: departmentId,
+                sortBy: sortKey,
+                sortOrder: sortOrder === 1 ? 'asc' : 'desc',
+                viewFilter: viewFilter,
+                itemType: itemType
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching folder/files:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching items",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };

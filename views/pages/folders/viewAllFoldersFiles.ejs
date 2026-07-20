@@ -1,0 +1,1302 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .folderbox.blocked {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .folderbox.blocked-user {
+        cursor: not-allowed !important;
+    }
+
+    .breadcrumb {
+        font-size: 15px;
+    }
+
+    .breadcrumb-item,
+    .breadcrumb-link {
+        font-size: 15px;
+    }
+
+    .breadcrumb-item i {
+        font-size: 15px;
+    }
+
+    .folderbox.blocked-user img {
+        filter: grayscale(100%) brightness(60%);
+    }
+
+    .folderbox.blocked-owner img {
+        filter: brightness(70%) saturate(80%);
+    }
+
+    .disabled-link {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    #folder-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    .folderbox {
+        flex: 0 0 23.5%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        border: 1px solid #eee;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .folderbox:hover {
+        background-color: #f8f8f8;
+        border-color: #c9c9c9;
+    }
+
+    .fldricon {
+        margin-bottom: 5px;
+        width: 64px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .fldricon img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .fldrname {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .fldrname p {
+        margin-bottom: 5px;
+        max-width: 200px;
+        color: #333;
+        font-weight: 500;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .folder_links {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .folder_links .btn {
+        padding: 0;
+        line-height: 1;
+    }
+
+    /* Image thumbnail styles */
+    .file-thumbnail {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        object-fit: cover;
+        background-color: #f8f9fa;
+    }
+
+    .file-thumbnail-icon {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
+
+    .avatar-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .avatar-icon-wrapper img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+    }
+
+    .avatar-icon-wrapper img.icon-only {
+        object-fit: contain;
+        width: 32px;
+        height: 32px;
+    }
+
+    @media (max-width: 1400px) {
+        .folderbox {
+            flex: 0 0 31.5%;
+        }
+    }
+
+
+    @media (max-width: 992px) {
+        .folderbox {
+            flex: 0 0 32%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .folderbox {
+            flex: 0 0 49%;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .folderbox {
+            flex: 0 0 100%;
+        }
+    }
+
+    /* Active stats card */
+    .dashboard-card.active-stats-card {
+        border: 2px solid #0d6efd;
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
+    }
+	.file-thumbnail-wrapper {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .file-thumbnail-wrapper .icon-only {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .file-thumbnail-wrapper .image-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Increase folder icon size in table */
+    .flxtblleft .file-thumbnail-wrapper {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        min-height: 52px;
+    }
+
+    .flxtblleft .file-thumbnail-wrapper .icon-only {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* Fix text alignment in table rows */
+    .flxtblleft {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .flxtbltxt {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .flxtbltxt p {
+        margin-bottom: 2px;
+        line-height: 1.3;
+    }
+
+    /* Make avatar initials larger */
+    .nameinitials {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 14px !important;
+        font-weight: 600;
+    }
+
+    /* Fix the folder container icons (grid view) */
+    .fldricon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .fldricon img {
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        display: block;
+    }
+
+    /* Adjust folderbox for better icon display */
+    .folderbox {
+        flex: 0 0 23.5%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 25px 20px;
+        border: 1px solid #eee;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        position: relative;
+        border-radius: 8px;
+    }
+
+    .folderbox .fldrname p {
+        font-size: 15px;
+        font-weight: 500;
+        margin-bottom: 4px;
+        max-width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .folderbox .fldrname small {
+        font-size: 12px;
+        color: #888;
+    }
+
+    /* DataTable custom styles */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_processing,
+    .dataTables_wrapper .dataTables_paginate {
+        display: none !important;
+    }
+    
+    .dataTables_wrapper .dataTable {
+        margin-bottom: 0 !important;
+    }
+    
+    .dataTables_wrapper .dataTable thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px 10px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #495057;
+    }
+    
+    .dataTables_wrapper .dataTable tbody td {
+        padding: 10px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .dataTables_wrapper .dataTable tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    /* Custom pagination styles */
+    .custom-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 0 5px 0;
+        border-top: 1px solid #e9ecef;
+        margin-top: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .custom-pagination .pagination-info {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .custom-pagination .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .custom-pagination .page-btn {
+        border: 1px solid #dee2e6;
+        background: #fff;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        transition: all 0.2s;
+        min-width: 36px;
+        text-align: center;
+    }
+    
+    .custom-pagination .page-btn:hover:not(.disabled):not(.active) {
+        background: #e9ecef;
+        border-color: #ced4da;
+    }
+    
+    .custom-pagination .page-btn.active {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+    
+    .custom-pagination .page-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
+    .custom-pagination .page-btn i {
+        font-size: 12px;
+    }
+    
+    .custom-pagination .per-page-select {
+        padding: 4px 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 14px;
+        background: #fff;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    
+    .custom-pagination .per-page-select:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .custom-pagination {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
+        }
+        .custom-pagination .pagination-controls {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+        .folderbox {
+            flex: 0 0 31.5%;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .folderbox {
+            flex: 0 0 32%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .folderbox {
+            flex: 0 0 49%;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .folderbox {
+            flex: 0 0 100%;
+        }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="content">
+
+        <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
+            <div class="my-auto mb-2">
+                <h2 class="mb-1">Folders</h2>
+                <nav>
+                    <ol class="breadcrumb mb-0" id="breadcrumb-list">
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="row py-4">
+            <div class="col-xxl-12">
+                <div class="row flex-fill">
+                    <div class="col-md-3 d-flex">
+                        <div class="card flex-fill dashboard-card dashboardtop-card" data-show="Total"
+                            style="cursor: pointer;">
+                            <div class="card-body align-items-center">
+                                <div class="card_avtr_right">
+                                    <span class="avatar avatar-xl text-warning rounded-4 bg-soft-warning mb-2">
+                                        <i class="ti ti-folder fs-30"></i>
+                                    </span>
+                                </div>
+                                <div class="dashcrd_txt">
+                                    <h6 class="fs-14 fw-normal text-dark mb-2">Total Folders</h6>
+                                    <h3 class="fs-24 fw-medium mb-2" id="totalDocs">0</h3>                                        
+                                    <span class="fs-12 fw-medium text-success">
+                                        +12 <span class="text-dark">from last
+                                            month</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex">
+                        <div class="card flex-fill dashboard-card dashboardtop-card" data-show="Shared"
+                            style="cursor: pointer;">
+                            <div class="card-body align-items-center">
+                                <div class="card_avtr_right">
+                                    <span class="avatar avatar-xl text-primary rounded-4 bg-soft-primary mb-2">
+                                        <i class="ti ti-files fs-30"></i>
+                                    </span>
+                                </div>
+                                <div class="dashcrd_txt" id="documentCard" style="cursor: pointer;">
+                                    <h6 class="fs-14 fw-normal text-dark mb-2">Total Files</h6>
+                                    <h3 class="fs-24 fw-medium mb-2" id="approvedDocs">0</h3>                                        
+                                    <span class="fs-12 fw-medium text-success">
+                                        +342
+                                        <span class="text-dark">from last month</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex">
+                        <div class="card flex-fill dashboard-card dashboardtop-card" data-show="Empty"
+                            style="cursor: pointer;">
+                            <div class="card-body align-items-center">
+                                <div class="card_avtr_right">
+                                    <span class="avatar avatar-xl text-info rounded-4 bg-soft-info mb-2">
+                                        <i class="ti ti-device-floppy fs-30"></i>
+                                    </span>
+                                </div>
+                                <div class="dashcrd_txt">                                        
+                                    <h6 class="fs-14 fw-normal text-dark mb-2">Storage Used</h6>
+                                    <h3 class="fs-24 fw-medium mb-2" id="pendingDocs">0 GB</h3>
+                                    <span class="fs-12 fw-medium text-danger">
+                                        <span class="text-dark" id="storageLimit">
+                                            of 200 GB
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex">
+                        <div class="card flex-fill dashboard-card dashboardtop-card" data-show="Shared"
+                            style="cursor: pointer;">
+                            <div class="card-body align-items-center">
+                                <div class="card_avtr_right">
+                                    <span class="avatar avatar-xl rounded-4 text-warning bg-soft-warning mb-2">
+                                        <i class="ti ti-users fs-30"></i>
+                                    </span>
+                                </div>
+                                <div class="dashcrd_txt">                                        
+                                    <h6 class="fs-14 fw-normal text-dark mb-2">Permissions</h6>
+                                    <h3 class="fs-24 fw-medium mb-2" id="rejectedDocs">0</h3>
+                                    <span class="fs-12 fw-medium text-success">
+                                        <span class="text-dark">Active roles</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4 justify-content-between align-items-end">
+            <div class="filtr_left d-flex gap-4 align-items-center w-50 flex-wrap">
+                <div class="position-relative w-40 search_folderbar" style="min-width: 200px;">
+                    <input type="text" name="q" id="SearchFolderInput" class="form-control"
+                        placeholder="Search by doc, tag, metadata.." value="">
+                    <span class="input-icon-addon">
+                        <i class="ti ti-search"></i>
+                    </span>
+                </div>
+                <div class="mb-0" style="min-width: 180px;">
+                    <select id="departmentFilter" class="form-select select2">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div class="mb-0 position-relative">
+                    <!-- Filter Button -->
+                    <button class="btn btn-outline-primary" data-bs-toggle="dropdown">
+                        <i class="ti ti-filter"></i> Filters
+                    </button>
+
+                    <ul class="dropdown-menu" data-bs-auto-close="outside">
+                        <!-- VIEW -->
+                        <li>
+                            <a class="dropdown-item view-folder" href="#" data-filter="lastView">
+                                <i class="ti ti-eye"></i> Last View
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item view-folder" href="#" data-filter="lastModified">
+                                <i class="ti ti-eye"></i> Last Modified
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="filtr_right">
+                <div class="dropdown w-100 w-sm-auto">
+                    <div class="input-group">
+                        <span class="input-group-text border">Sort by:</span>
+                        <select id="recentActivitySort" class="form-select border text-black">
+                            <option value="name_asc">A-Z</option>
+                            <option value="name_desc">Z-A</option>
+                            <option value="updatedAt_desc" selected>Date (Newest)</option>
+                            <option value="updatedAt_asc">Date (Oldest)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-xxl-12 col-xl-12">
+                <div class="card flex-fill">
+                    <div class="card-body p-0">
+                        <div class="custom-datatable-filter table-responsive">
+                            <table class="table" id="recycleTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">
+                                            <div class="form-check form-check-md">
+                                                <input class="form-check-input select-all-folder" type="checkbox">
+                                            </div>
+                                        </th>
+                                        <th>Name</th>
+                                        <th>Owner</th>
+                                        <th>Department</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Modified</th>
+                                        <th style="width: 60px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content will be rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Pagination -->
+        <div class="custom-pagination" id="customPagination">
+            <div class="pagination-info" id="paginationInfo">
+                Showing 0-0 of 0 items
+            </div>
+            <div class="pagination-controls">
+                <select class="per-page-select" id="perPageSelect">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="200">200</option>
+                </select>
+                <div class="d-flex gap-1">
+                    <button class="page-btn" id="firstPageBtn" title="First Page">
+                        <i class="ti ti-chevrons-left"></i>
+                    </button>
+                    <button class="page-btn" id="prevPageBtn" title="Previous Page">
+                        <i class="ti ti-chevron-left"></i>
+                    </button>
+                    <span id="pageNumbers" class="d-flex gap-1"></span>
+                    <button class="page-btn" id="nextPageBtn" title="Next Page">
+                        <i class="ti ti-chevron-right"></i>
+                    </button>
+                    <button class="page-btn" id="lastPageBtn" title="Last Page">
+                        <i class="ti ti-chevrons-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="folder-no-project" class="text-center py-5" style="display:none;">
+            <h4 class="text-muted">Please select a project first</h4>
+        </div>
+
+        <div id="folder-container"></div>
+
+        <div id="folder-loading" class="text-center py-4" style="display:none;">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted">Loading folders...</p>
+        </div>
+
+        <div id="folder-empty" class="text-center py-4" style="display:none;">
+            <i class="ti ti-folder-off fs-1 text-muted"></i>
+            <p class="mt-2 text-muted">No subfolders found</p>
+        </div>
+
+    </div>
+
+    <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+        <p class="mb-0">2025 &copy; HLFPPT.</p>
+        <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
+                Technology</a></p>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>
+
+<script>
+// Image extensions
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'];
+
+function getFileIcon(filename, extension) {
+    // If it's a folder
+    if (!filename || extension === 'folder' || extension === '') {
+        return '/img/icons/folder.png';
+    }
+    
+    const ext = (extension || filename.split('.').pop() || '').toLowerCase();
+    
+    // Check if it's an image - return special marker for thumbnail
+    if (imageExtensions.includes(ext)) {
+        return 'image';
+    }
+    
+    // Check if extension exists in mapping
+    return fileIcons[ext] || fileIcons['default'] || '/img/icons/file.png';
+}
+
+// Updated renderFileIcon function with better sizing
+function renderFileIcon(item) {
+    const isFolder = item.itemType === 'folder';
+    const ext = (item.extension || '').toLowerCase();
+    const isImage = imageExtensions.includes(ext);
+    
+    if (isFolder) {
+        return `
+            <div class="file-thumbnail-wrapper">
+                <img src="/img/icons/folder.png" alt="folder" class="icon-only" 
+                     style="width:44px;height:44px;object-fit:contain;"
+                     onerror="this.src='/img/icons/folder.png'">
+            </div>
+        `;
+    }
+    
+    // Check if it's an image and has S3 URL
+    if (isImage && item.s3Url) {
+        return `
+            <div class="file-thumbnail-wrapper">
+                <img src="${escapeHtml(item.s3Url)}" alt="${escapeHtml(item.name)}" 
+                     class="image-thumbnail" 
+                     loading="lazy"
+                     style="width:52px;height:52px;object-fit:cover;border-radius:4px;"
+                     onerror="this.parentElement.innerHTML='<img src=\\'/img/icons/image.png\\' class=\\'icon-only\\' style=\\'width:40px;height:40px;object-fit:contain;\\'>'">
+            </div>
+        `;
+    }
+    
+    // For non-image files, use the icon mapping
+    const iconPath = fileIcons[ext] || fileIcons['default'] || '/img/icons/file.png';
+    return `
+        <div class="file-thumbnail-wrapper">
+            <img src="${iconPath}" alt="${ext || 'file'}" class="icon-only" 
+                 style="width:40px;height:40px;object-fit:contain;"
+                 onerror="this.src='/img/icons/file.png'">
+        </div>
+    `;
+}
+
+// ============================================
+// PAGINATION STATE
+// ============================================
+let paginationState = {
+    page: 1,
+    limit: 100,
+    total: 0,
+    totalPages: 1,
+    items: []
+};
+
+let isLoading = false;
+
+// ============================================
+// DOCUMENT READY
+// ============================================
+$(document).ready(function () {
+    // Initialize Department Select2
+    $('#departmentFilter').select2({
+        placeholder: '-- Select Department --',
+        allowClear: true,
+        width: '100%',
+        ajax: {
+            url: '/api/departments/search',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { search: params.term || '' };
+            },
+            processResults: function (data) {
+                const results = [
+                    { id: '', text: 'All Departments' },
+                    ...(data.data || []).map(item => ({
+                        id: item._id,
+                        text: item.name
+                    }))
+                ];
+                return { results: results };
+            },
+            cache: true
+        }
+    });
+
+    // Load initial data
+    loadFolderSummary();
+    loadData();
+
+    // Event listeners
+    let filterTimeout;
+
+    $("#departmentFilter").on("change", function () {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => {
+            paginationState.page = 1;
+            loadData();
+            loadFolderSummary();
+        }, 300);
+    });
+
+    $("#SearchFolderInput").on("input", function () {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => {
+            paginationState.page = 1;
+            loadData();
+        }, 500);
+    });
+
+    $("#recentActivitySort").on("change", function () {
+        paginationState.page = 1;
+        loadData();
+    });
+
+    $(".view-folder").on("click", function(e) {
+        e.preventDefault();
+        $(".view-folder").removeClass("active");
+        $(this).addClass("active");
+        paginationState.page = 1;
+        loadData();
+    });
+
+    // Per page change handler
+    $("#perPageSelect").on("change", function() {
+        paginationState.limit = parseInt($(this).val());
+        paginationState.page = 1;
+        loadData();
+    });
+
+    // Pagination button handlers
+    $("#firstPageBtn").on("click", function() {
+        if (paginationState.page > 1) {
+            paginationState.page = 1;
+            loadData();
+        }
+    });
+
+    $("#prevPageBtn").on("click", function() {
+        if (paginationState.page > 1) {
+            paginationState.page--;
+            loadData();
+        }
+    });
+
+    $("#nextPageBtn").on("click", function() {
+        if (paginationState.page < paginationState.totalPages) {
+            paginationState.page++;
+            loadData();
+        }
+    });
+
+    $("#lastPageBtn").on("click", function() {
+        if (paginationState.page < paginationState.totalPages) {
+            paginationState.page = paginationState.totalPages;
+            loadData();
+        }
+    });
+
+    // Select all checkbox
+    $(".select-all-folder").on("change", function() {
+        $(".select-folder").prop("checked", $(this).prop("checked"));
+    });
+
+    // Clear filters
+    $("#clearFilters").on("click", function(e) {
+        e.preventDefault();
+        clearAllFilters();
+    });
+});
+
+// ============================================
+// MAIN DATA LOAD FUNCTION
+// ============================================
+async function loadData() {
+    if (isLoading) return;
+    isLoading = true;
+
+    try {
+        const tbody = $("#recycleTable tbody");
+        tbody.html(`
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading items...</p>
+                </td>
+            </tr>
+        `);
+
+        // Build query parameters
+        const departmentId = $("#departmentFilter").val() || "";
+        const search = $("#SearchFolderInput").val() || "";
+        const sortBy = $("#recentActivitySort").val() || "updatedAt_desc";
+        const viewFilter = $(".view-folder.active").data("filter") || null;
+
+        let sortField = 'updatedAt';
+        let sortOrder = 'desc';
+        if (sortBy) {
+            const parts = sortBy.split('_');
+            if (parts.length === 2) {
+                sortField = parts[0];
+                sortOrder = parts[1] === 'asc' ? 'asc' : 'desc';
+            }
+        }
+
+        const params = new URLSearchParams({
+            department: departmentId || '',
+            search: search || '',
+            sortBy: sortField,
+            sortOrder: sortOrder,
+            itemType: 'all',
+            page: paginationState.page,
+            limit: paginationState.limit
+        });
+
+        if (viewFilter) {
+            params.append('viewFilter', viewFilter);
+        }
+
+        const url = `/api/all-folder-files?${params.toString()}`;
+        const response = await fetch(url, { 
+            credentials: "include", 
+            cache: "no-store" 
+        });
+        
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load items');
+        }
+
+        // Update pagination state
+        paginationState.total = result.total || 0;
+        paginationState.totalPages = result.totalPages || 1;
+        paginationState.page = result.page || 1;
+        paginationState.items = result.items || [];
+
+        if (paginationState.items.length > 0) {
+            renderTableRows(paginationState.items);
+        } else {
+            renderEmptyState();
+        }
+
+        updatePaginationUI();
+
+    } catch (err) {
+        console.error("Failed to load data:", err);
+        $("#recycleTable tbody").html(`
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="ti ti-alert-circle text-danger fs-3"></i>
+                    <p class="mt-2 text-danger">${escapeHtml(err.message || 'Failed to load items. Please try again.')}</p>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="loadData()">
+                        <i class="ti ti-refresh"></i> Retry
+                    </button>
+                </td>
+            </tr>
+        `);
+        updatePaginationUI();
+    } finally {
+        isLoading = false;
+    }
+}
+
+// ============================================
+// RENDER FUNCTIONS
+// ============================================
+
+function renderTableRows(items) {
+    const tbody = $("#recycleTable tbody");
+    
+    if (!items || items.length === 0) {
+        renderEmptyState();
+        return;
+    }
+
+    let html = '';
+    items.forEach(item => {
+        const isFolder = item.itemType === 'folder';
+        const ext = (item.extension || '').toLowerCase();
+        const isImage = imageExtensions.includes(ext);
+        
+        // Render file icon
+        const iconHtml = renderFileIcon(item);
+        
+        // Type badge
+        let typeBadge;
+        if (isFolder) {
+            typeBadge = `<span class="badge bg-soft-primary text-primary">${item.typeBadge || 'Folder'}</span>`;
+        } else if (isImage) {
+            typeBadge = `<span class="badge bg-soft-success text-success">Image</span>`;
+        } else {
+            typeBadge = `<span class="badge bg-light">${item.typeBadge || (ext || 'File').toUpperCase()}</span>`;
+        }
+        
+        // Name display
+        let nameDisplay;
+        if (isFolder) {
+            nameDisplay = `
+                <p class="fs-14 mb-1 fw-normal">${escapeHtml(item.displayName || item.name)}</p>
+                <span class="fs-11 fw-light text-black">${item.itemCount || 0} Items</span>
+            `;
+        } else {
+            nameDisplay = `
+                <p class="fs-14 mb-1 fw-normal">${escapeHtml(item.displayName || item.name)}</p>
+                <span class="badge bg-soft-primary fs-11">${(ext || 'file').toUpperCase()}</span>
+            `;
+        }
+
+        const sharedIcon = item.isShared ? ' <i class="ti ti-share text-primary" title="Shared"></i>' : '';
+
+        html += `
+            <tr>
+                <td>
+                    <div class="form-check form-check-md">
+                        <input class="form-check-input select-folder" type="checkbox" data-folder-id="${item._id}" data-type="${item.itemType}">
+                    </div>
+                </td>
+                <td>
+                    <div class="flxtblleft d-flex align-items-center">
+                        ${iconHtml}
+                        <div class="flxtbltxt">
+                            ${nameDisplay}
+                            ${sharedIcon}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="flxtblleft d-flex align-items-center">
+                        <span class="avatar rounded-5 bg-soft-primary fs-12 text-info nameinitials" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                            ${item.ownerInitials || '??'}
+                        </span>
+                        <div class="flxtbltxt ms-2">
+                            <p class="fs-14 fw-normal mb-0">${escapeHtml(item.ownerName || 'Unknown')}</p>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(item.department || 'N/A')}</td>
+                <td>${typeBadge}</td>
+                <td>${isFolder ? '-' : escapeHtml(item.size || '0 KB')}</td>
+                <td>${escapeHtml(item.modified || 'N/A')}</td>
+                <td>
+                    <div class="docsaction">
+                        <button type="button" class="btn border-0" data-bs-toggle="dropdown">
+                            <i class="ti ti-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            ${isFolder ? `
+                                <li><a class="dropdown-item" href="/folders/${item._id}">
+                                    <i class="ti ti-folder-open"></i> Open
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="editFolder('${item._id}')">
+                                    <i class="ti ti-edit"></i> Edit
+                                </a></li>
+                                ${item.isShared ? `
+                                    <li><a class="dropdown-item" href="#" onclick="managePermissions('${item._id}')">
+                                        <i class="ti ti-lock"></i> Permissions
+                                    </a></li>
+                                ` : ''}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteItem('${item._id}', 'folder')">
+                                    <i class="ti ti-trash"></i> Delete
+                                </a></li>
+                            ` : `
+                                <li><a class="dropdown-item" href="#" onclick="previewFile('${item._id}')">
+                                    <i class="ti ti-eye"></i> Preview
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="downloadFile('${item._id}')">
+                                    <i class="ti ti-download"></i> Download
+                                </a></li>
+                                ${item.isShared ? `
+                                    <li><a class="dropdown-item" href="#" onclick="shareFile('${item._id}')">
+                                        <i class="ti ti-share"></i> Share
+                                    </a></li>
+                                ` : ''}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteItem('${item._id}', 'file')">
+                                    <i class="ti ti-trash"></i> Delete
+                                </a></li>
+                            `}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.html(html);
+}
+
+function renderEmptyState() {
+    $("#recycleTable tbody").html(`
+        <tr>
+            <td colspan="8" class="text-center py-5">
+                <i class="ti ti-folder-off fs-2 text-muted"></i>
+                <p class="mt-2 text-muted">No items found matching your criteria</p>
+                <button class="btn btn-outline-primary btn-sm mt-2" onclick="clearAllFilters()">
+                    <i class="ti ti-refresh"></i> Clear Filters
+                </button>
+            </td>
+        </tr>
+    `);
+}
+
+// ============================================
+// PAGINATION UI
+// ============================================
+
+function updatePaginationUI() {
+    const { page, totalPages, total, limit } = paginationState;
+    
+    // Update info text
+    const start = total === 0 ? 0 : (page - 1) * limit + 1;
+    const end = Math.min(start + limit - 1, total);
+    $("#paginationInfo").text(
+        total === 0 ? 'No items found' : `Showing ${start}-${end} of ${total} items`
+    );
+
+    // Update page buttons
+    const pageNumbersContainer = $("#pageNumbers");
+    let pageHtml = '';
+
+    if (totalPages > 0) {
+        const maxVisible = 5;
+        let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        if (startPage > 1) {
+            pageHtml += `<button class="page-btn" data-page="1">1</button>`;
+            if (startPage > 2) {
+                pageHtml += `<span class="page-btn disabled">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageHtml += `<button class="page-btn ${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pageHtml += `<span class="page-btn disabled">...</span>`;
+            }
+            pageHtml += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+    }
+
+    pageNumbersContainer.html(pageHtml);
+
+    // Attach click events to page buttons
+    $(".page-btn[data-page]").off("click").on("click", function(e) {
+        e.preventDefault();
+        const targetPage = parseInt($(this).data("page"));
+        if (targetPage && targetPage !== paginationState.page) {
+            paginationState.page = targetPage;
+            loadData();
+            // Scroll to table top
+            $(".custom-datatable-filter").closest(".card").get(0)?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    });
+
+    // Update navigation buttons
+    $("#firstPageBtn").toggleClass("disabled", page <= 1);
+    $("#prevPageBtn").toggleClass("disabled", page <= 1);
+    $("#nextPageBtn").toggleClass("disabled", page >= totalPages);
+    $("#lastPageBtn").toggleClass("disabled", page >= totalPages);
+}
+
+// ============================================
+// DASHBOARD SUMMARY
+// ============================================
+
+async function loadFolderSummary() {
+    try {
+        const departmentId = $("#departmentFilter").val() || "";
+        const url = `/api/folders/summary?departmentId=${departmentId}`;
+
+        const response = await fetch(url, { credentials: "include", cache: "no-store" });
+        const result = await response.json();
+
+        if (!result.success) {
+            console.warn('Summary API failed:', result.message);
+            return;
+        }
+
+        const summary = result.data || {};
+
+        $("#totalDocs").text(summary.totalFolders ?? 0);
+        $("#approvedDocs").text(summary.totalFiles ?? 0);
+        
+        if (summary.storage) {
+            $("#pendingDocs").text(`${summary.storage.value} ${summary.storage.unit}`);
+        }
+        
+        if (summary.storageLimit) {
+            $("#storageLimit").text(`of ${summary.storageLimit} GB`);
+        }
+        
+        $("#rejectedDocs").text(summary.permissions ?? 0);
+
+    } catch (err) {
+        console.error("Failed to load dashboard summary:", err);
+    }
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================
+// ACTION FUNCTIONS
+// ============================================
+
+function editFolder(id) {
+    console.log('Edit folder:', id);
+    showToast('info', 'Edit folder functionality coming soon');
+}
+
+function previewFile(id) {
+    console.log('Preview file:', id);
+    window.open(`/api/files/${id}/view`, '_blank');
+}
+
+function downloadFile(id) {
+    console.log('Download file:', id);
+    window.location.href = `/api/files/${id}/download`;
+}
+
+function viewFile(id) {
+    console.log('View file:', id);
+    window.open(`/api/files/${id}/view`, '_blank');
+}
+
+function shareFile(id) {
+    console.log('Share file:', id);
+    showToast('info', 'Share functionality coming soon');
+}
+
+function managePermissions(id) {
+    console.log('Manage permissions:', id);
+    showToast('info', 'Permissions management coming soon');
+}
+
+function deleteItem(id, type) {
+    if (confirm(`Are you sure you want to delete this ${type}?`)) {
+        console.log('Delete:', id, type);
+        // Add actual delete API call here
+        loadData();
+        loadFolderSummary();
+        showToast('success', `${type} deleted successfully`);
+    }
+}
+
+function clearAllFilters() {
+    $("#departmentFilter").val('').trigger('change');
+    $("#SearchFolderInput").val('');
+    $("#recentActivitySort").val('updatedAt_desc').trigger('change');
+    $(".view-folder").removeClass('active');
+    $(".view-folder[data-filter='lastModified']").addClass('active');
+    paginationState.page = 1;
+    loadData();
+}
+
+function refreshData() {
+    paginationState.page = 1;
+    loadData();
+    loadFolderSummary();
+    showToast('success', 'Data refreshed successfully');
+}
+
+function showToast(type, message) {
+    const toast = $(`
+        <div class="toast align-items-center text-white bg-${type} border-0 show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// Expose functions globally
+window.editFolder = editFolder;
+window.previewFile = previewFile;
+window.downloadFile = downloadFile;
+window.viewFile = viewFile;
+window.shareFile = shareFile;
+window.managePermissions = managePermissions;
+window.deleteItem = deleteItem;
+window.clearAllFilters = clearAllFilters;
+window.loadData = loadData;
+window.loadFolderSummary = loadFolderSummary;
+window.refreshData = refreshData;
+window.showToast = showToast;
+window.fileIcons = fileIcons;
+window.imageExtensions = imageExtensions;
+window.renderFileIcon = renderFileIcon;
+window.paginationState = paginationState;
+</script>

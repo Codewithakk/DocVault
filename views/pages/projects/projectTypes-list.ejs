@@ -32,13 +32,13 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>Sr No.</th>
+                                    <th>Action</th>
                                     <th>Name</th>
                                     <th>Priority</th>
                                     <th>Status</th>
                                     <th>Added By</th>
                                     <th>Updated By</th>
                                     <th>Created At</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="projectTypesTableBody"></tbody>
@@ -85,6 +85,15 @@
                                 tbody += `
 <tr>
     <td>${index + 1}</td>
+    <td>
+        <a href="/projectTypes/${pt._id}" class="text-primary me-2" title="Edit">
+            <i class="ti ti-edit"></i>
+        </a>
+
+        <a href="#" class="text-danger btn-delete" data-id="${pt._id}" title="Delete">
+            <i class="ti ti-trash"></i>
+        </a>
+    </td>
     <td>${pt.name || '-'}</td>
     <td>${pt.priority ?? '-'}</td>
     <td>
@@ -95,15 +104,6 @@
    <td>${pt.addedBy?.name || pt.addedBy?.email || '-'}</td>
       <td>${pt.updatedBy?.name || pt.updatedBy?.email || '-'}</td>
     <td>${formatDateTime(pt.createdAt)}</td>
-    <td>
-        <a href="/projectTypes/${pt._id}" class="text-primary me-2" title="Edit">
-            <i class="ti ti-edit"></i>
-        </a>
-
-        <a href="#" class="text-danger btn-delete" data-id="${pt._id}" title="Delete">
-            <i class="ti ti-trash"></i>
-        </a>
-    </td>
 </tr>`;
                             });
 

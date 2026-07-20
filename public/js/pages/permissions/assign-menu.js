@@ -1,248 +1,327 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const designationSelect = document.getElementById('designation_id');
-    const assignMenuForm = document.getElementById('assignMenuForm');
-    const selectAllBtn = document.getElementById('btnSelectAll');
+// document.addEventListener('DOMContentLoaded', () => {
+//     const designationSelect = document.getElementById('designation_id');
+//     const assignMenuForm = document.getElementById('assignMenuForm');
+//     const selectAllBtn = document.getElementById('btnSelectAll');
+//     const selectAllMenusCheckbox = document.getElementById('selectAllMenus');
 
-    // Only menu checkboxes (not permissions)
-    const menuCheckboxes = () => assignMenuForm.querySelectorAll('.menu-checkbox');
+//     // Only menu checkboxes (not permissions)
+//     const menuCheckboxes = () => assignMenuForm.querySelectorAll('.menu-checkbox');
 
-    let assignedMenus = [];
+//     let assignedMenus = [];
 
-    // Function to set up row-level event listeners
-    function setupRowEventListeners() {
-        assignMenuForm.querySelectorAll('table tbody tr').forEach(row => {
-            // Skip if this is a master menu row (no checkboxes)
-            if (row.classList.contains('table-primary')) return;
+//     // Function to set up row-level event listeners
+//     function setupRowEventListeners() {
+//         assignMenuForm.querySelectorAll('table tbody tr').forEach(row => {
+//             // Skip if this is a master menu row (no checkboxes)
+//             if (row.classList.contains('table-primary')) return;
 
-            const allCb = row.querySelector('td:nth-child(2) input[type="checkbox"]'); // "All" column
-            if (!allCb) return;
+//             const allCb = row.querySelector('td:nth-child(2) input[type="checkbox"]'); // "All" column
+//             if (!allCb) return;
 
-            const readCb = row.querySelector('td:nth-child(3) input[type="checkbox"]');
-            const writeCb = row.querySelector('td:nth-child(4) input[type="checkbox"]');
-            const deleteCb = row.querySelector('td:nth-child(5) input[type="checkbox"]');
-            const menuCb = row.querySelector('.menu-checkbox');
+//             const readCb = row.querySelector('td:nth-child(3) input[type="checkbox"]');
+//             const writeCb = row.querySelector('td:nth-child(4) input[type="checkbox"]');
+//             const deleteCb = row.querySelector('td:nth-child(5) input[type="checkbox"]');
+//             const menuCb = row.querySelector('.menu-checkbox');
 
-            // Check/uncheck Read/Write/Delete when "All" toggled
-            allCb.addEventListener('change', () => {
-                const checked = allCb.checked;
-                if (readCb) readCb.checked = checked;
-                if (writeCb) writeCb.checked = checked;
-                if (deleteCb) deleteCb.checked = checked;
+//             // Check/uncheck Read/Write/Delete when "All" toggled
+//             allCb.addEventListener('change', () => {
+//                 const checked = allCb.checked;
+//                 if (readCb) readCb.checked = checked;
+//                 if (writeCb) writeCb.checked = checked;
+//                 if (deleteCb) deleteCb.checked = checked;
 
-                // Also check the menu checkbox if "All" is checked
-                if (menuCb && checked) {
-                    menuCb.checked = checked;
-                }
-            });
+//                 // Also check the menu checkbox if "All" is checked
+//                 if (menuCb && checked) {
+//                     menuCb.checked = checked;
+//                 }
 
-            // Auto-update "All" checkbox when permissions change
-            [readCb, writeCb, deleteCb].forEach(permCb => {
-                if (permCb) {
-                    permCb.addEventListener('change', () => {
-                        if (readCb && writeCb && deleteCb) {
-                            allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
+//                 // Update the header "Select All" checkbox
+//                 updateSelectAllHeaderState();
+//             });
 
-                            // Ensure menu is checked if any permission is checked
-                            if (menuCb && (readCb.checked || writeCb.checked || deleteCb.checked)) {
-                                menuCb.checked = true;
-                            }
-                        }
-                    });
-                }
-            });
+//             // Auto-update "All" checkbox when permissions change
+//             [readCb, writeCb, deleteCb].forEach(permCb => {
+//                 if (permCb) {
+//                     permCb.addEventListener('change', () => {
+//                         if (readCb && writeCb && deleteCb) {
+//                             allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
 
-            // Ensure permissions are updated when menu checkbox changes
-            // Ensure permissions are updated when menu checkbox changes
-            if (menuCb) {
-                menuCb.addEventListener('change', () => {
-                    if (menuCb.checked) {
-                        // If menu is checked → auto-check Read
-                        if (readCb) readCb.checked = true;
-                    } else {
-                        // If unchecked → uncheck all permissions
-                        if (readCb) readCb.checked = false;
-                        if (writeCb) writeCb.checked = false;
-                        if (deleteCb) deleteCb.checked = false;
-                        if (allCb) allCb.checked = false;
-                    }
+//                             // Ensure menu is checked if any permission is checked
+//                             if (menuCb && (readCb.checked || writeCb.checked || deleteCb.checked)) {
+//                                 menuCb.checked = true;
+//                             }
 
-                    // Keep "All" synced
-                    if (readCb && writeCb && deleteCb && allCb) {
-                        allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
-                    }
-                });
-            }
-        });
-    }
+//                             // Update the header "Select All" checkbox
+//                             updateSelectAllHeaderState();
+//                         }
+//                     });
+//                 }
+//             });
 
-    // Initial setup
-    setupRowEventListeners();
+//             // Ensure permissions are updated when menu checkbox changes
+//             if (menuCb) {
+//                 menuCb.addEventListener('change', () => {
+//                     if (menuCb.checked) {
+//                         // If menu is checked → auto-check Read
+//                         if (readCb) readCb.checked = true;
+//                     } else {
+//                         // If unchecked → uncheck all permissions
+//                         if (readCb) readCb.checked = false;
+//                         if (writeCb) writeCb.checked = false;
+//                         if (deleteCb) deleteCb.checked = false;
+//                         if (allCb) allCb.checked = false;
+//                     }
 
-    // --- Load assigned menus ---
-    designationSelect.addEventListener('change', async function () {
-        const designationId = this.value;
-        assignedMenus = [];
+//                     // Keep "All" synced
+//                     if (readCb && writeCb && deleteCb && allCb) {
+//                         allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
+//                     }
 
-        // Uncheck all menu checkboxes and all permissions
-        menuCheckboxes().forEach(cb => cb.checked = false);
-        assignMenuForm.querySelectorAll('.perm-read, .perm-write, .perm-delete, .all-checkbox')
-            .forEach(cb => cb.checked = false);
+//                     // Update the header "Select All" checkbox
+//                     updateSelectAllHeaderState();
+//                 });
+//             }
+//         });
+//     }
 
-        if (!designationId) return;
+//     // Function to update the header "Select All" checkbox state
+//     function updateSelectAllHeaderState() {
+//         const boxes = Array.from(menuCheckboxes());
+//         const checkedBoxes = boxes.filter(cb => cb.checked);
+        
+//         if (boxes.length === 0) {
+//             selectAllMenusCheckbox.checked = false;
+//             selectAllMenusCheckbox.indeterminate = false;
+//             return;
+//         }
 
-        try {
-            const res = await fetch(`${baseUrl}/api/assign-menu/designation/${designationId}/menus`);
-            const data = await res.json();
+//         if (checkedBoxes.length === boxes.length) {
+//             selectAllMenusCheckbox.checked = true;
+//             selectAllMenusCheckbox.indeterminate = false;
+//         } else if (checkedBoxes.length === 0) {
+//             selectAllMenusCheckbox.checked = false;
+//             selectAllMenusCheckbox.indeterminate = false;
+//         } else {
+//             selectAllMenusCheckbox.checked = false;
+//             selectAllMenusCheckbox.indeterminate = true;
+//         }
+//     }
 
-            if (data.success && Array.isArray(data.data)) {
-                assignedMenus = data.data;
+//     // Header "Select All" checkbox functionality
+//     selectAllMenusCheckbox.addEventListener('change', () => {
+//         const isChecked = selectAllMenusCheckbox.checked;
+        
+//         // Select/deselect all menu checkboxes
+//         menuCheckboxes().forEach(cb => {
+//             cb.checked = isChecked;
+            
+//             const menuId = cb.value;
+//             const readCb = document.getElementById(`read_${menuId}`);
+//             const writeCb = document.getElementById(`write_${menuId}`);
+//             const deleteCb = document.getElementById(`delete_${menuId}`);
+//             const row = cb.closest('tr');
+//             const allCb = row ? row.querySelector('.all-checkbox') : null;
 
-                assignedMenus.forEach(menu => {
-                    const cb = assignMenuForm.querySelector(`.menu-checkbox[value="${menu.menu_id}"]`);
-                    if (cb) {
-                        cb.checked = true;
+//             // If checked, also check Read permission and row "All"
+//             if (readCb) readCb.checked = isChecked;
+//             if (writeCb) writeCb.checked = isChecked;
+//             if (deleteCb) deleteCb.checked = isChecked;
+//             if (allCb) allCb.checked = isChecked;
+//         });
 
-                        // Set permissions
-                        if (menu.permissions) {
-                            const readCb = document.getElementById(`read_${menu.menu_id}`);
-                            const writeCb = document.getElementById(`write_${menu.menu_id}`);
-                            const deleteCb = document.getElementById(`delete_${menu.menu_id}`);
-                            const allCb = cb.closest('tr').querySelector('.all-checkbox');
+//         // If checked, also select all through the "Select All" button logic
+//         if (isChecked) {
+//             // This will also trigger the "Select All" button's behavior
+//             selectAllBtn.click();
+//         }
 
-                            if (readCb) readCb.checked = menu.permissions.read;
-                            if (writeCb) writeCb.checked = menu.permissions.write;
-                            if (deleteCb) deleteCb.checked = menu.permissions.delete;
+//         // Update the header checkbox state
+//         updateSelectAllHeaderState();
+//     });
 
-                            // Update row-level "All" checkbox
-                            if (allCb && readCb && writeCb && deleteCb) {
-                                allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
-                            }
-                        }
-                    }
-                });
-            } else {
-                showToast('Failed to fetch assigned menus. Invalid response format.', "error");
-            }
-        } catch (err) {
-            showToast('Failed to fetch assigned menus.', "error");
-        }
+//     // Initial setup
+//     setupRowEventListeners();
 
-        // Re-setup event listeners after content changes
-        setTimeout(setupRowEventListeners, 100);
-    });
+//     // --- Load assigned menus ---
+//     designationSelect.addEventListener('change', async function () {
+//         const designationId = this.value;
+//         assignedMenus = [];
 
-    // --- Select All toggle ---
-    selectAllBtn.addEventListener('click', () => {
-        const boxes = Array.from(menuCheckboxes());
-        const allChecked = boxes.every(cb => cb.checked);
+//         // Uncheck all menu checkboxes and all permissions
+//         menuCheckboxes().forEach(cb => cb.checked = false);
+//         assignMenuForm.querySelectorAll('.perm-read, .perm-write, .perm-delete, .all-checkbox')
+//             .forEach(cb => cb.checked = false);
 
-        boxes.forEach(cb => {
-            cb.checked = !allChecked;
+//         // Reset header checkbox
+//         selectAllMenusCheckbox.checked = false;
+//         selectAllMenusCheckbox.indeterminate = false;
 
-            const menuId = cb.value;
-            const readCb = document.getElementById(`read_${menuId}`);
-            const writeCb = document.getElementById(`write_${menuId}`);
-            const deleteCb = document.getElementById(`delete_${menuId}`);
-            const row = cb.closest('tr');
-            const allCb = row.querySelector('.all-checkbox');
+//         if (!designationId) return;
 
-            if (readCb) readCb.checked = !allChecked;
-            if (writeCb) writeCb.checked = !allChecked;
-            if (deleteCb) deleteCb.checked = !allChecked;
-            if (allCb) allCb.checked = !allChecked;
-        });
-    });
+//         try {
+//             const res = await fetch(`${baseUrl}/api/assign-menu/designation/${designationId}/menus`);
+//             const data = await res.json();
 
-    // --- Save assignment ---
-    assignMenuForm.addEventListener('submit', async e => {
-        e.preventDefault();
+//             if (data.success && Array.isArray(data.data)) {
+//                 assignedMenus = data.data;
 
-        const designationId = designationSelect.value;
-        if (!designationId) return showToast('Please select a designation first.', "warning");
+//                 assignedMenus.forEach(menu => {
+//                     const cb = assignMenuForm.querySelector(`.menu-checkbox[value="${menu.menu_id}"]`);
+//                     if (cb) {
+//                         cb.checked = true;
 
-        // Prepare selected menus with permissions
-        const selectedMenus = Array.from(menuCheckboxes())
-            .filter(cb => cb.checked)
-            .map(cb => {
-                const menuId = cb.value;
-                return {
-                    menu_id: menuId,
-                    permissions: {
-                        read: document.getElementById(`read_${menuId}`)?.checked || false,
-                        write: document.getElementById(`write_${menuId}`)?.checked || false,
-                        delete: document.getElementById(`delete_${menuId}`)?.checked || false,
-                    }
-                };
-            });
+//                         // Set permissions
+//                         if (menu.permissions) {
+//                             const readCb = document.getElementById(`read_${menu.menu_id}`);
+//                             const writeCb = document.getElementById(`write_${menu.menu_id}`);
+//                             const deleteCb = document.getElementById(`delete_${menu.menu_id}`);
+//                             const allCb = cb.closest('tr').querySelector('.all-checkbox');
 
-        // Check if there are any changes (menu selection or permission changes)
-        const hasChanges = checkForChanges(selectedMenus, assignedMenus);
+//                             if (readCb) readCb.checked = menu.permissions.read;
+//                             if (writeCb) writeCb.checked = menu.permissions.write;
+//                             if (deleteCb) deleteCb.checked = menu.permissions.delete;
 
-        if (!hasChanges) {
-            return showToast('No changes to save.', "info");
-        }
+//                             // Update row-level "All" checkbox
+//                             if (allCb && readCb && writeCb && deleteCb) {
+//                                 allCb.checked = readCb.checked && writeCb.checked && deleteCb.checked;
+//                             }
+//                         }
+//                     }
+//                 });
 
-        try {
-            // Always send all selected menus with their permissions
-            const response = await fetch(`${baseUrl}/api/assign-menu/assign`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    designation_id: designationId,
-                    menus: selectedMenus
-                })
-            });
+//                 // Update header checkbox state
+//                 updateSelectAllHeaderState();
+//             } else {
+//                 showToast('Failed to fetch assigned menus. Invalid response format.', "error");
+//             }
+//         } catch (err) {
+//             showToast('Failed to fetch assigned menus.', "error");
+//         }
 
-            const result = await response.json();
+//         // Re-setup event listeners after content changes
+//         setTimeout(setupRowEventListeners, 100);
+//     });
 
-            if (result.success) {
-                assignedMenus = selectedMenus;
-                showToast('Menu assignments saved successfully!', 'success', 1000);
-                setTimeout(() => window.location.reload(), 1200);
-            } else {
-                showToast(`Failed to save assignments: ${result.message}`, "error");
-            }
-        } catch (err) {
-            showToast('Error updating menus.', 'error');
-        }
-    });
+//     // --- Select All toggle ---
+//     selectAllBtn.addEventListener('click', () => {
+//         const boxes = Array.from(menuCheckboxes());
+//         const allChecked = boxes.every(cb => cb.checked);
 
-    // Helper function to check for changes
-    function checkForChanges(selectedMenus, assignedMenus) {
-        // If no menus were previously assigned but now we have selections
-        if (assignedMenus.length === 0 && selectedMenus.length > 0) {
-            return true;
-        }
+//         boxes.forEach(cb => {
+//             cb.checked = !allChecked;
 
-        // If menus were assigned but now none are selected
-        if (assignedMenus.length > 0 && selectedMenus.length === 0) {
-            return true;
-        }
+//             const menuId = cb.value;
+//             const readCb = document.getElementById(`read_${menuId}`);
+//             const writeCb = document.getElementById(`write_${menuId}`);
+//             const deleteCb = document.getElementById(`delete_${menuId}`);
+//             const row = cb.closest('tr');
+//             const allCb = row.querySelector('.all-checkbox');
 
-        // Check if any menu was added or removed
-        const selectedIds = selectedMenus.map(m => m.menu_id);
-        const assignedIds = assignedMenus.map(m => m.menu_id);
+//             if (readCb) readCb.checked = !allChecked;
+//             if (writeCb) writeCb.checked = !allChecked;
+//             if (deleteCb) deleteCb.checked = !allChecked;
+//             if (allCb) allCb.checked = !allChecked;
+//         });
 
-        const menusAdded = selectedIds.some(id => !assignedIds.includes(id));
-        const menusRemoved = assignedIds.some(id => !selectedIds.includes(id));
+//         // Update header checkbox
+//         updateSelectAllHeaderState();
+//     });
 
-        if (menusAdded || menusRemoved) {
-            return true;
-        }
+//     // --- Save assignment ---
+//     assignMenuForm.addEventListener('submit', async e => {
+//         e.preventDefault();
 
-        // Check if permissions changed for any menu
-        for (const selectedMenu of selectedMenus) {
-            const assignedMenu = assignedMenus.find(m => m.menu_id === selectedMenu.menu_id);
+//         const designationId = designationSelect.value;
+//         if (!designationId) return showToast('Please select a designation first.', "warning");
 
-            if (!assignedMenu) continue;
+//         // Prepare selected menus with permissions
+//         const selectedMenus = Array.from(menuCheckboxes())
+//             .filter(cb => cb.checked)
+//             .map(cb => {
+//                 const menuId = cb.value;
+//                 return {
+//                     menu_id: menuId,
+//                     permissions: {
+//                         read: document.getElementById(`read_${menuId}`)?.checked || false,
+//                         write: document.getElementById(`write_${menuId}`)?.checked || false,
+//                         delete: document.getElementById(`delete_${menuId}`)?.checked || false,
+//                     }
+//                 };
+//             });
 
-            if (selectedMenu.permissions.read !== assignedMenu.permissions.read ||
-                selectedMenu.permissions.write !== assignedMenu.permissions.write ||
-                selectedMenu.permissions.delete !== assignedMenu.permissions.delete) {
-                return true;
-            }
-        }
+//         // Check if there are any changes (menu selection or permission changes)
+//         const hasChanges = checkForChanges(selectedMenus, assignedMenus);
 
-        return false;
-    }
-});
+//         if (!hasChanges) {
+//             return showToast('No changes to save.', "info");
+//         }
+
+//         try {
+//             // Always send all selected menus with their permissions
+//             const response = await fetch(`${baseUrl}/api/assign-menu/assign`, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({
+//                     designation_id: designationId,
+//                     menus: selectedMenus
+//                 })
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 assignedMenus = selectedMenus;
+//                 showToast('Menu assignments saved successfully!', 'success', 1000);
+//                 setTimeout(() => window.location.reload(), 1200);
+//             } else {
+//                 showToast(`Failed to save assignments: ${result.message}`, "error");
+//             }
+//         } catch (err) {
+//             showToast('Error updating menus.', 'error');
+//         }
+//     });
+
+//     // Helper function to check for changes
+//     function checkForChanges(selectedMenus, assignedMenus) {
+//         // If no menus were previously assigned but now we have selections
+//         if (assignedMenus.length === 0 && selectedMenus.length > 0) {
+//             return true;
+//         }
+
+//         // If menus were assigned but now none are selected
+//         if (assignedMenus.length > 0 && selectedMenus.length === 0) {
+//             return true;
+//         }
+
+//         // Check if any menu was added or removed
+//         const selectedIds = selectedMenus.map(m => m.menu_id);
+//         const assignedIds = assignedMenus.map(m => m.menu_id);
+
+//         const menusAdded = selectedIds.some(id => !assignedIds.includes(id));
+//         const menusRemoved = assignedIds.some(id => !selectedIds.includes(id));
+
+//         if (menusAdded || menusRemoved) {
+//             return true;
+//         }
+
+//         // Check if permissions changed for any menu
+//         for (const selectedMenu of selectedMenus) {
+//             const assignedMenu = assignedMenus.find(m => m.menu_id === selectedMenu.menu_id);
+
+//             if (!assignedMenu) continue;
+
+//             if (selectedMenu.permissions.read !== assignedMenu.permissions.read ||
+//                 selectedMenu.permissions.write !== assignedMenu.permissions.write ||
+//                 selectedMenu.permissions.delete !== assignedMenu.permissions.delete) {
+//                 return true;
+//             }
+//         }
+
+//         return false;
+//     }
+
+//     // Trigger change event to load assigned menus if designation is pre-selected
+//     if (designationSelect.value) {
+//         designationSelect.dispatchEvent(new Event('change'));
+//     }
+// });

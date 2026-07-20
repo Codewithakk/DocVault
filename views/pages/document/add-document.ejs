@@ -1,437 +1,2391 @@
 <%- include('../../partials/header') %>
-	<!-- Page Wrapper -->
-	<div class="page-wrapper">
-		<div class="content">
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+    <div class="content">
 
-			<!-- Breadcrumb -->
-			<div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
-				<div class="my-auto mb-2">
-					<h2 class="mb-1">
-						<%= isEdit ? "Edit Document" : "Add Document" %>
-					</h2>
-					<nav>
-						<ol class="breadcrumb mb-0">
-							<li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
-							<li class="breadcrumb-item">
-								<%= isEdit ? "Edit Document" : "Add Document" %>
-							</li>
-						</ol>
-					</nav>
-				</div>
-			</div>
-			<!-- /Breadcrumb -->
+        <!-- Breadcrumb -->
+        <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-3">
+            <div class="my-auto mb-2">
+                <h2 class="mb-1">
+                    <%= isEdit ? "Edit Document" : "Add Document" %>
+                </h2>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="#"><i class="ti ti-smart-home"></i></a></li>
+                        <li class="breadcrumb-item">
+                            <%= isEdit ? "Edit Document" : "Add Document" %>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        <!-- /Breadcrumb -->
 
-			<div class="add-info-fieldset">
-				<form id="documentForm" enctype="multipart/form-data">
-					<% if (isEdit) { %>
-						<input type="hidden" name="_method" value="PATCH">
-						<% } %>
-							<div class="modal-body">
-								<div class="row">
-									<!-- Project Name -->
-									<div class="col-md-4">
-										<div class="mb-3">
-											<label class="form-label">Project Name</label>
-											<select id="projectName" name="project" class="form-select select2"
-												required>
-												<% if (!isEdit && selectedProject) { %>
-													<option value="<%= selectedProject._id %>" selected>
-														<%= selectedProject.projectName %>
-													</option>
-													<% } %>
+        <div class="add-info-fieldset">
+            <form id="documentForm" enctype="multipart/form-data">
+                <% if (isEdit) { %>
+                    <input type="hidden" name="_method" value="PATCH">
+                <% } %>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-body row">
+                                    <!-- File Upload -->
+                                    <div class="col-md-6">
+                                        <label class="form-label">File Uploads</label>
+                                        <div class="upload-box mb-3" id="uploadBox">
+                                            <i class="ti ti-cloud-upload fa-2x text-primary mb-2"></i>
+                                            <p class="mb-1"><strong>Click to upload file</strong> or drag and drop</p>
+                                            <small class="text-muted">Max 10GB total storage. DOCX / PPTX / CSV / PDF</small>
+                                            <input type="file" class="form-control d-none" id="fileInput" name="files" multiple>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="fileList">
+                                            <label class="form-label">Selected Files</label>
+                                            <!-- existing file list code -->
+                                        </div>
+                                    </div>                                                
+                                </div>
+                            </div>
 
-												<% if (isEdit && document.project) { %>
-													<option value="<%= document.project._id %>" selected>
-														<%= document.project.projectName %>
-													</option>
-												<% } %>
+                            <div class="card">
+                                <div class="card-header border-0 pb-0">
+                                    <h6 class="d-flex align-items-center"> <i class="ti ti-notes fs-22 text-primary me-1"></i> Document Information</h6>
+                                </div>
+                                <div class="card-body row">
+                                    <!-- Project Name -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Project Name</label>
+                                            <select id="projectName" name="project" class="form-select select2" required>
+                                                <% if (!isEdit && selectedProject) { %>
+                                                    <option value="<%= selectedProject._id %>" selected>
+                                                        <%= selectedProject.projectName %>
+                                                    </option>
+                                                <% } %>
+                                                <% if (isEdit && document.project) { %>
+                                                    <option value="<%= document.project._id %>" selected>
+                                                        <%= document.project.projectName %>
+                                                    </option>
+                                                <% } %>
+                                            </select>
+                                        </div>
+                                    </div>
 
-											</select>
-										</div>
-									</div>
+                                    <!-- Department -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Department </label>
+                                            <select id="department" name="department" class="form-select select2" required>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Donor Name -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Donor Name</label>
+                                            <select id="documentDonor" name="documentDonor" class="form-select select2">
+                                                <option value="">-- Select Donor Name --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Vendor Name -->
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Vendor Name</label>
+                                            <select id="documentVendor" name="documentVendor" class="form-select select2">
+                                                <option value="">-- Select Vendor Name --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Metadata -->
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Meta Data - File Name</label>
+                                            <input class="form-control" type="text" name="metadata[fileName]" placeholder="File Name" value="<%= isEdit && document.metadata && document.metadata.fileName ? document.metadata.fileName : '' %>">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tags -->
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            <label class="form-label">Add Tags</label>
+                                            <input type="text" name="tags" class="form-control" placeholder="tag1, tag2, tag3" value="<%= isEdit && document.tags ? document.tags.join(', ') : '' %>">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header border-0 pb-0">
+                                    <h6 class="d-flex align-items-center"> <i class="ti ti-edit fs-22 text-primary me-1"></i> Description</h6>
+                                </div>
+                                <div class="card-body row">
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <textarea id="summernote" name="description" style="display: none;"><%= isEdit && document.description ? document.description : '' %></textarea>
+                                            <div class="summernote">
+                                                <%- isEdit && document.description ? document.description : '' %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-header border-0 pb-0">
+                                            <h6 class="d-flex align-items-center"> <i class="ti ti-folder-open fs-22 text-primary me-1"></i> Organization</h6>
+                                            <button type="button" 
+                                            id="createFolderBtn" 
+                                            class="btn btn-sm btn-primary rounded-pill" 
+                                            disabled 
+                                            style="opacity: 0.5; cursor: not-allowed;"
+                                            title="Please select both Project and Department">
+                                        <i class="ti ti-plus me-1"></i> Add Folder
+                                    </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex gap-4">
+                                                <p class="card-header-org-title">Folder Path</p>
+                                                <div class="breadcrumb-nav" id="dynamicBreadcrumb">
+                                                    <i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem; padding-right: 1px;"></i>
+                                                    <span class="text-muted">Select a folder</span>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-3">
+                                                <div class="card-body-org" style="flex: 1;">
+                                                    <ul class="folder-tree" id="dynamicFolderTree">
+                                                        <div id="folderTreeLoader" class="text-center py-3 d-none">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading folders...</span>
+                                                            </div>
+                                                        </div>
+                                                    </ul>
+                                                </div>
+                                                <div class="folder-grid-container" style="flex: 1;">
+                                                    <div class="grid-header">
+                                                        <h3 class="grid-title">Frequently Used</h3>
+                                                    </div>
+                                                    <div class="folder-grid" id="dynamicFolderGrid">
+                                                        <div id="folderGridLoader" class="text-center py-3 d-none">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" name="folderId" id="selectedFolderId">
+                                        </div>
+                                    </div>                                             
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header border-0 pb-0">
+                                            <h6 class="d-flex align-items-center"> <i class="ti ti-shield-check fs-22 text-primary me-1"></i> Options</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <div class="d-flex align-items-center gap-5">
+                                                    <label class="form-label mb-0">Compliance and Retention Document</label>
+                                                    <div class="form-switch ps-2">
+                                                        <input class="form-check-input" type="checkbox" id="complianceSwitch" name="compliance" value="yes" <%= isEdit && document.compliance?.isCompliance ? 'checked' : '' %>>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="mb-3" id="expiryDateContainer" style="display: <%= isEdit && document.compliance?.isCompliance ? 'block' : 'none' %>;">
+                                                <div class="d-flex align-items-center gap-5">
+                                                    <label class="form-label mb-0">Enter Expiry Date</label>
+                                                    <div class="input-icon-end position-relative">
+                                                        <input type="text" class="form-control datetimepicker" name="expiryDate" placeholder="dd/mm/yyyy" value="<%= isEdit && document.compliance?.expiryDate ? new Date(document.compliance.expiryDate).toLocaleDateString('en-GB') : '' %>" <%=isEdit && document.compliance?.isCompliance ? 'required' : '' %>>
+                                                        <span class="input-icon-addon"><i class="ti ti-calendar text-gray-7"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="d-flex align-items-center gap-5">
+                                                    <label class="form-label mb-0">File Access grant Required</label>
+                                                    <div class="form-switch ps-2">
+                                                        <input class="form-check-input" type="checkbox" id="wantApprovers" name="wantApprovers" value="no" <%= isEdit && document.wantApprovers?.iswantApprovers ? 'checked' : '' %>>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Comment (Optional)</label>
+                                                <textarea class="form-control" rows="3" placeholder="Add any additional comments..." name="comment" value="<%= isEdit && document.comment ? document.comment : '' %>"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header border-0 pb-0">
+                                    <h6 class="d-flex align-items-center"><i class="ti ti-file-database fs-22 text-primary me-1"></i> Metadata</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="col-md-12" id="metadataDisplay">
+                                        <!-- ALL uploaded files metadata will be populated dynamically -->
+                                        <p class="text-muted">No files uploaded yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="sideupldwrp card">
+                                <div class="card-header">
+                                    <h6 class="d-flex align-items-center"><i class="ti ti-notes fs-22 text-primary me-1"></i> Upload Summary</h6>
+                                </div>
+                                <div class="sideupldtxt card-body" id="uploadSummary">
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Project</p>
+                                        <span class="fs-14 text-dark" id="summaryProject">--</span>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Department</p>
+                                        <span class="fs-14 text-dark" id="summaryDepartment">--</span>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Folder</p>
+                                        <span class="fs-14 text-dark" id="summaryFolder">--</span>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Tags</p>
+                                        <div class="d-flex gap-2 flex-wrap" id="summaryTags">
+                                            <span class="text-muted">No tags added</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Files Uploaded</p>
+                                        <span class="fs-14 text-dark" id="summaryFileCount">0</span>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Compliance Document</p>
+                                        <span class="badge bg-soft-success fs-12 fw-normal text-success" id="summaryCompliance">No</span>
+                                    </div>
+                                    <div class="mb-4">
+                                        <p class="fs-14 fw-medium text-gray mb-2">Restricted Access</p>
+                                        <span class="badge bg-soft-danger fs-12 fw-normal text-danger" id="summaryAccess">No</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-end">
+                    <button class="btn btn-primary rounded-pill" type="submit" id="submitBtn">
+                        <%= isEdit ? "Update Document" : "Add Document" %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
+        <p class="mb-0">2025 &copy; HLFPPT.</p>
+        <p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services & Technology</a></p>
+    </div>
+</div>
+<!-- /Page Wrapper -->
+
+<!-- Success Modal -->
+<div id="data-success-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-notificationslike">
+        <div class="modal-content">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-body">
+                <div class="success_mdltxt text-center">
+                    <div class="imgscs mb-3"><img src="/img/icons/success.png" style="max-width: 60px;"></div>
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <span class="avatar avatar-xs rounded bg-light mb-2">
+                            <img src="/img/icons/fn1.png">
+                        </span>
+                        <div class="ms-2">
+                            <p class="fs-12 mb-1 fw-medium" id="successFileName">Project Proposal v1</p>
+                        </div>
+                    </div>
+                    <h4 class="fs-16 text-dark fw-medium mb-2">Your File <%= isEdit ? "Updated" : "Added" %> Successfully</h4>
+                    <p class="fs-14 fw-normal mb-3">You will be notified soon as your file gets approved</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>
+
+<script>
+// =============================================
+// COMPLETE DOCUMENT ADD/EDIT SCRIPT
+// =============================================
+$(document).ready(function () {
+    // Force header project select to work independently
+    if (typeof initializeHeaderComponents === 'function') {
+        setTimeout(initializeHeaderComponents, 100);
+    }
+});
+// Global state
+window.isEdit = <%= isEdit ? 'true' : 'false' %>;
+window.documentId = "<%= isEdit && document ? document._id : '' %>";
+window.documentData = <%= isEdit && document ? JSON.stringify(document) : 'null' %>;
+window.selectedFolders = [];
+window.uploadedFilesMetadata = [];
+window.folderTreeData = [];
+window.uploadedFileIds = [];
+
+$(document).ready(function() {
+    // Initialize components
+    initializeSelect2();
+    initializeSummernote();
+    initializeDatepicker();
+    setupEnhancedDateRestrictions();
+    initializeEditData();
+    loadInitialData();
+    setupFileUpload();
+    setupFormSubmission();
+    setupSummaryUpdate();
+    
+    // Setup create folder button
+    setupCreateFolderButton();
+    
+    // Initial state for create folder button
+    toggleCreateFolderBtn();
+    
+    // Handle modal cleanup
+    $(document).on('hidden.bs.modal', '#createFolderModal', function() {
+        // Clean up select2 to prevent memory leaks
+        if ($.fn.select2) {
+            $('#parentFolderSelect').select2('destroy');
+        }
+        $('#createFolderModal').remove();
+    });
+});
+function formatDateForDisplay(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+}
+function toggleCreateFolderBtn() {
+    const projectSelected = !!$('#projectName').val() && $('#projectName').val() !== 'all';
+    const departmentSelected = !!$('#department').val() && $('#department').val() !== 'all';
+    const isEnabled = projectSelected && departmentSelected;
+
+    // Update Create Folder button
+    $('#createFolderBtn')
+        .prop('disabled', !isEnabled)
+        .css({
+            'opacity': isEnabled ? '1' : '0.5',
+            'cursor': isEnabled ? 'pointer' : 'not-allowed'
+        })
+        .attr('title', isEnabled ? 'Create new folder in this department' : 'Please select both Project and Department');
+
+    // Enable/disable Upload Box
+    if (projectSelected && departmentSelected) {
+        $('#uploadBox').css({ 'pointer-events': '', 'opacity': '' });
+    } else {
+        $('#uploadBox').css({ 'pointer-events': 'none', 'opacity': 0.6 });
+    }
+}
+// Helper function to format date for server
+// Helper function to format date for server - supports multiple input formats
+function formatDateForServer(dateString) {
+    if (!dateString) return '';
+    
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+    }
+    
+    // Try to parse DD/MM/YYYY or DD-MM-YYYY
+    let parts = dateString.split(/[/-]/);
+    if (parts.length === 3) {
+        // If year is 2 digits, assume 20xx
+        if (parts[2].length === 2) {
+            parts[2] = '20' + parts[2];
+        }
+        // Return in YYYY-MM-DD format
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    
+    // Try to parse using moment.js
+    const momentDate = moment(dateString, ['DD-MM-YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD', 'MM-DD-YYYY'], true);
+    if (momentDate.isValid()) {
+        return momentDate.format('YYYY-MM-DD');
+    }
+    
+    // If all parsing fails, return original
+    return dateString;
+}
+// =============================================
+// INITIALIZATION FUNCTIONS
+// =============================================
+
+function initializeSelect2() {
+    $('.select2').select2();
+
+    // Project Name Select2 with AJAX
+    $("#projectName").select2({
+        placeholder: "-- Select Project Name --",
+        allowClear: true,
+        ajax: {
+            delay: 300,
+            transport: function(params, success, failure) {
+                const search = params.data.term || "";
+                $.ajax({
+                    url: `/api/projects?search=${encodeURIComponent(search)}`,
+                    type: "GET",
+                    success: function(res) {
+                        let data = res.data || [];
+                        success(data);
+                    },
+                    error: failure
+                });
+            },
+            processResults: function(data) {
+                return {
+                    results: data.map(project => ({
+                        id: project._id,
+                        text: project.projectName
+                    }))
+                };
+            }
+        }
+    });
+
+    // Department Select2 with AJAX
+    $("#department").select2({
+        placeholder: "-- Select Department --",
+        allowClear: true,
+        ajax: {
+            url: '/api/departments/search',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return { search: params.term || '', page: params.page || 1, limit: 10 };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+                let results = data.data.map(dep => ({ id: dep._id, text: dep.name }));
+                return { results, pagination: { more: data.pagination.more } };
+            },
+            cache: true
+        }
+    });
+
+    // Donor Select2
+    initializeDonorSelect2();
+    
+    // Vendor Select2
+    initializeVendorSelect2();
+
+    // Pre-select values if editing
+    if (window.isEdit && window.documentData) {
+        if (window.documentData.project) {
+            const projectOption = new Option(
+                window.documentData.project.projectName,
+                window.documentData.project._id,
+                true,
+                true
+            );
+            $('#projectName').append(projectOption).trigger('change');
+        }
+        if (window.documentData.department) {
+            const departmentOption = new Option(
+                window.documentData.department.name,
+                window.documentData.department._id,
+                true,
+                true
+            );
+            $('#department').append(departmentOption).trigger('change');
+        }
+    }
+
+    // Pre-select from session if not editing
+    <% if (!isEdit && selectedProject && selectedProject._id) { %>
+        const userProject = { id: "<%= selectedProject._id %>", name: "<%= selectedProject.projectName %>" };
+        const projectOption = new Option(userProject.name, userProject.id, true, true);
+        $('#projectName').append(projectOption).trigger('change');
+    <% } %>
+}
+
+function initializeSummernote() {
+    $('.summernote').summernote({
+        height: 200,
+        callbacks: {
+            onChange: function(contents) {
+                $('#summernote').val(contents);
+            }
+        }
+    });
+}
+
+function initializeDatepicker() {
+    $('.datetimepicker').datetimepicker({
+        format: 'DD-MM-YYYY',
+        useCurrent: false
+    });
+}
+
+function setupEnhancedDateRestrictions() {
+    const today = moment().startOf('day');
+    const expiryDatePicker = $('input[name="expiryDate"]').datetimepicker({
+        format: 'DD-MM-YYYY',
+        useCurrent: false,
+        minDate: today
+    });
+    expiryDatePicker.data("DateTimePicker").disable();
+
+    $('#complianceSwitch').change(function() {
+        const expiryPicker = expiryDatePicker.data("DateTimePicker");
+        if ($(this).is(':checked')) {
+            expiryPicker.enable();
+            expiryPicker.minDate(today);
+            $('#expiryDateContainer').show();
+            $('input[name="expiryDate"]').prop('required', true);
+        } else {
+            expiryPicker.clear();
+            expiryPicker.disable();
+            $('#expiryDateContainer').hide();
+            $('input[name="expiryDate"]').prop('required', false);
+        }
+    });
+}
+
+function initializeDonorSelect2() {
+    $('#documentDonor').select2({
+        placeholder: '-- Select Donor Name --',
+        allowClear: true,
+        ajax: {
+            url: '/api/user/search',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                const projectId = $('#projectName').val();
+                return {
+                    search: params.term || '',
+                    page: params.page || 1,
+                    limit: 10,
+                    projectId: projectId,
+                    profile_type: 'donor'
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+                const results = data.users.map(u => ({ id: u._id, text: u.name }));
+                return {
+                    results,
+                    pagination: { more: params.page * 10 < data.pagination.total }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    if (window.isEdit && window.documentData && window.documentData.documentDonor) {
+        const donorOption = new Option(
+            window.documentData.documentDonor.name,
+            window.documentData.documentDonor._id,
+            true,
+            true
+        );
+        $('#documentDonor').append(donorOption).trigger('change');
+    }
+}
+
+function initializeVendorSelect2() {
+    $('#documentVendor').select2({
+        placeholder: '-- Select Vendor Name --',
+        allowClear: true,
+        ajax: {
+            url: '/api/user/search',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                const projectId = $('#projectName').val();
+                return {
+                    search: params.term || '',
+                    page: params.page || 1,
+                    limit: 10,
+                    projectId: projectId,
+                    profile_type: 'vendor'
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+                const results = data.users.map(u => ({ id: u._id, text: u.name }));
+                return {
+                    results,
+                    pagination: { more: params.page * 10 < data.pagination.total }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    if (window.isEdit && window.documentData && window.documentData.documentVendor) {
+        const vendorOption = new Option(
+            window.documentData.documentVendor.name,
+            window.documentData.documentVendor._id,
+            true,
+            true
+        );
+        $('#documentVendor').append(vendorOption).trigger('change');
+    }
+}
+
+function initializeEditData() {
+    if (!window.isEdit || !window.documentData) return;
+
+    // Initialize folder selection
+    if (window.documentData.folderId) {
+        const folderId = window.documentData.folderId._id || window.documentData.folderId;
+        const folderName = window.documentData.folderId.name || 'Selected Folder';
+        window.selectedFolders = [{ id: folderId, name: folderName }];
+        $('#selectedFolderId').val(folderId);
+    }
+
+    // Initialize metadata
+    if (window.documentData.metadata) {
+        populateMetadataFields(window.documentData.metadata);
+    }
+
+    // Initialize uploaded files
+    if (window.documentData.files && window.documentData.files.length > 0) {
+        window.uploadedFilesMetadata = window.documentData.files.map(file => ({
+            fileName: file.originalName || file.name || 'Unknown',
+            fileType: file.mimetype || file.type || 'Unknown',
+            fileSize: formatFileSize(file.size || 0),
+            uploadedBy: file.uploadedBy?.name || 'Unknown',
+            uploadDate: file.createdAt ? new Date(file.createdAt).toLocaleString() : 'Unknown',
+            fileId: file._id || file.id,
+            fileUrl: file.fileUrl || ''
+        }));
+        window.uploadedFileIds = window.uploadedFilesMetadata.map(f => f.fileId);
+        updateMetadataDisplay();
+        updateFileList();
+    }
+
+    // Initialize tags
+    if (window.documentData.tags && window.documentData.tags.length > 0) {
+        $('input[name="tags"]').val(window.documentData.tags.join(', '));
+    }
+
+    // Initialize compliance
+    if (window.documentData.compliance?.isCompliance) {
+        $('#complianceSwitch').prop('checked', true);
+        $('#expiryDateContainer').show();
+        if (window.documentData.compliance.expiryDate) {
+            $('input[name="expiryDate"]').val(
+                new Date(window.documentData.compliance.expiryDate).toLocaleDateString('en-GB')
+            );
+        }
+    }
+
+    // Initialize wantApprovers
+    if (window.documentData.wantApprovers?.iswantApprovers) {
+        $('#wantApprovers').prop('checked', true);
+    }
+
+    // Initialize comment
+    if (window.documentData.comment) {
+        $('textarea[name="comment"]').val(window.documentData.comment);
+    }
+}
+
+function populateMetadataFields(metadata) {
+    if (metadata.fileName) {
+        $('input[name="metadata[fileName]"]').val(metadata.fileName);
+    }
+}
+
+// =============================================
+// LOAD DATA FUNCTIONS
+// =============================================
+
+function loadInitialData() {
+    // Load folders
+    loadFolders();
+    // Build dynamic folder tree
+    buildDynamicFolderTree();
+    // Update summary
+    updateSummary();
+    // Set up event listeners for changes
+    setupChangeListeners();
+}
+
+function setupChangeListeners() {
+    $('#projectName, #department').on('change select2:select select2:clear', function() {
+        window.selectedFolders = [];
+        $('#selectedFolderId').val('');
+        loadFolders();
+        buildDynamicFolderTree();
+        updateSummary();
+        initializeDonorSelect2();
+        initializeVendorSelect2();
+        toggleCreateFolderBtn();
+    });
+
+    $('input[name="tags"]').on('input', updateSummary);
+    $('#complianceSwitch, #wantApprovers').on('change', updateSummary);
+}
+
+// =============================================
+// FOLDER FUNCTIONS
+// =============================================
+
+async function buildDynamicFolderTree() {
+    const projectId = $('#projectName').val();
+    const departmentId = $('#department').val();
+    
+    if ((!projectId || projectId === 'all') || (!departmentId || departmentId === 'all')) {
+        $('#dynamicFolderTree').html('<li class="text-muted p-3">Please select project and department</li>');
+        $('#dynamicFolderGrid').html('<p class="text-muted p-3">Please select project and department</p>');
+        window.folderTreeData = [];
+        return;
+    }
+    
+    const query = new URLSearchParams();
+    if (departmentId && departmentId !== 'all') query.append('departmentId', departmentId);
+    if (projectId && projectId !== 'all') query.append('projectId', projectId);
+    
+    try {
+        $('#folderTreeLoader').removeClass('d-none');
+        $('#folderGridLoader').removeClass('d-none');
+        
+        const res = await fetch(`/api/folders/tree/structure?${query.toString()}`);
+        const data = await res.json();
+        
+        if (!data.success || !data.tree || data.tree.length === 0) {
+            $('#dynamicFolderTree').html('<li class="text-muted p-3">No folders found</li>');
+            $('#dynamicFolderGrid').html('<p class="text-muted p-3">No folders found</p>');
+            return;
+        }
+        
+        window.folderTreeData = data.tree;
+        renderFolderTree(data.tree);
+        renderFolderGrid(data.tree);
+        
+    } catch (err) {
+        console.error("Error building folder tree:", err);
+        $('#dynamicFolderTree').html('<li class="text-danger p-3">Error loading folders</li>');
+        $('#dynamicFolderGrid').html('<p class="text-danger p-3">Error loading folders</p>');
+    } finally {
+        $('#folderTreeLoader').addClass('d-none');
+        $('#folderGridLoader').addClass('d-none');
+    }
+}
+function populateParentFolders(projectId, departmentId) {
+    const select = $('#parentFolderSelect');
+    select.empty().append('<option value="">-- Root Folder --</option>');
+    
+    fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${departmentId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.tree) {
+                const flatFolders = flattenFolderTree(data.tree);
+                flatFolders.forEach(folder => {
+                    select.append(`<option value="${folder._id}">${folder.name}</option>`);
+                });
+                select.select2({
+                    placeholder: "Select parent folder (optional)",
+                    allowClear: true
+                });
+            }
+        })
+        .catch(err => console.error('Error loading parent folders:', err));
+}
+
+async function createNewFolder(projectId, departmentId, modal) {
+    const folderName = $('#newFolderName').val().trim();
+    const parentFolderId = $('#parentFolderSelect').val();
+    
+    // Validate
+    let isValid = true;
+    
+    if (!folderName) {
+        $('#newFolderName').addClass('is-invalid');
+        isValid = false;
+    } else {
+        $('#newFolderName').removeClass('is-invalid');
+    }
+    
+    if (!parentFolderId || parentFolderId === '') {
+        $('#parentFolderSelect').addClass('is-invalid');
+        isValid = false;
+    } else {
+        $('#parentFolderSelect').removeClass('is-invalid');
+    }
+    
+    if (!isValid) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const confirmBtn = $('#confirmCreateFolder');
+    confirmBtn.prop('disabled', true).html(
+        '<span class="spinner-border spinner-border-sm me-1"></span> Creating...'
+    );
+    
+    try {
+        const response = await fetch('/api/folders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: folderName,
+                projectId: projectId,
+                departmentId: departmentId,
+                parentId: parentFolderId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to create folder');
+        }
+        
+        // Close modal
+        modal.hide();
+        
+        // Show success message with folder path
+        const parentPath = findFolderPathById(parentFolderId, window.folderTreeData);
+        const fullPath = parentPath ? parentPath.map(f => f.name).join(' / ') : '';
+        showToast(
+            data.message || `Folder "${folderName}" created successfully in: ${fullPath}`,
+            'success'
+        );
+        
+        // Refresh folder tree
+        await loadFolders();
+        await buildDynamicFolderTree();
+        
+        // Auto-select the new folder
+        setTimeout(() => {
+            const newFolder = findFolderById(data.data.folder._id);
+            if (newFolder) {
+                updateFolderSelection(newFolder);
+                // Show a notification that folder is selected
+                showToast(`Folder "${folderName}" is now selected`, 'info');
+            }
+        }, 500);
+        
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        confirmBtn.prop('disabled', false).html('<i class="ti ti-plus me-1"></i> Create Folder');
+    }
+}
+
+function populateParentFoldersWithHierarchy(projectId, departmentId) {
+    const select = $('#parentFolderSelect');
+    select.empty().append('<option value="">-- Select Parent Folder --</option>');
+    
+    // Show loading
+    select.prop('disabled', true);
+    
+    fetch(`/api/folders/tree/structure?projectId=${projectId}&departmentId=${departmentId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.tree) {
+                // Build options with hierarchy display
+                const options = buildHierarchyOptions(data.tree);
+                options.forEach(opt => {
+                    select.append(`<option value="${opt.id}">${opt.display}</option>`);
+                });
+                
+                // Enable select
+                select.prop('disabled', false);
+                
+                // Initialize select2 with search
+                select.select2({
+                    placeholder: "Search for parent folder...",
+                    allowClear: false,
+                    width: '100%',
+                    dropdownParent: $('#createFolderModal .modal-body')
+                });
+                
+                // Auto-select root if available
+                if (data.tree.length > 0) {
+                    // Optionally set default to root
+                    // select.val(data.tree[0]._id).trigger('change');
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error loading parent folders:', err);
+            select.append('<option value="" disabled>Error loading folders</option>');
+            select.prop('disabled', false);
+        });
+}
+
+function buildHierarchyOptions(treeData, prefix = '', level = 0) {
+    let options = [];
+    
+    treeData.forEach(folder => {
+        const displayName = prefix + folder.name;
+        options.push({
+            id: folder._id,
+            display: displayName,
+            level: level
+        });
+        
+        if (folder.children && folder.children.length > 0) {
+            const childOptions = buildHierarchyOptions(
+                folder.children, 
+                prefix + folder.name + ' / ', 
+                level + 1
+            );
+            options = options.concat(childOptions);
+        }
+    });
+    
+    return options;
+}
+
+function updateParentPathDisplay(parentId) {
+    const pathDisplay = $('#selectedParentPath');
+    if (!pathDisplay.length) return;
+    
+    if (!parentId || parentId === '') {
+        pathDisplay.html(`
+            <i class="ti ti-folder text-primary me-2"></i>
+            <span class="text-muted">Select a parent folder</span>
+        `);
+        return;
+    }
+    
+    // Find the folder path
+    const folderPath = findFolderPathById(parentId, window.folderTreeData);
+    if (folderPath && folderPath.length > 0) {
+        const pathString = folderPath.map(f => f.name).join(' / ');
+        pathDisplay.html(`
+            <i class="ti ti-folder text-primary me-2"></i>
+            <span style="font-weight: 500;">${escapeHtml(pathString)}</span>
+        `);
+    } else {
+        pathDisplay.html(`
+            <i class="ti ti-folder text-primary me-2"></i>
+            <span class="text-muted">Folder path not found</span>
+        `);
+    }
+}
+
+function findFolderPathById(folderId, treeData = null, currentPath = []) {
+    if (!treeData) treeData = window.folderTreeData;
+    if (!treeData) return null;
+    
+    for (const folder of treeData) {
+        const newPath = [...currentPath, { id: folder._id, name: folder.name }];
+        if (folder._id === folderId) {
+            return newPath;
+        }
+        if (folder.children && folder.children.length > 0) {
+            const found = findFolderPathById(folderId, folder.children, newPath);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+function setupCreateFolderButton() {
+    $('#createFolderBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
+        
+        const projectId = $('#projectName').val();
+        const departmentId = $('#department').val();
+        const projectName = $('#projectName option:selected').text();
+        const departmentName = $('#department option:selected').text();
+        
+        // Open modal to create new folder
+        const modalHTML = `
+            <div class="modal fade" id="createFolderModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="ti ti-folder-plus text-primary me-2"></i>
+                                Create New Folder
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Project</label>
+                                <input type="text" class="form-control" value="${escapeHtml(projectName)}" disabled style="background-color: #f8f9fa;">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-control" value="${escapeHtml(departmentName)}" disabled style="background-color: #f8f9fa;">
+                            </div>
+                            
+                            <!-- ✅ PARENT FOLDER SELECTION (REQUIRED) -->
+                            <div class="mb-3">
+                                <label class="form-label">Parent Folder <span class="text-danger">*</span></label>
+                                <select id="parentFolderSelect" class="form-select select2" required>
+                                    <option value="">-- Select Parent Folder --</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a parent folder</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Folder Name <span class="text-danger">*</span></label>
+                                <input type="text" id="newFolderName" class="form-control" placeholder="Enter folder name" maxlength="50" required>
+                                <div class="invalid-feedback">Please enter a folder name</div>
+                                <small class="text-muted">Max 50 characters</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" id="confirmCreateFolder" class="btn btn-primary rounded-pill" disabled>
+                                <i class="ti ti-plus me-1"></i> Create Folder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#createFolderModal').remove();
+        $('body').append(modalHTML);
+        
+        // Populate parent folder options with hierarchy
+        populateParentFoldersWithHierarchy(projectId, departmentId);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('createFolderModal'));
+        modal.show();
+        
+        // Enable/disable create button based on validations
+        function validateModalForm() {
+            const folderName = $('#newFolderName').val().trim();
+            const parentFolder = $('#parentFolderSelect').val();
+            const isValid = folderName !== '' && parentFolder && parentFolder !== '';
+            $('#confirmCreateFolder').prop('disabled', !isValid);
+        }
+        
+        // Validate on changes
+        $('#newFolderName').on('input', validateModalForm);
+        $('#parentFolderSelect').on('change', function() {
+            validateModalForm();
+            // Update path display when parent changes
+            updateParentPathDisplay($(this).val());
+        });
+        
+        // Handle create confirmation
+        $('#confirmCreateFolder').off('click').on('click', function() {
+            createNewFolder(projectId, departmentId, modal);
+        });
+        
+        // Enter key support
+        $('#newFolderName').off('keypress').on('keypress', function(e) {
+            if (e.key === 'Enter' && !$('#confirmCreateFolder').prop('disabled')) {
+                e.preventDefault();
+                $('#confirmCreateFolder').click();
+            }
+        });
+        
+        // Initial validation state
+        validateModalForm();
+    });
+}
+
+function renderFolderTree(treeData, parentElement = null, level = 0) {
+    const container = parentElement || $('#dynamicFolderTree');
+    
+    if (!parentElement) {
+        container.empty();
+    }
+    
+    treeData.forEach(folder => {
+        const hasChildren = folder.children && folder.children.length > 0;
+        const folderId = folder._id;
+        const folderName = folder.name;
+        
+        const li = document.createElement('li');
+        li.className = 'folder-tree-item';
+        
+        const nodeDiv = document.createElement('div');
+        nodeDiv.className = 'folder-node';
+        nodeDiv.setAttribute('data-folder', folderId);
+        nodeDiv.onclick = function(e) { selectFolderFromTree(e, folder); };
+        
+        let nodeHTML = '';
+        
+        if (hasChildren) {
+            nodeHTML += `
+                <button type="button" class="folder-toggle expanded" onclick="toggleFolderTree(event, '${folderId}')">
+                    <i class="ti ti-chevron-right"></i>
+                </button>
+            `;
+        } else {
+            nodeHTML += `<div style="width:15px;"></div>`;
+        }
+        
+        nodeHTML += `
+            <i class="folder-icon ${level === 0 ? 'root' : 'sub'} ti ti-folder"></i>
+            <div class="folder-content">
+                <div class="folder-info">
+                    <div class="folder-name">${folderName}</div>
+                </div>
+            </div>
+        `;
+        
+        nodeDiv.innerHTML = nodeHTML;
+        li.appendChild(nodeDiv);
+        
+        if (hasChildren) {
+            const nestedUl = document.createElement('ul');
+            nestedUl.className = 'folder-nested';
+            nestedUl.id = `nested-tree-${folderId}`;
+            li.appendChild(nestedUl);
+            renderFolderTree(folder.children, nestedUl, level + 1);
+        }
+        
+        container.append(li);
+    });
+    
+    // Pre-select folder if editing
+    if (window.isEdit && window.documentData && window.documentData.folderId) {
+        const folderId = window.documentData.folderId._id || window.documentData.folderId;
+        const treeNode = document.querySelector(`#dynamicFolderTree .folder-node[data-folder="${folderId}"]`);
+        if (treeNode) {
+            treeNode.classList.add('selected');
+            // Also update grid
+            updateGridSelection(folderId);
+        }
+    }
+}
+
+function renderFolderGrid(treeData) {
+    const gridContainer = $('#dynamicFolderGrid');
+    gridContainer.empty();
+    
+    const allFolders = flattenFolderTree(treeData);
+    
+    if (allFolders.length === 0) {
+        gridContainer.html('<p class="text-muted p-3">No folders available</p>');
+        return;
+    }
+    
+    const displayFolders = allFolders.slice(0, 8);
+    
+    displayFolders.forEach(folder => {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.setAttribute('data-folder', folder._id);
+        card.onclick = function(e) { selectFolderFromGrid(e, folder); };
+        
+        const subCount = folder.children ? folder.children.length : 0;
+        
+        card.innerHTML = `
+            <div class="fldicn">
+                <i class="folder-card-icon ti ti-folder" style="color: var(--folder-yellow);"></i>
+            </div>
+            <div class="frq_fldrtxt">
+                <div class="folder-card-name">${folder.name}</div>
+                <div class="folder-card-count">${subCount} Documents</div>
+            </div>
+        `;
+        
+        gridContainer.append(card);
+    });
+    
+    // Pre-select folder if editing
+    if (window.isEdit && window.documentData && window.documentData.folderId) {
+        const folderId = window.documentData.folderId._id || window.documentData.folderId;
+        const card = document.querySelector(`#dynamicFolderGrid .folder-card[data-folder="${folderId}"]`);
+        if (card) {
+            card.classList.add('selected');
+        }
+    }
+}
+
+function flattenFolderTree(tree, result = []) {
+    tree.forEach(folder => {
+        result.push(folder);
+        if (folder.children && folder.children.length > 0) {
+            flattenFolderTree(folder.children, result);
+        }
+    });
+    return result;
+}
+
+function toggleFolderTree(event, folderId) {
+    event.stopPropagation();
+    const btn = event.currentTarget;
+    const nested = document.getElementById(`nested-tree-${folderId}`);
+    
+    if (btn && nested) {
+        btn.classList.toggle('expanded');
+        nested.classList.toggle('collapsed');
+    }
+}
+
+function selectFolderFromTree(event, folder) {
+    event.stopPropagation();
+    
+    document.querySelectorAll('#dynamicFolderTree .folder-node').forEach(node => {
+        node.classList.remove('selected');
+    });
+    
+    const clickedNode = event.currentTarget;
+    clickedNode.classList.add('selected');
+    
+    updateFolderSelection(folder);
+}
+
+function selectFolderFromGrid(event, folder) {
+    event.stopPropagation();
+    
+    document.querySelectorAll('#dynamicFolderGrid .folder-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    const clickedCard = event.currentTarget;
+    clickedCard.classList.add('selected');
+    
+    updateFolderSelection(folder);
+}
+
+function updateFolderSelection(folder) {
+    const folderPath = findFolderPath(folder._id);
+    
+    window.selectedFolders = folderPath;
+    $('#selectedFolderId').val(folder._id);
+    
+    updateDynamicBreadcrumb(folderPath);
+    updateGridSelection(folder._id);
+    updateTreeSelection(folder._id);
+    updateSummary();
+}
+
+function findFolderPath(folderId, treeData = null, currentPath = []) {
+    if (!treeData) treeData = window.folderTreeData;
+    
+    for (const folder of treeData) {
+        const newPath = [...currentPath, { id: folder._id, name: folder.name }];
+        if (folder._id === folderId) return newPath;
+        if (folder.children && folder.children.length > 0) {
+            const found = findFolderPath(folderId, folder.children, newPath);
+            if (found) return found;
+        }
+    }
+    return currentPath;
+}
+
+function updateTreeSelection(folderId) {
+    document.querySelectorAll('#dynamicFolderTree .folder-node').forEach(node => {
+        node.classList.remove('selected');
+    });
+    const treeNode = document.querySelector(`#dynamicFolderTree .folder-node[data-folder="${folderId}"]`);
+    if (treeNode) {
+        treeNode.classList.add('selected');
+        treeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function updateGridSelection(folderId) {
+    document.querySelectorAll('#dynamicFolderGrid .folder-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    const card = document.querySelector(`#dynamicFolderGrid .folder-card[data-folder="${folderId}"]`);
+    if (card) {
+        card.classList.add('selected');
+    }
+}
+
+function updateDynamicBreadcrumb(folderPath) {
+    const breadcrumbNav = $('#dynamicBreadcrumb');
+    
+    if (!folderPath || folderPath.length === 0) {
+        breadcrumbNav.html(`
+            <i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem;"></i>
+            <span class="text-muted">Select a folder</span>
+        `);
+        return;
+    }
+    
+    const projectText = $('#projectName option:selected').text() || '';
+    const departmentText = $('#department option:selected').text() || '';
+    
+    let html = '<i class="ti ti-folder" style="color: var(--primary-blue); font-size: 1rem;"></i>';
+    
+    // if (projectText && projectText !== '-- Select Project Name --') {
+    //     html += `<span class="breadcrumb-segment">${projectText}</span>`;
+    //     html += '<span class="breadcrumb-separator"> > </span>';
+    // }
+    
+    // if (departmentText && departmentText !== '-- Select Department --') {
+    //     html += `<span class="breadcrumb-segment">${departmentText}</span>`;
+    //     html += '<span class="breadcrumb-separator"> > </span>';
+    // }
+    
+    folderPath.forEach((folder, index) => {
+        if (index < folderPath.length - 1) {
+            html += `<a href="javascript:void(0)" onclick="navigateToFolder('${folder.id}')">${folder.name}</a>`;
+            html += '<span class="breadcrumb-separator"> > </span>';
+        } else {
+            html += `<span class="active">${folder.name}</span>`;
+        }
+    });
+    
+    breadcrumbNav.html(html);
+}
+
+function navigateToFolder(folderId) {
+    const folder = findFolderById(folderId);
+    if (folder) {
+        updateFolderSelection(folder);
+    }
+}
+
+function findFolderById(folderId, treeData = null) {
+    if (!treeData) treeData = window.folderTreeData;
+    
+    for (const folder of treeData) {
+        if (folder._id === folderId) return folder;
+        if (folder.children && folder.children.length > 0) {
+            const found = findFolderById(folderId, folder.children);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+async function loadFolders(rootId = null, parentPath = []) {
+    const departmentId = $('#department').val();
+    const projectId = $('#projectName').val();
+
+    if ((!projectId || projectId === 'all') && (!departmentId || departmentId === 'all')) {
+        $('#folderContainer').empty();
+        window.selectedFolders = [];
+        $('#selectedFolderId').val('');
+        return;
+    }
+
+    const query = new URLSearchParams();
+    if (departmentId && departmentId !== 'all') query.append('departmentId', departmentId);
+    if (projectId && projectId !== 'all') query.append('projectId', projectId);
+    if (rootId !== null && rootId !== undefined) query.append('rootId', rootId);
+
+    try {
+        const res = await fetch(`/api/folders/tree/structure?${query.toString()}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        // Update folder tree data
+        window.folderTreeData = data.tree;
+        
+    } catch (err) {
+        console.error("Error loading folders:", err);
+    }
+}
+
+// =============================================
+// FILE UPLOAD FUNCTIONS
+// =============================================
+
+function setupFileUpload() {
+    const uploadBox = document.getElementById("uploadBox");
+    const fileInput = document.getElementById("fileInput");
+    
+    uploadBox.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async (e) => {
+        await handleFileUpload(e.target.files);
+    });
+
+    uploadBox.addEventListener("dragover", e => {
+        e.preventDefault();
+        uploadBox.classList.add("dragover");
+    });
+    uploadBox.addEventListener("dragleave", () => uploadBox.classList.remove("dragover"));
+    uploadBox.addEventListener("drop", async e => {
+        e.preventDefault();
+        uploadBox.classList.remove("dragover");
+        await handleFileUpload(e.dataTransfer.files);
+    });
+}
+
+async function handleFileUpload(files) {
+    const folderId = document.getElementById('selectedFolderId').value;
+    if (!folderId) {
+        showToast("Please select a folder.", 'info');
+        return;
+    }
+
+    const filesArray = Array.from(files);
+
+    for (const file of filesArray) {
+        const tempId = 'temp_' + Date.now() + Math.random().toString(36).substring(2, 8);
+
+        const fileItem = document.createElement("div");
+        fileItem.className = "file-item col-sm-5 mb-3 p-3 border rounded";
+        fileItem.setAttribute("data-file-id", tempId);
+
+        fileItem.innerHTML = `
+            <div class="file-info d-flex align-items-center">
+                <i class="fa-solid fa-file fa-2x me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="mb-0 text-truncate">${file.name}</h6>
+                    <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                </div>
+            </div>
+            <div class="file-progress mt-2">
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" style="width:0%">0%</div>
+                </div>
+            </div>
+            <button type="button" class="remove-btn btn btn-sm btn-danger mt-2" data-file-id="${tempId}" disabled>
+                Remove
+            </button>
+        `;
+        document.getElementById("fileList").appendChild(fileItem);
+
+        const progressBar = fileItem.querySelector(".progress-bar");
+        const removeBtn = fileItem.querySelector(".remove-btn");
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            progressBar.style.width = "50%";
+            progressBar.textContent = "Uploading...";
+
+            const res = await fetch(`/api/tempfiles/upload/${folderId}`, { 
+                method: 'POST', 
+                body: formData 
+            });
+            
+            const data = await res.json();
+
+            if (!data.success) {
+                fileItem.remove();
+                window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== tempId);
+                updateMetadataDisplay();
+                updateSummary();
+                showToast(data.message || "Upload failed", "error");
+                continue;
+            }
+
+            const uploadedFile = data.files[0];
+            const fileId = uploadedFile.fileId;
+            
+            window.uploadedFileIds.push(fileId);
+            fileItem.setAttribute("data-file-id", fileId);
+            removeBtn.setAttribute("data-file-id", fileId);
+            removeBtn.disabled = false;
+
+            fileItem.addEventListener('dblclick', () => {
+                window.location.href = `/folders/view/${fileId}`;
+            });
+
+            progressBar.style.width = "100%";
+            progressBar.textContent = "Uploaded";
+            progressBar.classList.remove("bg-success");
+            progressBar.classList.add("bg-success");
+
+            // Update metadata
+            const tempIndex = window.uploadedFilesMetadata.findIndex(f => f.fileId === tempId);
+            if (tempIndex !== -1) {
+                window.uploadedFilesMetadata[tempIndex].fileId = fileId;
+                window.uploadedFilesMetadata[tempIndex].fileUrl = uploadedFile.fileUrl || '';
+            } else {
+                window.uploadedFilesMetadata.push({
+                    fileName: file.name,
+                    fileType: file.type || 'Unknown',
+                    fileSize: formatFileSize(file.size),
+                    uploadedBy: 'Current User',
+                    uploadDate: new Date().toLocaleString(),
+                    fileId: fileId,
+                    fileUrl: uploadedFile.fileUrl || ''
+                });
+            }
+            
+            updateMetadataDisplay();
+            updateSummary();
+            showToast(`${file.name} uploaded successfully!`, "success");
+
+        } catch (err) {
+            console.error("Upload failed:", err);
+            fileItem.remove();
+            window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== tempId);
+            updateMetadataDisplay();
+            updateSummary();
+            showToast(`Failed to upload ${file.name}: ${err.message || "Network error"}`, "error");
+        }
+    }
+}
+
+function updateFileList() {
+    const fileList = document.getElementById("fileList");
+    // Clear existing files (except the label)
+    const label = fileList.querySelector('.form-label');
+    fileList.innerHTML = '';
+    if (label) fileList.appendChild(label);
+    
+    // Add existing files
+    window.uploadedFilesMetadata.forEach(file => {
+        const fileItem = document.createElement("div");
+        fileItem.className = "file-item col-sm-5 mb-3 p-3 border rounded";
+        fileItem.setAttribute("data-file-id", file.fileId);
+
+        fileItem.innerHTML = `
+            <div class="file-info d-flex align-items-center">
+                <i class="fa-solid fa-file fa-2x me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="mb-0 text-truncate">${file.fileName}</h6>
+                    <small class="text-muted">${file.fileSize}</small>
+                </div>
+            </div>
+            <div class="file-progress mt-2">
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" style="width:100%">Uploaded</div>
+                </div>
+            </div>
+            <button type="button" class="remove-btn btn btn-sm btn-danger mt-2" data-file-id="${file.fileId}">
+                Remove
+            </button>
+        `;
+        
+        fileItem.addEventListener('dblclick', () => {
+            if (file.fileUrl) {
+                window.open(file.fileUrl, '_blank');
+            }
+        });
+        
+        fileList.appendChild(fileItem);
+    });
+}
+
+// Remove file handler
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest(".remove-btn");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const fileItem = btn.closest(".file-item");
+    const fileId = btn.getAttribute("data-file-id");
+    if (!fileItem || !fileId) return;
+
+    // Show confirmation
+    if (confirm(`Are you sure you want to delete "${fileItem.querySelector('h6').textContent}"?`)) {
+        removeFile(fileItem, fileId);
+    }
+});
+
+async function removeFile(fileItem, fileId) {
+    try {
+        if (window.uploadedFileIds.includes(fileId)) {
+            const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || "Delete failed");
+            window.uploadedFileIds = window.uploadedFileIds.filter(id => id !== fileId);
+        }
+
+        window.uploadedFilesMetadata = window.uploadedFilesMetadata.filter(f => f.fileId !== fileId);
+        fileItem.remove();
+        updateMetadataDisplay();
+        updateSummary();
+        showToast("File removed successfully!", 'success');
+    } catch (err) {
+        showToast("Error deleting file: " + err.message, 'error');
+    }
+}
+
+// =============================================
+// METADATA DISPLAY FUNCTIONS
+// =============================================
+
+function updateMetadataDisplay() {
+    const metadataContainer = $('#metadataDisplay');
+    if (!metadataContainer.length) return;
+
+    if (window.uploadedFilesMetadata.length === 0) {
+        metadataContainer.html('<p class="text-muted">No files uploaded yet</p>');
+        return;
+    }
+
+    let html = '';
+
+    window.uploadedFilesMetadata.forEach((file, index) => {
+
+        const fileStatus = file.fileId && !file.fileId.startsWith('temp_')
+            ? 'Uploaded'
+            : 'Pending';
+
+        html += `
+            <div class="border rounded p-3 mb-3">
+                <div class="row">
+
+                    <div class="col-md-3 pe-0">
+                        <div class="mb-3">
+                            <label class="form-label">File Name</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="${escapeHtml(file.fileName || '')}"
+                                   disabled>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 pe-0">
+                        <div class="mb-3">
+                            <label class="form-label">File Type</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="${(file.fileType || '').split('/').pop().toUpperCase()}"
+                                   disabled>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 pe-0">
+                        <div class="mb-3">
+                            <label class="form-label">File Size</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="${file.fileSize || ''}"
+                                   disabled>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 pe-0">
+                        <div class="mb-3">
+                            <label class="form-label">Uploaded By</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="${file.uploadedBy || ''}"
+                                   disabled>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Upload Date</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="${file.uploadDate || ''}"
+                                   disabled>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    ${
+                        file.fileUrl
+                            ? `<a href="${file.fileUrl}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="ti ti-eye me-1"></i> View File
+                               </a>`
+                            : ''
+                    }
+                </div>
+            </div>
+        `;
+    });
+
+    metadataContainer.html(html);
+}
 
 
-									<!-- Department -->
-									<div class="col-md-4">
-										<div class="mb-3">
-											<label class="form-label">Select Department </label>
-											<select id="department" name="department" class="form-select select2"
-												required>
+function getFileTypeIcon(fileType) {
+    if (!fileType) return 'ti ti-file';
+    if (fileType.includes('pdf')) return 'ti ti-file-text';
+    if (fileType.includes('word') || fileType.includes('document')) return 'ti ti-file-word';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'ti ti-file-spreadsheet';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'ti ti-file-powerpoint';
+    if (fileType.includes('image')) return 'ti ti-photo';
+    if (fileType.includes('video')) return 'ti ti-video';
+    if (fileType.includes('audio')) return 'ti ti-music';
+    if (fileType.includes('zip') || fileType.includes('compressed')) return 'ti ti-file-zip';
+    if (fileType.includes('csv')) return 'ti ti-file-spreadsheet';
+    if (fileType.includes('text')) return 'ti ti-file-text';
+    return 'ti ti-file';
+}
 
-											</select>
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-										</div>
-									</div>
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
+// =============================================
+// SUMMARY UPDATE FUNCTIONS
+// =============================================
 
-									<!-- Project Manager -->
-									<!-- <div class="col-md-4">
-										<div class="mb-3">
-											<label class="form-label">Project Manager</label>
-											<select id="projectManager" name="projectManager"
-												class="form-select select2" required>
+function updateSummary() {
+    // Project
+    const projectText = $('#projectName option:selected').text();
+    $('#summaryProject').text(projectText && projectText !== '-- Select Project Name --' ? projectText : '--');
 
-											</select>
-										</div>
-									</div> -->
+    // Department
+    const departmentText = $('#department option:selected').text();
+    $('#summaryDepartment').text(departmentText && departmentText !== '-- Select Department --' ? departmentText : '--');
 
-									<!-- Document Date -->
-									<!-- <div class="col-md-4">
-										<div class="mb-3">
-											<label class="form-label">Add Date</label>
-											<div class="input-icon-end position-relative">
-												<input type="text"
-													name="documentDate"
-													class="form-control datetimepicker"
-													placeholder="Create Date"
-													value="<%= isEdit && document.documentDate
-														? new Date(document.documentDate).toLocaleDateString('en-GB')
-														: new Date().toLocaleDateString('en-GB') %>"
-													<%= !(isEdit && document.documentDate) ? 'readonly' : '' %>
-													required>
-												<span class="input-icon-addon"><i
-														class="ti ti-calendar text-gray-7"></i></span>
-											</div>
-										</div>
-									</div> -->
-									<!-- Donor Name -->
-									<div class="col-md-4">
-										<div class="mb-3">
-											<label class="form-label">Donor Name</label>
-											<select id="documentDonor" name="documentDonor" class="form-select select2">
-												<option value="">-- Select Donor Name --</option>
-											</select>
-										</div>
-									</div>
+    // Folder
+    const folderPath = window.selectedFolders.map(f => f.name).join(' > ');
+    $('#summaryFolder').text(folderPath || '--');
 
-									<!-- <div class="row"> -->
-										<!-- Vendor Name -->
-										<div class="col-md-4">
-											<div class="mb-3">
-												<label class="form-label">Vendor Name</label>
-												<select id="documentVendor" name="documentVendor"
-													class="form-select select2">
-													<option value="">-- Select Vendor Name --</option>
-												</select>
-											</div>
-										</div>
-									
-										<!-- Tags -->
-										<div class="col-md-4">
-											<div class="mb-3">
-												<label class="form-label">Add Tags</label>
-												<input type="text" name="tags" class="form-control"
-													placeholder="tag1, tag2, tag3"
-													value="<%= isEdit && document.tags ? document.tags.join(', ') : '' %>">
-											</div>
-										</div>
-									
-										<!-- Metadata -->
-										<div class="col-md-4">
-											<div class="mb-3">
-												<label class="form-label">Meta Data - File Name</label>
-												<input class="form-control" type="text"
-													name="metadata[fileName]"
-													placeholder="File Name"
-													value="<%= isEdit && document.metadata && document.metadata.fileName ? document.metadata.fileName : '' %>">
-											</div>
-										</div>
-									<!-- </div> -->
-									<!-- Description -->
-									<div class="col-md-12">
-										<div class="mb-3">
-											<label class="form-label">File Contains Description</label>
-											<textarea id="summernote" name="description"
-												style="display: none;"><%= isEdit && document.description ? document.description : '' %></textarea>
-											<div class="summernote">
-												<%- isEdit && document.description ? document.description : '' %>
-											</div>
-										</div>
-									</div>
+    // Tags
+    const tagsText = $('input[name="tags"]').val() || '';
+    const tags = tagsText.split(',').map(t => t.trim()).filter(t => t);
+    const tagsContainer = $('#summaryTags');
+    if (tags.length > 0) {
+        tagsContainer.html(tags.map(t => `<span class="badge bg-light fs-12 fw-normal text-dark">${escapeHtml(t)}</span>`).join(' '));
+    } else {
+        tagsContainer.html('<span class="text-muted">No tags added</span>');
+    }
 
-									<!-- Compliance -->
-									<div class="col-md-6">
-										<div class="mb-3">
-											<div class="d-flex align-items-center gap-5">
-												<label class="form-label mb-0">Compliance and Retention Document</label>
-									
-												<div class="form-check">
-													<input class="form-check-input" type="radio" name="compliance"
-														value="yes" id="complianceYes"
-														<%= isEdit && document.compliance?.isCompliance ? 'checked' : '' %>>
-													<label class="form-check-label" for="complianceYes">Yes</label>
-												</div>
-									
-												<div class="form-check">
-													<input class="form-check-input" type="radio" name="compliance"
-														value="no" id="complianceNo"
-														<%= (!isEdit || !document.compliance?.isCompliance) ? 'checked' : '' %>>
-													<label class="form-check-label" for="complianceNo">No</label>
-												</div>
-											</div>
-										</div>
-									</div>
-									<!-- Expiry Date (only show if compliance is enabled) -->
-									<div class="col-md-6" id="expiryDateContainer"
-										style="display: <%= isEdit && document.compliance?.isCompliance ? 'block' : 'none' %>;">
-										<div class="mb-3">
-											<div class="d-flex align-items-center gap-5">
-												<label class="form-label mb-0">Enter Expiry Date</label>
-												<div class="input-icon-end position-relative">
-													<input type="text" class="form-control datetimepicker"
-														name="expiryDate" placeholder="dd/mm/yyyy"
-														value="<%= isEdit && document.compliance?.expiryDate ? new Date(document.compliance.expiryDate).toLocaleDateString('en-GB') : '' %>"
-														<%=isEdit && document.compliance?.isCompliance ? 'required' : ''
-														%>>
-													<span class="input-icon-addon"><i
-															class="ti ti-calendar text-gray-7"></i></span>
-												</div>
-											</div>
-										</div>
-									</div>
-									<!-- Approver Authority -->
-									<div class="col-md-12">
-										<div class="mb-3">
-											<div class="d-flex align-items-center gap-5">
-												<label class="form-label mb-0">File Access grant Required</label>
-									
-												<div class="form-check">
-													<input class="form-check-input" type="radio" name="wantApprovers"
-														value="true" id="wantApproversYes"
-														<%= isEdit && document.wantApprovers === true ? 'checked' : '' %>>
-													<label class="form-check-label" for="wantApproversYes">Yes</label>
-												</div>
-									
-												<div class="form-check">
-													<input class="form-check-input" type="radio" name="wantApprovers"
-														value="false" id="wantApproversNo"
-														<%= (!isEdit || document.wantApprovers === false) ? 'checked' : '' %>>
-													<label class="form-check-label" for="wantApproversNo">No</label>
-												</div>
-											</div>
-										</div>
-									</div>
+    // File Count
+    const fileCount = window.uploadedFilesMetadata.length;
+    $('#summaryFileCount').text(fileCount);
 
-									<!-- Comment -->
-									<div class="col-md-12">
-										<div class="mb-3">
-											<label class="form-label">Leave a comment (Optional)</label>
-											<input type="text" class="form-control" name="comment"
-												value="<%= isEdit && document.comment ? document.comment : '' %>">
-										</div>
-									</div>
+    // Compliance
+    const isCompliance = $('#complianceSwitch').is(':checked');
+    $('#summaryCompliance').text(isCompliance ? 'Yes' : 'No').removeClass('bg-soft-success text-success bg-soft-danger text-danger')
+        .addClass(isCompliance ? 'bg-soft-success text-success' : 'bg-soft-danger text-danger');
 
-									<!-- Display Directory Path -->
-									<div class="mb-2" id="uploadDirectoryWrapper">
-										<h6 class="mb-1" style="font-weight: 600; color: #333;">File Directory</h6>
-										<div id="uploadDirectoryPath" class="text-truncate"
-											style="font-size: 0.9rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-											<!-- will be filled dynamically -->
-										</div>
-									</div>
-									<!-- Folders List -->
-									<!-- Folders List -->
-									<div class="col-md-12 mb-3">
-										<label class="form-label mb-2">Select Folder</label>
-									
-										<div id="folderContainer" class="d-flex flex-wrap gap-2">
-											<!-- Folder buttons will be injected here -->
-									
-											<!-- Loader (hidden by default) -->
-											<div id="folderLoader"
-												class="position-absolute top-50 start-50 translate-middle d-none">
-												<div class="spinner-border text-primary" role="status">
-													<span class="visually-hidden">Loading folders...</span>
-												</div>
-											</div>
-										</div>
-									
-										<input type="hidden" name="folderId" id="selectedFolderId">
-									</div>
+    // Restricted Access
+    const isRestricted = $('#wantApprovers').is(':checked');
+    $('#summaryAccess').text(isRestricted ? 'Yes' : 'No').removeClass('bg-soft-success text-success bg-soft-danger text-danger')
+        .addClass(isRestricted ? 'bg-soft-danger text-danger' : 'bg-soft-success text-success');
+}
 
-									<!-- File Upload -->
-									<div class="col-md-12">
-										<label class="form-label">File Uploads</label>
-										<div class="upload-box mb-3" id="uploadBox">
-											<i class="ti ti-cloud-upload fa-2x text-primary mb-2"></i>
-											<p class="mb-1"><strong>Click to upload file</strong> or drag and drop</p>
-											<small class="text-muted">Max 10GB total storage. DOCX / PPTX / CSV /
-												PDF</small>
-											<!-- REMOVE required attribute here -->
-											<input type="file" class="form-control d-none" id="fileInput" name="files"
-												multiple>
-										</div>
-												<div id="fileList">
-													<!-- existing file list code -->
-												</div>
-									</div>
-									<!-- Signature -->
-									<!-- <div class="col-md-12">
-										<label class="form-label">Add Your Signature</label>
-										<div class="signtrboxwrp mb-3">
-											<div class="signbox form-control" id="signaturePreview" style="width:70%;">
-												<% if (isEdit && document.signature?.fileUrl) { %>
-													<img src="<%= document.signature.fileUrl %>" alt="Signature"
-														style="max-height:100%; max-width:100%; object-fit:contain;">
-													<% } %>
+function setupSummaryUpdate() {
+    // Listen for changes that affect summary
+    $('#projectName, #department').on('change', updateSummary);
+    $('input[name="tags"]').on('input', updateSummary);
+    $('#complianceSwitch, #wantApprovers').on('change', updateSummary);
+}
 
-											</div>
-											<div class="signupld d-flex gap-2">
-												
-												<input type="file" class="form-control d-none" id="fileSign"
-													name="signatureFile" accept="image/*">
-												<button type="button" class="btn btn-primary rounded-pill"
-													id="uploadSignBtn">
-													<%= isEdit && document.signature ? 'Update Signature'
-														: 'Browse from system' %>
-												</button>
+// =============================================
+// FORM SUBMISSION
+// =============================================
+function setupFormSubmission() {
+    $('#documentForm').on('submit', async function(e) {
+        e.preventDefault();
+    
+        const submitBtn = $('#submitBtn');
+        if (submitBtn.prop('disabled')) return;
+    
+        if (!validateForm()) return;
+    
+        $('#summernote').val($('.summernote').summernote('code'));
+    
+        submitBtn.prop('disabled', true).html(
+            '<span class="spinner-border spinner-border-sm" role="status"></span> ' +
+            (window.isEdit ? "Updating..." : "Adding...")
+        );
+    
+        try {
+            // Convert expiry date to proper format
+            const expiryDateInput = document.querySelector('input[name="expiryDate"]');
+            if (expiryDateInput && expiryDateInput.value) {
+                const formattedDate = formatDateForServer(expiryDateInput.value);
+                // Replace the value with formatted date
+                expiryDateInput.value = formattedDate;
+            }
+            
+            // Add fileIds to form data
+            const fileIdsInput = document.createElement('input');
+            fileIdsInput.type = 'hidden';
+            fileIdsInput.name = 'fileIds';
+            fileIdsInput.value = JSON.stringify(window.uploadedFileIds || []);
+            this.appendChild(fileIdsInput);
+    
+            // Remove required attribute from file input
+            const rawFileInput = document.getElementById('fileInput');
+            if (rawFileInput) {
+                rawFileInput.removeAttribute('required');
+                rawFileInput.value = '';
+            }
+    
+            const formData = new FormData(this);
+            const url = window.isEdit
+                ? `/api/documents/${window.documentId}`
+                : `/api/documents`;
+            const method = window.isEdit ? 'PATCH' : 'POST';
+    
+            const response = await fetch(url, { method, body: formData });
+    
+            if (!response.ok) {
+                let serverMessage = `HTTP ${response.status}`;
+                try {
+                    const json = await response.json();
+                    if (json?.message) serverMessage = json.message;
+                } catch {
+                    const text = await response.text();
+                    if (text) serverMessage = text;
+                }
+                throw new Error(serverMessage);
+            }
+    
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || "Unknown server error");
+            }
+    
+            // Show success modal
+            const doc = data.data.document;
+            if (doc?.metadata?.fileName) {
+                document.getElementById('successFileName').textContent = doc.metadata.fileName;
+            }
+    
+            const modalElement = document.getElementById('data-success-modal');
+            const successModal = new bootstrap.Modal(modalElement);
+            successModal.show();
+    
+            setTimeout(() => {
+                successModal.hide();
+                window.location.href = '/documents/list';
+            }, 2000);
+    
+            submitBtn.prop('disabled', false).html(window.isEdit ? "Update Document" : "Add Document");
+    
+        } catch (error) {
+            console.error('Form submission error:', error);
+            showToast(error.message || "An unknown error occurred.", "error");
+            submitBtn.prop('disabled', false).html(window.isEdit ? "Update Document" : "Add Document");
+        }
+    });
+}
+function validateForm() {
+    const projectName = $('#projectName').val();
+    const department = $('#department').val();
+    const folderId = $('#selectedFolderId').val();
 
-												
-												<button type="button" class="btn btn-secondary rounded-pill"
-													id="drawSignBtn">
-													Draw Signature
-												</button>
-											</div>
-											<input type="hidden" name="signature" id="signatureData">
-										</div>
-									</div> -->
+    if (!window.isEdit && window.uploadedFileIds.length === 0) {
+        showToast('Please upload at least one file.', 'error');
+        document.getElementById('uploadBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
 
-									<!-- Link -->
-									<div class="col-md-12">
-										<div class="mb-3">
-											<label class="form-label">Add Link (if any)</label>
-											<input type="url" class="form-control" name="link"
-												placeholder="https://example.com"
-												value="<%= isEdit && document.link ? document.link : '' %>">
-										</div>
-									</div>
-								</div>
-							</div>
+    if (!projectName || projectName === 'all') {
+        showToast('Please select a project name.', 'error');
+        $('#projectName').focus();
+        return false;
+    }
 
-							<div class="d-flex align-items-center justify-content-end">
-								<button class="btn btn-primary rounded-pill" type="submit" id="submitBtn">
-									<%= isEdit ? "Update Document" : "Add Document" %>
-								</button>
-							</div>
-				</form>
-			</div>
-		</div>
+    if (!department || department === 'all') {
+        showToast('Please select a department.', 'error');
+        $('#department').focus();
+        return false;
+    }
 
-		<!-- Footer -->
-		<div class="footer mt-4 d-sm-flex align-items-center justify-content-between border-top bg-white p-3">
-			<p class="mb-0">2025 &copy; HLFPPT.</p>
-			<p>Designed & Developed by <a href="javascript:void(0);" class="text-primary">Duplex services &
-					Technology</a></p>
-		</div>
-	</div>
-	<!-- /Page Wrapper -->
-	<!-- <script>
-		// EJS variables exposed to JS
-		const isEdit = <%= isEdit ? 'true' : 'false' %>;
-		const documentId = "<%= isEdit && document ? document._id : '' %>";
-		const documentData = <%= isEdit && document ? JSON.stringify(document) : 'null' %>;
-	</script> -->
-	<!-- Metadata Modal -->
-	<div id="metadata-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Add Meta Data</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<form id="metadataForm">
-						<div class="mb-3">
-							<label class="form-label">File Name</label>
-							<input class="form-control" type="text" name="fileName" required placeholder="File Name"
-								value="<%= isEdit && document.metadata && document.metadata.fileName ? document.metadata.fileName : '' %>">
-						</div>
-						<div class="mb-3">
-							<label class="form-label">File Description</label>
-							<input class="form-control" type="text" name="fileDescription" required
-								placeholder="File Description"
-								value="<%= isEdit && document.metadata && document.metadata.fileDescription ? document.metadata.fileDescription : '' %>">
-						</div>
-						<div class="mb-3">
-							<label class="form-label">File Main Heading</label>
-							<input type="text" class="form-control" name="mainHeading" placeholder="Main Heading"
-								value="<%= isEdit && document.metadata && document.metadata.mainHeading ? document.metadata.mainHeading : '' %>">
-						</div>
-						<div class="mb-3 text-center">
-							<button class="btn btn-primary rounded-pill" type="submit">Save Metadata</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!-- /Metadata Modal -->
+    if (!folderId) {
+        showToast('Please select a folder.', 'error');
+        $('#dynamicFolderTree').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
 
-	<!-- Signature Canvas Modal -->
-	<div class="modal fade" id="signatureModal" tabindex="-1" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content p-3">
-				<div class="modal-header">
-					<h5 class="modal-title">Draw Your Signature</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-				</div>
-				<div class="modal-body">
-					<div class="canvas-wrap"
-						style="border:1px solid #ccc; border-radius:8px; height:200px; position:relative;">
-						<canvas id="sigCanvas" style="width:100%; height:100%; touch-action:none;"></canvas>
-					</div>
-					<div class="mt-2 text-end">
-						<button type="button" id="undoSignBtn" class="btn btn-secondary btn-sm">Undo</button>
-						<button type="button" id="clearSignBtn" class="btn btn-secondary btn-sm">Clear</button>
-						<button type="button" id="saveSignBtn" class="btn btn-primary btn-sm">Save</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+    return true;
+}
 
-	<!-- Add these hidden fields for data backup -->
-	<input type="hidden" id="hiddenDocumentId" value="<%= isEdit && document ? document._id : '' %>">
-	<div id="hiddenDocumentData"
-		data-document="<%= isEdit && document ? encodeURIComponent(JSON.stringify(document)) : '{}' %>"></div>
+// =============================================
+// TOAST NOTIFICATION
+// =============================================
 
-	<script>
-		// EJS variables exposed to JS - FIXED VERSION
-		window.isEdit = <%= isEdit ? 'true' : 'false' %>;
-		window.documentId = "<%= isEdit && document ? document._id : '' %>";
-		window.documentData = <%= isEdit && document ? JSON.stringify(document) : 'null' %>;
-		// Expose selectedProject from session for pre-selection
-		<% if (!isEdit && selectedProject && selectedProject._id) { %>
-		window.selectedProject = { id: "<%= selectedProject._id %>", name: "<%= selectedProject.projectName %>" };
-		<% } %>
-	</script>
-	<!-- Success Modal -->
-	<div id="data-success-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-centered modalw620">
-			<div class="modal-content">
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				<div class="modal-body">
-					<div class="success_mdltxt text-center">
-						<div class="imgscs mb-3"><img src="/img/icons/success.png"></div>
-						<div class="d-flex align-items-center justify-content-center mb-2">
-							<span class="avatar avatar-xs rounded bg-light mb-2">
-								<img src="/img/icons/fn1.png">
-							</span>
-							<div class="ms-2">
-								<p class="fs-12 mb-1 fw-medium" id="successFileName">Project Proposal v1</p>
-							</div>
-						</div>
-						<h4 class="fs-16 text-dark fw-medium mb-2">Your File <%= isEdit ? "Updated" : "Added" %>
-								Successfully</h4>
-						<p class="fs-14 fw-normal mb-3">You will be notified soon as your file gets approved</p>
-						<!-- <div class="mb-3 text-center">
-							<button class="btn btn-primary rounded-pill minw80" type="button" id="success-ok-btn"
-								data-bs-dismiss="modal">Ok</button>
-						</div> -->
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<%- include('../../partials/footer') %>
-		<script defer src="/js/pages/documents/addEditDocument.js"></script>
+function showToast(message, type = 'info') {
+    // Check if toast container exists, create if not
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        warning: '#ffc107',
+        info: '#17a2b8'
+    };
+
+    const toast = document.createElement('div');
+    toast.className = 'toast show';
+    toast.style.cssText = `
+        min-width: 300px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        background-color: ${colors[type] || colors.info};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        font-weight: 500;
+    `;
+    toast.textContent = message;
+
+    toastContainer.appendChild(toast);
+
+    // Trigger entrance animation
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 4000);
+}
+
+// =============================================
+// STYLES
+// =============================================
+
+const styles = `
+    :root {
+        --primary-blue: #5B5FFF;
+        --light-bg: #F8F9FB;
+        --border-color: #E5E7EB;
+        --text-primary: #1F2937;
+        --text-secondary: #6B7280;
+        --folder-yellow: #FCD34D;
+        --hover-bg: #F3F4F6;
+        --active-bg: #E0E7FF;
+    }
+    /* Folder path display styles */
+.folder-path-display {
+    position: relative;
+}
+
+#selectedParentPath {
+    background-color: #f8f9fa !important;
+    cursor: default;
+    padding: 6px 12px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+#selectedParentPath .text-muted {
+    font-style: italic;
+}
+
+/* Modal styles */
+#createFolderModal .modal-dialog {
+    max-width: 550px;
+}
+
+#createFolderModal .select2-container {
+    width: 100% !important;
+}
+
+#createFolderModal .select2-container--default .select2-selection--single {
+    height: 38px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+#createFolderModal .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+    padding-left: 12px;
+}
+
+#createFolderModal .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+
+#createFolderModal .select2-dropdown {
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#createFolderModal .select2-search__field {
+    border-radius: 4px !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Validation styles */
+#createFolderModal .is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+#createFolderModal .is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+/* Button disable state */
+#confirmCreateFolder:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#confirmCreateFolder:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(91, 95, 255, 0.3);
+}
+    .folder-tree {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .folder-tree-item {
+        margin-bottom: 0;
+    }
+
+    .folder-node {
+        display: flex;
+        align-items: center;
+        padding: 5px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        margin-bottom: 4px;
+    }
+
+    .folder-node:hover {
+        background-color: var(--hover-bg);
+    }
+
+    .folder-node.selected {
+        background-color: var(--active-bg);
+        border-left: 3px solid var(--primary-blue);
+    }
+
+    .folder-node.selected .folder-name {
+        color: var(--primary-blue);
+    }
+
+    .folder-toggle {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        width: 15px;
+        height: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 1rem;
+        transition: transform 0.3s;
+        margin-right: 4px;
+    }
+
+    .folder-toggle.expanded {
+        transform: rotate(90deg);
+    }
+
+    .folder-toggle:hover {
+        color: var(--primary-blue);
+    }
+
+    .folder-icon {
+        font-size: 1.1rem;
+        margin-right: 5px;
+        min-width: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .folder-icon.root {
+        color: var(--primary-blue);
+    }
+
+    .folder-icon.sub {
+        color: var(--folder-yellow);
+    }
+
+    .folder-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 0;
+    }
+
+    .folder-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .folder-name {
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .folder-count {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    .folder-nested {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        margin-left: 8px;
+        border-left: 1px solid var(--border-color);
+        padding-left: 10px;
+        max-height: 500px;
+        overflow: hidden;
+        opacity: 1;
+        transition: all 0.3s ease;
+    }
+
+    .folder-nested.collapsed {
+        max-height: 0;
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .folder-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: space-between;
+        max-height: 380px;
+        overflow-y: auto;
+    }
+
+    .folder-grid .folder-card {
+        width: 48%;
+    }
+
+    .folder-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+    }
+
+    .folder-card:hover {
+        border-color: var(--primary-blue);
+        box-shadow: 0 4px 12px rgba(91, 95, 255, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .folder-card.selected {
+        background-color: var(--active-bg);
+        border-color: var(--primary-blue);
+    }
+
+    .folder-card-icon {
+        font-size: 1.5rem;
+        display: block;
+    }
+
+    .folder-card-name {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+        word-break: break-word;
+    }
+
+    .folder-card-count {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .folder-card.selected::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 15px;
+        height: 15px;
+        background-color: var(--primary-blue);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .folder-card.selected::before {
+        content: '✓';
+        position: absolute;
+        top: 10px;
+        right: 11px;
+        width: 10px;
+        height: 10px;
+        background-color: var(--primary-blue);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.6rem;
+        z-index: 10;
+    }
+
+    .upload-box {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .upload-box:hover {
+        border-color: var(--primary-blue);
+        background-color: #f8f9ff;
+    }
+
+    .upload-box.dragover {
+        border-color: var(--primary-blue);
+        background-color: #f0f0ff;
+    }
+
+    .file-item {
+        position: relative;
+        transition: all 0.3s;
+    }
+
+    .file-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .remove-btn {
+        transition: all 0.3s;
+    }
+
+    .remove-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .breadcrumb-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        padding: 4px 0;
+    }
+
+    .breadcrumb-nav .breadcrumb-separator {
+        color: var(--text-secondary);
+        margin: 0 4px;
+    }
+
+    .breadcrumb-nav a {
+        color: var(--primary-blue);
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .breadcrumb-nav a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-nav .active {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .card-body-org {
+        flex: 1;
+        min-width: 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .folder-grid-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .grid-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .grid-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .sideupldtxt .badge {
+        font-weight: 400;
+    }
+
+    .fldicn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #metadataDisplay .table th {
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    #metadataDisplay .table td {
+        vertical-align: middle;
+    }
+`;
+
+// Inject styles
+const styleSheet = document.createElement("style");
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+</script>

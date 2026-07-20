@@ -10,8 +10,8 @@ import { parseDateDDMMYYYY } from "../utils/formatDate.js";
 import { renderProjectDetails } from "../utils/renderProjectDetails.js";
 import { activityLogger } from "../helper/activityLogger.js";
 import { addNotification } from "./NotificationController.js";
-import { formatTotalFileSize } from "../helper/CommonHelper.js";
 import File from "../models/File.js";
+import Folder from "../models/Folder.js";
 //Page controllers
 
 const extractApprovalAuthority = (body) => {
@@ -770,13 +770,13 @@ export const searchProjects = async (req, res) => {
         };
 
         const result = await Project.paginate(query, options);
-
         const projectIds = result.docs.map(p => p._id);
 
-        let projectsWithSize = result.docs;
+        let projectsWithMetrics = result.docs;
 
         if (projectIds.length > 0) {
-            const sizeAggregation = await File.aggregate([
+            // 1. Get file sizes and counts per project
+            const fileAggregation = await File.aggregate([
                 {
                     $match: {
                         projectId: { $in: projectIds },
@@ -786,32 +786,83 @@ export const searchProjects = async (req, res) => {
                 {
                     $group: {
                         _id: '$projectId',
-                        totalSize: { $sum: '$fileSize' }
+                        totalSize: { $sum: '$fileSize' },
+                        totalFiles: { $sum: 1 }
                     }
                 }
             ]);
 
-            const sizeMap = {};
-            sizeAggregation.forEach(item => {
-                sizeMap[item._id.toString()] = item.totalSize;
+            const fileMetricsMap = {};
+            fileAggregation.forEach(item => {
+                fileMetricsMap[item._id.toString()] = {
+                    totalSize: item.totalSize,
+                    totalFiles: item.totalFiles
+                };
             });
 
-            projectsWithSize = result.docs.map(project => {
+            // 2. Get folder counts per project
+            const folderAggregation = await Folder.aggregate([
+                {
+                    $match: {
+                        projectId: { $in: projectIds },
+                        isDeleted: false,
+                        isArchived: false,
+                        parent: { $ne: null },
+                        status: 'active'
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$projectId',
+                        totalFolders: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            const folderMetricsMap = {};
+            folderAggregation.forEach(item => {
+                folderMetricsMap[item._id.toString()] = {
+                    totalFolders: item.totalFolders
+                };
+            });
+
+            // 3. Combine all metrics
+            projectsWithMetrics = result.docs.map(project => {
                 const projId = project._id.toString();
-                const totalBytes = sizeMap[projId] || 0;
+                const fileMetrics = fileMetricsMap[projId] || { totalSize: 0, totalFiles: 0 };
+                const folderMetrics = folderMetricsMap[projId] || { totalFolders: 0 };
 
                 return {
                     ...project.toObject(),
-                    storageConsumed: formatTotalFileSize(totalBytes)
+                    totalFiles: fileMetrics.totalFiles,
+                    totalFolders: folderMetrics.totalFolders,
+                    totalSize: fileMetrics.totalSize,
+                    storageConsumed: formatTotalFileSize(fileMetrics.totalSize),
+                    formattedTotalSize: formatFileSize(fileMetrics.totalSize)
                 };
             });
+        }
+
+        // Update totalFiles in Project collection if needed
+        for (const project of projectsWithMetrics) {
+            if (project.totalFiles !== undefined) {
+                await Project.findByIdAndUpdate(
+                    project._id,
+                    { 
+                        $set: { 
+                            totalFiles: project.totalFiles 
+                        } 
+                    },
+                    { new: true }
+                );
+            }
         }
 
         res.status(200).json({
             success: true,
             query: { q, status, manager, priority, startDate, endDate, projectId },
             count: result.totalDocs,
-            data: projectsWithSize,
+            data: projectsWithMetrics,
             pagination: {
                 page: result.page,
                 limit: result.limit,
@@ -829,6 +880,22 @@ export const searchProjects = async (req, res) => {
         });
     }
 };
+
+// Helper function to format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Helper function for total file size formatting (using MB as base)
+function formatTotalFileSize(bytes) {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return bytes / 1024 < 1 ? bytes + ' B' : (bytes / 1024).toFixed(2) + ' KB';
+    return mb.toFixed(2) + ' MB';
+}
 
 export const searchProjectManager = async (req, res) => {
     try {

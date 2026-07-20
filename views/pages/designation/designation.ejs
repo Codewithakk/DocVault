@@ -35,7 +35,7 @@
 
                         <!-- Name -->
                         <div class="col-md-6 mb-3">
-                            <label for="name" class="form-label">Designation Name</label>
+                            <label for="name" class="form-label">Designation Name <span class="text-danger">*</span></label>
                             <input type="text" id="name" name="name" class="form-control"
                                 placeholder="Enter designation name" value="<%= designation ? designation.name : '' %>"
                                 required>
@@ -44,8 +44,8 @@
                         <!-- Priority -->
                         <div class="col-md-3 mb-3">
                             <label for="priority" class="form-label">Priority</label>
-                            <input type="text" id="priority" name="priority" class="form-control"
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Enter priority"
+                            <input type="number" id="priority" name="priority" class="form-control"
+                                placeholder="Enter priority" min="0"
                                 value="<%= designation ? designation.priority : '' %>">
                         </div>
 
@@ -53,24 +53,86 @@
                         <div class="col-md-3 mb-3">
                             <label for="status" class="form-label">Status</label>
                             <select id="status" name="status" class="form-select select2">
-                                <option value="Active" <%=designation && designation.status==='Active' ? 'selected' : ''
-                                    %>>Active</option>
-                                <option value="Inactive" <%=designation && designation.status==='Inactive' ? 'selected'
-                                    : '' %>>Inactive</option>
+                                <option value="Active" <%=designation && designation.status==='Active' ? 'selected' : '' %>>Active</option>
+                                <option value="Inactive" <%=designation && designation.status==='Inactive' ? 'selected' : '' %>>Inactive</option>
                             </select>
                         </div>
 
                         <!-- Is Donor or Vendor -->
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label d-block">Is Donor / Vendor?</label>
-                            <input type="checkbox" id="isDonorOrVendor" name="isDonorOrVendor" <%=designation &&
-                                designation.isDonorOrVendor ? 'checked' : '' %> >
+                        <div class="col-md-4 mb-1 mt-2">
+                            <div class="form-check">
+                                <input type="checkbox" id="isDonorOrVendor" name="isDonorOrVendor" class="form-check-input" 
+                                    value="true" <%=designation && designation.isDonorOrVendor ? 'checked' : '' %> >
+                                <label class="form-check-label" for="isDonorOrVendor">Is Donor / Vendor?</label>
+                            </div>
+                        </div>
+                        <!-- Permissions Section Header -->
+                        <div class="col-12 mt-2 mb-1">
+                            <hr>
+                            <h5 class="mb-0">Permissions</h5>
+                            <small class="text-muted">Select the permissions for this designation</small>
+                            <hr>
+                        </div>
+
+
+                        <!-- Own Files -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="ownFiles" name="ownFiles" class="form-check-input" 
+                                    value="true" <%=designation && designation.ownFiles ? 'checked' : '' %> >
+                                <label class="form-check-label" for="ownFiles">Own Files</label>
+                            </div>
+                        </div>
+
+                        <!-- Own Folders -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="ownFolders" name="ownFolders" class="form-check-input" 
+                                    value="true" <%=designation && designation.ownFolders ? 'checked' : '' %> >
+                                <label class="form-check-label" for="ownFolders">Own Folders</label>
+                            </div>
+                        </div>
+
+                        <!-- Team Files -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="teamFiles" name="teamFiles" class="form-check-input" 
+                                    value="true" <%=designation && designation.teamFiles ? 'checked' : '' %> >
+                                <label class="form-check-label" for="teamFiles">Team Files</label>
+                            </div>
+                        </div>
+
+                        <!-- Department Files -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="deptFiles" name="deptFiles" class="form-check-input" 
+                                    value="true" <%=designation && designation.deptFiles ? 'checked' : '' %> >
+                                <label class="form-check-label" for="deptFiles">Department Files</label>
+                            </div>
+                        </div>
+
+                        <!-- Other Departments -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="otherDepts" name="otherDepts" class="form-check-input" 
+                                    value="true" <%=designation && designation.otherDepts ? 'checked' : '' %> >
+                                <label class="form-check-label" for="otherDepts">Other Departments</label>
+                            </div>
+                        </div>
+
+                        <!-- All Organizations -->
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" id="allOrgs" name="allOrgs" class="form-check-input" 
+                                    value="true" <%=designation && designation.allOrgs ? 'checked' : '' %> >
+                                <label class="form-check-label" for="allOrgs">All Organizations</label>
+                            </div>
                         </div>
 
                         <!-- Description -->
-                        <div class="col-md-12 mb-3">
+                        <div class="col-12 mb-3 mt-4">
                             <label for="description" class="form-label">
-                                Description <span class="optnl_lbl">(Optional)</span>
+                                Description <span class="text-muted">(Optional)</span>
                             </label>
                             <textarea id="description" name="description" rows="3" class="form-control"
                                 placeholder="Enter description"><%= designation ? designation.description : '' %></textarea>
@@ -93,57 +155,100 @@
             <p class="mb-0">2025 &copy; HLFPPT.</p>
             <p>
                 Designed & Developed by
-                <a href="https://duplexservices.com" target="_blank" class="text-primary">Duplex Services &
-                    Technology</a>
+                <a href="https://duplexservices.com" target="_blank" class="text-primary">Duplex Services & Technology</a>
             </p>
         </div>
     </div>
 
     <%- include('../../partials/footer') %>
 
-        <script>
-            const form = document.getElementById('designationForm');
-            const submitBtn = document.getElementById('submitBtn');
+    <script>
+        const form = document.getElementById('designationForm');
+        const submitBtn = document.getElementById('submitBtn');
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `
-            <span class="spinner-border spinner-border-sm me-2"></span> Processing...
-        `;
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2"></span> Processing...
+            `;
 
-                // Collect form data
-                const formData = new FormData(form);
-                formData.set("isDonorOrVendor", document.getElementById("isDonorOrVendor").checked);
+            // Collect form data
+            const formData = new FormData(form);
+            
+            // Get all checkbox fields and convert to proper boolean values
+            const checkboxFields = ['isDonorOrVendor', 'ownFiles', 'ownFolders', 'teamFiles', 'deptFiles', 'otherDepts', 'allOrgs'];
+            
+            // Create data object
+            const data = {};
+            
+            // Handle regular form fields
+            for (let [key, value] of formData.entries()) {
+                // Skip checkbox fields - we'll handle them separately
+                if (!checkboxFields.includes(key)) {
+                    data[key] = value;
+                }
+            }
+            
+            // Handle checkbox fields - convert to proper boolean
+            checkboxFields.forEach(field => {
+                const checkbox = document.getElementById(field);
+                data[field] = checkbox ? checkbox.checked : false;
+            });
 
-                const data = Object.fromEntries(formData.entries());
+            const id = "<%= designation ? designation._id : '' %>";
+            const url = id ? `/api/designations/${id}` : '/api/designations';
+            const method = id ? 'PATCH' : 'POST';
 
-                const id = "<%= designation ? designation._id : '' %>";
-                const url = id ? `/api/designations/${id}` : '/api/designations';
-                const method = id ? 'PATCH' : 'POST';
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
 
-                try {
-                    const res = await fetch(url, {
-                        method,
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
+                const result = await res.json();
 
-                    const result = await res.json();
-
-                    if (res.ok) {
-                        showToast(result.message || 'Saved successfully!', 'success');
-                        setTimeout(() => window.location.href = '/designations/list', 1000);
+                if (res.ok) {
+                    showToast(result.message || 'Saved successfully!', 'success');
+                    setTimeout(() => window.location.href = '/designations/list', 1000);
+                } else {
+                    // Handle validation errors
+                    if (result.errors && Array.isArray(result.errors)) {
+                        const errorMessages = result.errors.map(err => err.message || err.msg).join(', ');
+                        showToast(errorMessages || 'Validation failed', 'danger');
                     } else {
                         showToast(result.message || 'Failed to save.', 'danger');
                     }
-                } catch (err) {
-                    showToast('Something went wrong!', 'danger');
-                } finally {
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
                 }
-            });
-        </script>
+            } catch (err) {
+                showToast('Something went wrong!', 'danger');
+                console.error('Error:', err);
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show`;
+            toast.role = 'alert';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            container.appendChild(toast);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    </script>

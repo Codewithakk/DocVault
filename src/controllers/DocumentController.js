@@ -115,7 +115,14 @@ export const showEditDocumentPage = async (req, res) => {
         }
 
         const document = await Document.findById(id)
-            .populate("project department projectManager documentDonor documentVendor folderId files")
+            .populate("project department projectManager documentDonor documentVendor folderId")
+            .populate({
+                path: "files",
+                populate: {
+                    path: "uploadedBy",
+                    select: "name"
+                }
+            })
             .lean();
 
         if (!document) {

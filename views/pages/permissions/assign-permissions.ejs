@@ -54,6 +54,7 @@
 										<th></th> <!-- Settings column -->
 										<th>Name</th>
 										<th>Email</th>
+										<th>Designation</th>
 										<th>Department</th>
 										<th>Created on</th>
 										<th>Assign Permission</th>
@@ -124,6 +125,7 @@
 						},
 						{ data: "name" },
 						{ data: "email" },
+						{ data: "userDetails", render: ud => ud?.designation?.name || "-" },
 						{ data: "userDetails", render: ud => ud?.department?.name || "-" },
 						{
 							data: "createdAt",

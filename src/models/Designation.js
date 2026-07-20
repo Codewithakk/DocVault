@@ -23,7 +23,32 @@ const designationSchema = new mongoose.Schema({
     },
     isDonorOrVendor: {
         type: Boolean,
-        require: true,
+        required: true,
+        default: false
+    },
+    //permission fields
+    ownFiles: {
+        type: Boolean,
+        default: false
+    },
+    ownFolders: {
+        type: Boolean,
+        default: false
+    },
+    teamFiles: {
+        type: Boolean,
+        default: false
+    },
+    deptFiles: {
+        type: Boolean,
+        default: false
+    },
+    otherDepts: {
+        type: Boolean,
+        default: false
+    },
+    allOrgs: {
+        type: Boolean,
         default: false
     },
     added_by: {

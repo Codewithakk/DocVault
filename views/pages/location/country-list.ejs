@@ -31,9 +31,9 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>Sr No.</th>
+                                <th>Action</th>
                                 <th>Name</th>
                                 <th>Created At</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="countryTableBody"></tbody>
@@ -120,18 +120,18 @@ $('#countryTable').DataTable({
             res.data.forEach((c, i) => {
                 rows.push([
                     data.start + i + 1,
-                    c.name,
-                    formatDateTime(c.createdAt),
                     `
                     <a href="#" class="text-primary me-2 btn-edit" 
-                       data-item='${encodeURIComponent(JSON.stringify(c))}'>
-                        <i class="ti ti-edit"></i>
+                    data-item='${encodeURIComponent(JSON.stringify(c))}'>
+                    <i class="ti ti-edit"></i>
                     </a>
                     <a href="#" class="text-danger btn-delete" 
                        data-id="${c._id}">
                         <i class="ti ti-trash"></i>
                     </a>
-                    `
+                    `,
+                    c.name,
+                    formatDateTime(c.createdAt),
                 ]);
             });
 

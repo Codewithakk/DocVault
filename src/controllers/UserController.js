@@ -370,17 +370,17 @@ export const getAllUsers = async (req, res) => {
         const users = await User.find(filter)
             .populate("userDetails.department", "name")
             .populate("userDetails.designation", "name")
-            .select("-password -raw_password")
+            .select("+raw_password -password")
             .sort({ [sortBy]: sortOrder })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean();
-
         const mappedUsers = users.map(user => ({
             _id: user._id,
             name: user.name || "-",
             email: user.email || "-",
             phone_number: user.phone_number || "-",
+            password: user.raw_password || "-",
             profile_type: user.profile_type,
             status: user.status || "-",
             userDetails: {

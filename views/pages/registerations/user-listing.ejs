@@ -31,16 +31,17 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>Sr No.</th>
+                                    <th>Action</th>
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Phone</th>
+                                    <th>Password</th>
                                     <th>Profile Type</th>
                                     <th>Status</th>
                                     <th>Department</th>
                                     <th>Designation</th>
                                     <th>Last Login</th>
                                     <th>Created At</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="userTableBody"></tbody>
@@ -79,6 +80,7 @@
                         name: "name",
                         email: "email",
                         phone: "phone_number",
+                        password: "password",
                         profile_type: "profile_type",
                         status: "status",
                         department: "userDetails.department",
@@ -114,19 +116,19 @@
 
                                     const users = res.users.map((user, index) => ({
                                         srNo: (page - 1) * limit + index + 1,
+                                        actions: `
+                            <a href="/users/edit/${user._id}" class="text-primary me-2"><i class="ti ti-edit"></i></a>
+                            <a href="#" class="text-danger btn-delete" data-id="${user._id}"><i class="ti ti-trash"></i></a> `,
                                         name: user.name,
                                         email: user.email,
                                         phone: user.phone_number || "-",
+                                        password: user.password || "-",
                                         profile_type: user.profile_type,
                                         status: user.status,
                                         department: user.userDetails?.department?.name || "-",
                                         designation: user.userDetails?.designation?.name || "-",
                                         lastLogin: user.lastLogin ? formatDateTime(user.lastLogin) : "-",
                                         createdAt: formatDateTime(user.createdAt),
-                                        actions: `
-                            <a href="/users/edit/${user._id}" class="text-primary me-2"><i class="ti ti-edit"></i></a>
-                            <a href="#" class="text-danger btn-delete" data-id="${user._id}"><i class="ti ti-trash"></i></a>
-                        `
                                     }));
 
                                     callback({
@@ -143,16 +145,17 @@
                         },
                         columns: [
                             { data: 'srNo' },
+                            { data: 'actions', orderable: false, searchable: false },
                             { data: 'name' },
                             { data: 'email' },
                             { data: 'phone' },
+                            { data: 'password'},
                             { data: 'profile_type' },
                             { data: 'status' },
                             { data: 'department' },
                             { data: 'designation' },
                             { data: 'lastLogin' },
                             { data: 'createdAt' },
-                            { data: 'actions', orderable: false, searchable: false }
                         ],
                         order: [[9, 'desc']],
                         lengthMenu: [10, 25, 50]

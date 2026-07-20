@@ -32,13 +32,13 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>Sr No.</th>
+                                    <th>Action</th>
                                     <th>Name</th>
                                     <th>Short Name</th>
                                     <th>Priority</th>
                                     <th>Status</th>
                                     <th>Added By</th>
                                     <th>Created At</th>
-                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="departmentTableBody"></tbody>
@@ -84,12 +84,6 @@
                                 tbody += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${dept.name}</td>
-                        <td>${dept.shortName || 'N/A'}</td>
-                        <td>${dept.priority}</td>
-                        <td>${dept.status}</td>
-                        <td>${addedBy}</td>
-                        <td>${createdAt}</td>
                         <td>
                             <a href="/departments/${dept._id}" class="text-primary me-2" title="Edit">
                                 <i class="ti ti-edit"></i>
@@ -98,6 +92,12 @@
                                 <i class="ti ti-trash"></i>
                             </a>
                         </td>
+                        <td>${dept.name}</td>
+                        <td>${dept.shortName || 'N/A'}</td>
+                        <td>${dept.priority}</td>
+                        <td>${dept.status}</td>
+                        <td>${addedBy}</td>
+                        <td>${createdAt}</td>
                     </tr>
                 `;
                             });

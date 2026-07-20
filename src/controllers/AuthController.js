@@ -107,7 +107,7 @@ export const login = async (req, res) => {
         if (!isPasswordValid) return failResponse(res, "Password incorrect", 401);
 
         if (user.status !== "Active") {
-            return failResponse(res, "Your account is inactive or blocked.", 403);
+            return failResponse(res, "Your account is inactive or blocked. Please Contact Admin", 403);
         }
 
         const now = new Date();

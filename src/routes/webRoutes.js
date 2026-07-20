@@ -337,7 +337,7 @@ router.get("/folders/recyclebin", authenticate, FolderController.showRecycleBinP
 router.get("/folders", authenticate, FolderController.showMainFoldersPage);
 router.get('/folders/view/:fileId', optionalAuth, FolderController.viewFile)
 router.get("/folders/viewer/:folderId", authenticate, FolderController.showviewFoldersPage);
-
+router.get("/folders/folders-files", authenticate, FolderController.showFoldersandFilesPage);
 /* =========================================
    File ROUTE
    ========================================= */

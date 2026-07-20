@@ -29,10 +29,10 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>Sr No.</th>
+                                <th>Action</th>
                                 <th>Name</th>
                                 <th>Country</th>
                                 <th>Created At</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="stateTableBody"></tbody>
@@ -109,13 +109,13 @@ $('#stateTable').DataTable({
             res.data.forEach((s, i) => {
                 rows.push([
                     data.start + i + 1,
-                    s.name,
-                    s.country?.name || '-',
-                    formatDateTime(s.createdAt),
                     `
                     <a href="#" class="text-primary btn-edit" data-item='${encodeURIComponent(JSON.stringify(s))}'><i class="ti ti-edit"></i></a>
                     <a href="#" class="text-danger btn-delete" data-id="${s._id}"><i class="ti ti-trash"></i></a>
-                    `
+                    `,
+                    s.name,
+                    s.country?.name || '-',
+                    formatDateTime(s.createdAt),
                 ]);
             });
 

@@ -1200,6 +1200,67 @@
     a.menu-link.recent-toggle.active {
         color: #fff !important;
     }
+    .docsaction {
+        position: relative;
+    }
+
+    .docsaction button {
+        transform: rotate(90deg);
+    }
+
+    .modal-notificationslike {
+        position: fixed;
+        right: 20px;
+        bottom: 70px;
+        margin: 0;
+        width: auto;
+        max-width: 400px;
+    }
+.form-switch .form-check-input {
+    width: 2.6em;
+    height: 1.18rem;
+    padding-left: 0;
+}
+
+
+.card-body-org { width: 40%;}
+
+.folder-grid-container { width: 58%;}
+
+
+.folder-node.selected:after {
+    content:'';
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: var(--primary-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.6rem;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+
+.folder-node.selected:before {
+    content: '✓';
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    width: 10px;
+    height: 10px;
+    background-color: var(--primary-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.6rem;
+    z-index: 10;
+}
+
 
 
     @media(max-width:1500px) {

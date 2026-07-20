@@ -25,3 +25,46 @@ export function toProperCase(str = "") {
         .replace(/\s+/g, " ")                              // Remove extra spaces
         .trim();
 }
+
+// Update your existing bytesToGB function
+export const bytesToGB = (bytes) => {
+    if (bytes === 0) return 0;
+    const gb = bytes / (1024 * 1024 * 1024);
+    // If less than 0.01 GB, show with 6 decimal places
+    if (gb < 0.01) {
+        return parseFloat(gb.toFixed(6));
+    }
+    return parseFloat(gb.toFixed(2));
+};
+
+export const formatStorage = (bytes) => {
+    if (!bytes || bytes === 0) {
+        return { value: 0, unit: 'GB', bytes: 0 };
+    }
+    
+    const gb = bytes / (1024 * 1024 * 1024);
+    const mb = bytes / (1024 * 1024);
+    const kb = bytes / 1024;
+    
+    if (gb >= 1) {
+        return { 
+            value: parseFloat(gb.toFixed(2)), 
+            unit: 'GB'
+        };
+    } else if (mb >= 1) {
+        return { 
+            value: parseFloat(mb.toFixed(2)), 
+            unit: 'MB'
+        };
+    } else if (kb >= 1) {
+        return { 
+            value: parseFloat(kb.toFixed(2)), 
+            unit: 'KB'
+        };
+    } else {
+        return { 
+            value: bytes, 
+            unit: 'Bytes'
+        };
+    }
+};

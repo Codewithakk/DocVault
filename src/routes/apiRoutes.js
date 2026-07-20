@@ -654,11 +654,12 @@ router.get('/session/recent-folders', async (req, res) => {
 // Create a new folder
 router.post('/folders', FolderController.createFolder);
 router.patch('/folderstatus/:folderId', FolderController.updateFolderStatus);
-
+router.get('/all-folder-files', FolderController.allFoldersFiles);
 router.post('/folders/automatic', optionalAuth,FolderController.automaticProjectDepartmentFolderCreate);
 // List folders (optionally filter by parent)
 router.get('/folders', FolderController.listFolders);
 router.get('/folders/all', FolderController.getAllFolders);
+router.get('/folders/summary', FolderController.folderSummary);
 
 // Get folder details along with its contents
 router.get('/folders/details/:id', FolderController.getFolder);

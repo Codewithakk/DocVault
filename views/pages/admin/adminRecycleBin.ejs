@@ -45,11 +45,11 @@
 							<thead class="thead-light">
 								<tr>
 									<th></th>
+									<th>Actions</th>
 									<th>File Name</th>
 									<th>Created On</th>
 									<th>Department</th>
 									<th>Deleted On</th>
-									<th>Actions</th>
 								</tr>
 							</thead>
 							<tbody id="recyclinbindocuments_table_body"></tbody>
@@ -166,11 +166,11 @@
 						},
 						columns: [
 							{ title: "Select", orderable: false },
+							{ title: "Actions", orderable: false },
 							{ title: "Files" },
 							{ title: "Created On" },
 							{ title: "Department" },
 							{ title: "Deleted On" },
-							{ title: "Actions", orderable: false }
 						]
 					});
 
@@ -211,7 +211,7 @@
     </div>
   `;
 
-						return [checkbox, filesInfo, createdOn, departmentName, deletedOn, actions];
+						return [checkbox,actions,filesInfo, createdOn, departmentName, deletedOn];
 					}
 
 					// Debounced reload for search and filters
@@ -228,7 +228,7 @@
 						const restoreConfirmModal = $('#restore-modal');
 
 						// Extract file information from the table cell HTML
-						const filesInfoDiv = row.find('td:eq(1) .flxtblleft');
+						const filesInfoDiv = row.find('td:eq(2) .flxtblleft');
 						const fileName = filesInfoDiv.find('p').text().trim();
 						const fileSize = filesInfoDiv.find('span.fs-11').text().trim();
 						const fileIconSrc = filesInfoDiv.find('.avatar img').attr('src');
@@ -271,7 +271,7 @@
 						const documentSize = $(this).data('document-size');   // << here
 						const documentCount = $(this).data('document-count'); // optional
 						const modal = $('#fileDelete-modal');
-						const fileIconSrc = row.find('td:eq(1) .avatar img').attr('src');
+						const fileIconSrc = row.find('td:eq(2) .avatar img').attr('src');
 
 						// ---- Update modal content ----
 						modal.find('.flxtbltxt p').html(`${documentName}`);

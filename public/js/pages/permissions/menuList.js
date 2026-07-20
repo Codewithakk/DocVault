@@ -53,6 +53,17 @@ function initializeDataTable() {
         },
         columns: [
             { data: null, render: (d, t, r, meta) => meta.row + 1 },
+            {
+                data: "_id",
+                orderable: false,
+                render: id => `
+            <div class="action-icon d-inline-flex">
+                <a href="/permissions/menu/add/${id}" class="me-2"><i class="ti ti-edit"></i></a>
+                <a href="javascript:void(0);" onclick="confirmDelete('${id}')">
+                    <i class="ti ti-trash"></i>
+                </a>
+            </div>`
+            },
             { data: "type" },
             { data: "name" },
             { data: "url", render: data => (!data || data === "#") ? "#" : (data.startsWith("/") ? data : `/${data}`) },
@@ -85,18 +96,6 @@ function initializeDataTable() {
             },
 
             { data: "add_date", render: d => d ? new Date(d).toLocaleDateString("en-IN") : "-" },
-
-            {
-                data: "_id",
-                orderable: false,
-                render: id => `
-            <div class="action-icon d-inline-flex">
-                <a href="/permissions/menu/add/${id}" class="me-2"><i class="ti ti-edit"></i></a>
-                <a href="javascript:void(0);" onclick="confirmDelete('${id}')">
-                    <i class="ti ti-trash"></i>
-                </a>
-            </div>`
-            }
         ]
 
 
