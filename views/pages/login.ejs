@@ -26,7 +26,8 @@
                         <img src="<%= logo %>">
                     </div> -->
                     <div class="main_illustration">
-                        <img src="<%= banner %>" style="height:100vh;">
+                        <img src="<%= banner ? 'https://res.cloudinary.com/kykghulm/image/upload/v1784518589/login_ep86tb.png' : banner  %>"
+                            style="height:100vh;" alt="Login">
                     </div>
                 </div>
             </div>
@@ -44,12 +45,13 @@
                                 <%= metaTitle || "Where you can manage your files in one software" %>
                             </p>
                         </div>
-                    </div>                    
+                    </div>
                     <div class="mb-4">
                         <label for="emailInput" class="form-label">Email ID</label>
                         <div class="fieldwrap">
                             <i class="fa fa-envelope"></i>
-                            <input type="email" class="form-control" id="emailInput" placeholder="name@example.com"  autocomplete="username">
+                            <input type="email" class="form-control" id="emailInput" placeholder="name@example.com"
+                                autocomplete="username">
                         </div>
                     </div>
                     <div class="mb-4 password-box">
@@ -81,7 +83,8 @@
                     </div>
 
                     <div class="submitrow">
-                        <button type="button" id="loginBtn" class="btn submitbtn"> <i class="fa fa-lock me-2"></i> Login</button>
+                        <button type="button" id="loginBtn" class="btn submitbtn"> <i class="fa fa-lock me-2"></i>
+                            Login</button>
                         <div id="loginMessage" class="mt-2"></div>
                     </div>
                 </div>
