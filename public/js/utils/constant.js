@@ -9,6 +9,7 @@ const fileIcons = {
     default: "/img/icons/fn1.png"
 };
 
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
 
 const backgroundColors = [
     '#10A37F', '#33A3D2', '#F15C44', '#2B1871',

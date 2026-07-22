@@ -111,7 +111,7 @@ $(document).ready(function () {
     // Load storage data from API
     async function loadStorageData(projectId = '') {
         try {
-            const url = `${baseUrl}/api/myStorage`;
+            const url = `/api/myStorage`;
             
             const response = await fetch(url);
             const result = await response.json();
@@ -119,20 +119,32 @@ $(document).ready(function () {
             if (result.success && result.data) {
                 const data = result.data;
                 
-                // Calculate used percentage from remaining storage
-                const usedPercentage = (data.remainingPercentage || 0);
+                // Use the percentage directly from API
+                const usedPercentage = data.usedPercentage || 0;
+                const remainingPercentage = data.remainingPercentage || 100;
+                
+                // Update progress bar (show used percentage)
                 const progressBar = document.querySelector('.progress-bar');
                 if (progressBar) {
                     progressBar.style.width = `${usedPercentage}%`;
                     progressBar.setAttribute('aria-valuenow', usedPercentage);
+                    
+                    // Color coding based on usage
+                    if (usedPercentage > 90) {
+                        progressBar.className = 'progress-bar bg-danger rounded';
+                    } else if (usedPercentage > 75) {
+                        progressBar.className = 'progress-bar bg-warning rounded';
+                    } else {
+                        progressBar.className = 'progress-bar bg-info rounded';
+                    }
                 }
                 
                 // Update storage summary text
                 const summaryText = document.querySelector('.d-flex.align-items-center.justify-content-between p:first-child');
                 if (summaryText) {
-                    const usedGB = data.remainingStorage;
-                    const totalGB = data.totalStorage;
-                    summaryText.textContent = `${usedGB} GB used of ${totalGB} GB`;
+                    const usedGB = data.usedStorage || 0;
+                    const totalGB = data.totalStorage || 0;
+                    summaryText.textContent = `${usedGB.toFixed(2)} GB used of ${totalGB.toFixed(2)} GB`;
                 }
                 
                 // Update percentage text
@@ -143,49 +155,78 @@ $(document).ready(function () {
                 
                 // Update storage distribution
                 updateStorageDistribution(data);
+            } else {
+                console.error('Failed to load storage data:', result.message);
+                showStorageError();
             }
         } catch (error) {
             console.error('Error loading storage data:', error);
+            showStorageError();
         }
     }
     
+    // Helper function to show error state
+    function showStorageError() {
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+        }
+        const summaryText = document.querySelector('.d-flex.align-items-center.justify-content-between p:first-child');
+        if (summaryText) {
+            summaryText.textContent = 'Error loading storage data';
+        }
+        const percentageText = document.querySelector('.d-flex.align-items-center.justify-content-between p.text-title');
+        if (percentageText) {
+            percentageText.textContent = '0%';
+        }
+    }
     // Update storage distribution items
     function updateStorageDistribution(data) {
         const folderWraps = document.querySelectorAll('.folder-wrap');
         
         if (folderWraps.length >= 3) {
-            // Calculate total used storage
-            const totalUsed = data.documents + data.media + data.others;
-            
-            // Documents
+            // Get storage values in GB - use the exact values from API
             const docSize = data.documents || 0;
-            const docGB = docSize.toFixed(2);
-            const docPercentage = totalUsed > 0 ? ((docSize / totalUsed) * 100) : 0;
-            folderWraps[0].querySelector('h6').textContent = `${docGB} GB`;
-            const docLabel = folderWraps[0].querySelector('.fs-12');
-            // if (docLabel) {
-            //     docLabel.textContent = `Documents (${docPercentage.toFixed(1)}%)`;
-            // }
-            
-            // Media
             const mediaSize = data.media || 0;
-            const mediaGB = mediaSize.toFixed(2);
-            const mediaPercentage = totalUsed > 0 ? ((mediaSize / totalUsed) * 100) : 0;
-            folderWraps[1].querySelector('h6').textContent = `${mediaGB} GB`;
-            const mediaLabel = folderWraps[1].querySelector('.fs-12');
-            // if (mediaLabel) {
-            //     mediaLabel.textContent = `Media (${mediaPercentage.toFixed(1)}%)`;
-            // }
-            
-            // Others
             const othersSize = data.others || 0;
-            const othersGB = othersSize.toFixed(2);
-            const othersPercentage = totalUsed > 0 ? ((othersSize / totalUsed) * 100) : 0;
-            folderWraps[2].querySelector('h6').textContent = `${othersGB} GB`;
-            const othersLabel = folderWraps[2].querySelector('.fs-12');
-            // if (othersLabel) {
-            //     othersLabel.textContent = `Others (${othersPercentage.toFixed(1)}%)`;
-            // }
+            
+            // Get the percentage values from API (optional - if you want to show percentages)
+            const docPercentage = data.documentsPercentage || 0;
+            const mediaPercentage = data.mediaPercentage || 0;
+            const othersPercentage = data.othersPercentage || 0;
+            
+            // Get counts
+            const docCount = data.documentsCount || 0;
+            const mediaCount = data.mediaCount || 0;
+            const othersCount = data.othersCount || 0;
+            
+            // Update the h6 elements with GB values
+            // For very small values, show in MB instead of GB
+            const docDisplay = docSize < 0.001 ? `${(docSize * 1024).toFixed(2)} MB` : `${docSize.toFixed(2)} GB`;
+            const mediaDisplay = mediaSize < 0.001 ? `${(mediaSize * 1024).toFixed(2)} MB` : `${mediaSize.toFixed(2)} GB`;
+            const othersDisplay = othersSize < 0.001 ? `${(othersSize * 1024).toFixed(2)} MB` : `${othersSize.toFixed(2)} GB`;
+            
+            folderWraps[0].querySelector('h6').textContent = docDisplay;
+            folderWraps[1].querySelector('h6').textContent = mediaDisplay;
+            folderWraps[2].querySelector('h6').textContent = othersDisplay;
+            
+            // Update the labels with file counts (showing the count from API)
+            const labels = document.querySelectorAll('.folder-wrap .fs-12');
+            if (labels.length >= 3) {
+                // Update the labels to show counts (if you want)
+                // labels[0].textContent = `Files (${docCount} files)`;
+                // labels[1].textContent = `Media (${mediaCount} files)`;
+                // labels[2].textContent = `Others (${othersCount} files)`;
+                
+                // OR update to show percentages
+                // labels[0].textContent = `Files (${docPercentage.toFixed(1)}%)`;
+                // labels[1].textContent = `Media (${mediaPercentage.toFixed(1)}%)`;
+                // labels[2].textContent = `Others (${othersPercentage.toFixed(1)}%)`;
+                
+                // Keep original labels but maybe add count as tooltip or secondary text
+                // Currently keeping the labels as "Files", "Media", "Others"
+            }
         }
     }
     // Load current project from session
@@ -817,6 +858,7 @@ $(document).ready(function () {
                 return;
             }
 
+            // Define the image detection logic outside the loop or inside
             documents.forEach(doc => {
                 const fileSizeKB = doc.files.fileSize || 'N/A';
                 const createdDate = formatDateTime(doc.createdAt);
@@ -829,32 +871,48 @@ $(document).ready(function () {
                     const more = remaining > 0 ? `<div class="avatar avatar-more">+${remaining}</div>` : '';
                     return `<div class="avatar-group">${avatars}${more}</div>`;
                 })() : '-';
-
+            
                 const statusKey = (doc.status || 'draft').toLowerCase();
                 const statusClassName = statusClass[statusKey] || 'bg-soft-secondary';
-
+            
                 const description = doc.description
                     ? doc.description.replace(/<\/?[^>]+(>|$)/g, '').substring(0, 30) + (doc.description.length > 30 ? '...' : '')
                     : '-';
-
+            
                 const firstFile = doc.files;
-                const fileIcon = firstFile
-                    ? fileIcons[firstFile.originalName.split('.').pop().toLowerCase()] || fileIcons.default
-                    : fileIcons.default;
-                const displayFileName = doc.metadata?.fileName?.trim() || 'Untitled Document';
+                
+                // --- USE THE IMAGE THUMBNAIL LOGIC HERE ---
+                const ext = firstFile?.originalName?.split('.').pop()?.toLowerCase() || '';
+                const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
+                const isImage = imageExtensions.includes(ext);
+                
+                // Get the correct file URL/path
+                const imagePath = firstFile?.fileUrl || firstFile?.url || '';
+                
+                // For images, use the actual image URL; for other files, use icon
+                let fileIcon;
+                if (isImage && imagePath) {
+                    fileIcon = imagePath; // Use actual image URL
+                } else {
+                    fileIcon = fileIcons[ext] || fileIcons.default; // Use icon
+                }
+                
+                const displayFileName = firstFile?.originalName || 'Untitled Document';
                 const fileInfoHtml = `
-                    <div class="flxtblleft d-flex align-items-center">
-                        <span class="avatar rounded bg-light me-2 mb-2">
-                            <img src="${fileIcon}" style="height:30px;" alt="icon">
-                        </span>
-                        <div class="flxtbltxt">
-                            <p class="fs-14 mb-1 fw-normal">${displayFileName}
-                            ${doc.files?.length > 1 ? ` +${doc.files.length - 1}` : ''}</p>
-                            <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
-                        </div>
+                <div class="flxtblleft d-flex align-items-center" onclick="window.open('/folders/view/${firstFile?._id}', '_blank')" style="cursor: pointer;">
+                    <span class="avatar rounded bg-light me-2 mb-2">
+                        <img src="${fileIcon}" style="height:30px;" alt="icon">
+                    </span>
+                    <div class="flxtbltxt">
+                        <p class="fs-14 mb-1 fw-normal">
+                            ${displayFileName}
+                            ${doc.files?.length > 1 ? ` +${doc.files.length - 1}` : ''}
+                        </p>
+                        <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
                     </div>
-                `;
-
+                </div>
+            `;
+            
                 const row = `
                     <tr>
                         <td>
@@ -887,7 +945,7 @@ $(document).ready(function () {
                         <td><span class="badge badge-md ${statusClassName}">${doc.status || '-'}</span></td>
                     </tr>
                 `;
-
+            
                 tableBody.append(row);
             });
         } catch (err) {

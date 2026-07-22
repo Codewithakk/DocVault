@@ -64,6 +64,7 @@ import { createS3Uploader, s3uploadfolder } from "../middlewares/multer-s3.js";
 import { ParentFolderName } from "../middlewares/parentFolderName.js";
 import { validators } from "../middlewares/validate.js";
 import { uploadWebImages } from "../middlewares/imagesUpload.js";
+import checkAccessPermission from "../middlewares/checkAccessPermissions.js";
 
 const router = express.Router();
 // ---------------------------
@@ -654,13 +655,13 @@ router.get('/session/recent-folders', async (req, res) => {
 // Create a new folder
 router.post('/folders', FolderController.createFolder);
 router.patch('/folderstatus/:folderId', FolderController.updateFolderStatus);
-router.get('/all-folder-files', FolderController.allFoldersFiles);
+router.get('/all-folder-files', checkAccessPermission("folders"), FolderController.allFoldersFiles);
 router.post('/folders/automatic', optionalAuth,FolderController.automaticProjectDepartmentFolderCreate);
 // List folders (optionally filter by parent)
 router.get('/folders', FolderController.listFolders);
 router.get('/folders/all', FolderController.getAllFolders);
 router.get('/folders/summary', FolderController.folderSummary);
-
+router.get('/folders/:folderId/directory', FolderController.folderDirectory);
 // Get folder details along with its contents
 router.get('/folders/details/:id', FolderController.getFolder);
 
@@ -687,7 +688,7 @@ router.get('/folders/recyclebin', FolderController.getRecycleBinFolders);
 router.get('/folders/archived', FolderController.getArchivedFolders);
 
 // Get folder tree structure
-router.get('/folders/tree/structure', FolderController.getFolderTree);
+router.get('/folders/tree/structure', checkAccessPermission("folders"),FolderController.getFolderTree);
 
 // Get folder Count
 router.get('/folders-count', FolderController.getFoldersCount);

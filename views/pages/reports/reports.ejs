@@ -350,7 +350,7 @@ dataSrc: function (json) {
         })();
 
         return {
-            fileName: `${doc.metadata?.fileName || '—'} <br><small>${doc.files?.fileSize || ''}</small>`,
+            fileName: `${doc.files?.originalName || '—'} <br><small>${doc.files?.fileSize || ''}</small>`,
             owner: doc.owner?.name || '—',
             designation: doc.owner?.userDetails?.designation?.name || '—',
             department: doc.department?.name || '—',
@@ -358,7 +358,7 @@ dataSrc: function (json) {
             approver: approversHtml,
             lastModified: new Date(doc.updatedAt).toLocaleString(),
             tags: doc.tags?.join(', ') || '—',
-            metadata: doc.metadata?.fileDescription || '—',
+            metadata: doc.metadata?.fileName || '—',
             sharedWith: doc.sharedWithUsers?.map(u => u.name).join(', ') || '—',
             createdOn: new Date(doc.createdAt).toLocaleString(),
             description: doc.description ? doc.description.replace(/<\/?[^>]+(>|$)/g, '').substring(0, 30) + (doc.description.length > 30 ? '...' : ''): '-',

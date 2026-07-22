@@ -5,10 +5,10 @@
             <!-- Breadcrumb -->
             <div class="d-md-flex d-block align-items-center justify-content-between page-breadcrumb mb-4">
                 <div class="mb-2 mb-md-0">
-                    <h2 class="mb-1 fw-bold text-primary">Document Version Details</h2>
+                    <h2 class="mb-1 fw-bold text-primary">Files Version Details</h2>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="/documents">Documents</a></li>
+                            <li class="breadcrumb-item"><a href="/documents">Files</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Version Details</li>
                         </ol>
                     </nav>
@@ -41,12 +41,12 @@
                             <!-- Accordion for Sections -->
                             <div class="accordion accordion-flush" id="documentAccordion">
 
-                                <!-- Document Information -->
+                                <!-- Files Information -->
                                 <div class="accordion-item border rounded mb-3 shadow-sm">
                                     <h2 class="accordion-header">
                                         <button class="accordion-button fw-semibold" type="button"
                                             data-bs-toggle="collapse" data-bs-target="#collapseInfo">
-                                            <i class="bi bi-info-circle me-2 text-primary"></i> Document Information
+                                            <i class="bi bi-info-circle me-2 text-primary"></i> Files Information
                                         </button>
                                     </h2>
                                     <div id="collapseInfo" class="accordion-collapse collapse show"
@@ -54,7 +54,7 @@
                                         <div class="accordion-body">
                                             <div class="row g-3">
                                                 <div class="col-md-6">
-                                                    <label class="form-label fw-semibold text-muted">Document
+                                                    <label class="form-label fw-semibold text-muted">Files
                                                         Name</label>
                                                     <input type="text" id="fileName"
                                                         class="form-control form-control-sm" readonly>
@@ -463,21 +463,31 @@ noApprovals.style.display = 'block';
                             const li = document.createElement('li');
                             li.className = 'list-group-item';
 
-                            const fileIcon = getFileIcon(f.originalName);
+                            const ext = f.originalName?.split('.').pop()?.toLowerCase() || '';
+                            const isImage = imageExtensions.includes(ext);
+
+                            // Replace with your actual image URL property
+                            const thumbnail = isImage
+                                ? (f.s3Url)
+                                : getFileIcon(f.originalName);
+
                             const fileSizeKB = (f.fileSize / 1024).toFixed(1) + ' KB';
                             const displayName = `${f.originalName}${doc.files.length > 1 ? ` +${doc.files.length - 1}` : ''}`;
 
                             li.innerHTML = `
-            <div class="flxtblleft d-flex align-items-center" style="cursor:pointer;">
-                <span class="avatar rounded bg-light me-2 mb-2">
-                    <img src="${fileIcon}" style="height:30px;" alt="icon">
-                </span>
-                <div class="flxtbltxt">
-                    <p class="fs-14 mb-1 fw-normal">${displayName}</p>
-                    <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
-                </div>
-            </div>
-        `;
+                                <div class="flxtblleft d-flex align-items-center" style="cursor:pointer;">
+                                    <span class="avatar rounded bg-light me-2 mb-2">
+                                        <img src="${thumbnail}"
+                                            style="height:30px;width:30px;object-fit:cover;"
+                                            alt="icon"
+                                            onerror="this.src='${getFileIcon(f.originalName)}'">
+                                    </span>
+                                    <div class="flxtbltxt">
+                                        <p class="fs-14 mb-1 fw-normal">${displayName}</p>
+                                        <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
+                                    </div>
+                                </div>
+                            `;
 
                             // Redirect to folder view on click
                             li.addEventListener('click', () => {

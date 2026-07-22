@@ -183,53 +183,71 @@
                             }
 
                             const docs = result.data.documents.map(doc => {
-                                const { _id, metadata, department, compliance, files, currentVersionLabel, archivedAt } = doc;
-                                const file = doc.files;  // object, not array
+                                    const { _id, metadata, department, compliance, files, currentVersionLabel, archivedAt } = doc;
+                                    const file = doc.files;  // object, not array
 
-                                const retentionStatus = getRetentionStatus(archivedAt, compliance?.expiryDate) || { icon: '', status: '-' };
-                                const retentionDisplay = `
-        <p class="mb-0 d-flex align-items-center fw-medium text-neutral">
-            ${retentionStatus.icon}
-            ${retentionStatus.status}
-        </p>
-    `;
+                                    const retentionStatus = getRetentionStatus(archivedAt, compliance?.expiryDate) || { icon: '', status: '-' };
+                                    const retentionDisplay = `
+                                        <p class="mb-0 d-flex align-items-center fw-medium text-neutral">
+                                            ${retentionStatus.icon}
+                                            ${retentionStatus.status}
+                                        </p>
+                                    `;
 
-                                const fileName = metadata?.fileName || file?.originalName || 'Untitled';
-                                const fileSizeKB = file?.fileSize || '—';  // already includes "KB"
-                                const version = currentVersionLabel ? ` <span class="text-success">v${currentVersionLabel}</span>` : '';
-                                const fileIcon = getFileIcon(fileName);
-                                const expiry = compliance?.expiryDate ? formatDateTime(compliance.expiryDate) : 'N/A';
-                                const retention = retentionDisplay;
+                                    const fileName = file?.originalName || metadata?.fileName || 'Untitled';
+                                    const fileSizeKB = file?.fileSize || '—';  // already includes "KB"
+                                    const version = currentVersionLabel ? ` <span class="text-success">v${currentVersionLabel}</span>` : '';
+                                    
+                                    // Get file extension and determine if it's an image
+                                    const ext = file?.originalName?.split('.').pop()?.toLowerCase() || '';
+                                    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
+                                    const isImage = imageExtensions.includes(ext);
+                                    const imagePath = file?.fileUrl || '';
+                                    const fileId = file?._id || _id || '';
+                                    
+                                    // For images, use the actual image URL; for other files, use icon
+                                    let thumbnailSrc;
+                                    if (isImage && imagePath) {
+                                        thumbnailSrc = imagePath;
+                                    } else {
+                                        thumbnailSrc = getFileIcon(fileName);
+                                    }
+                                    
+                                    const expiry = compliance?.expiryDate ? formatDateTime(compliance.expiryDate) : 'N/A';
+                                    const retention = retentionDisplay;
 
-                                const isCompliant = compliance?.isCompliance
-                                    ? `<p class="text-success d-flex align-items-center gap-2">
-            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle" style="width: 28px; height: 28px;">
-                <i class="ti ti-check"></i>
-            </span> Compliant
-           </p>`
-                                    : `<p class="text-danger d-flex align-items-center gap-2">
-            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle" style="width: 28px; height: 28px;">
-                <i class="ti ti-x"></i>
-            </span> Non-Compliant
-           </p>`;
+                                    const isCompliant = compliance?.isCompliance
+                                        ? `<p class="text-success d-flex align-items-center gap-2">
+                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle" style="width: 28px; height: 28px;">
+                                                <i class="ti ti-check"></i>
+                                            </span> Compliant
+                                        </p>`
+                                        : `<p class="text-danger d-flex align-items-center gap-2">
+                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle" style="width: 28px; height: 28px;">
+                                                <i class="ti ti-x"></i>
+                                            </span> Non-Compliant
+                                        </p>`;
 
-                                return [  // <-- ADD return HERE
-                                    buildActions(doc),
-                                    `<div class="flxtblleft">
-            <span class="avatar rounded bg-light mb-2">
-                <img src="${fileIcon}" alt="file icon">
-            </span>
-            <div class="flxtbltxt">
-                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName}${version}</p>
-                <span class="fs-11 fw-light text-black">${fileSizeKB}</span>  <!-- fixed variable name -->
-            </div>
-        </div>`,
-                                    department?.name || 'N/A',
-                                    isCompliant,
-                                    retention,
-                                    expiry
-                                ];
-                            });
+                                    return [
+                                        buildActions(doc),
+                                        `<div class="flxtblleft" style="cursor: pointer;" onclick="window.open('/folders/view/${fileId}', '_blank')">
+                                            <span class="avatar rounded bg-light mb-2">
+                                                <img src="${thumbnailSrc}" 
+                                                    alt="file icon" 
+                                                    style="width: 32px; height: 32px; object-fit: cover;"
+                                                    onerror="this.src='${getFileIcon('default')}'">
+                                            </span>
+                                            <div class="flxtbltxt">
+                                                <p class="fs-14 mb-1 fw-normal text-neutral">${fileName}${version}</p>
+                                                <span class="fs-11 fw-light text-black">${fileSizeKB}</span>
+                                            </div>
+                                        </div>`,
+                                        department?.name || 'N/A',
+                                        isCompliant,
+                                        retention,
+                                        expiry
+                                    ];
+                                });
                             callback({
                                 data: docs,
                                 recordsTotal: result.data.pagination.totalDocuments,

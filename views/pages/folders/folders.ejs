@@ -185,7 +185,7 @@
 									</div>
 									<div class="dashcrd_txt" id="documentCard" style="cursor: pointer;">
 										<h3 class="fs-32 fw-medium mb-2" id="approvedDocs">12</h3>
-										<h6 class="fs-16 fw-medium text-dark mb-1">With Documents</h6>
+										<h6 class="fs-16 fw-medium text-dark mb-1">With Files</h6>
 										<span class="fs-12 fw-medium text-success">
 											<i class="ti ti-trending-up"></i>8%
 											<span class="text-dark">from last month</span>
@@ -238,28 +238,31 @@
 				</div>
 			</div>
 
-			<div class="d-flex gap-2 mb-4 justify-content-between align-items-end">
-				<div class="filtr_left d-flex gap-4 align-items-center w-50">
-					<div class="position-relative w-40 search_folderbar">
+			<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
+				<!-- Left -->
+				<div class="filtr_left d-flex align-items-center flex-wrap gap-3 flex-grow-1">
+			
+					<div class="position-relative search_folderbar" style="min-width:300px; max-width:400px; flex:1;">
 						<input type="text" name="q" id="SearchFolderInput" class="form-control"
 							placeholder="Search by doc, tag, metadata.." value="">
 						<span class="input-icon-addon">
 							<i class="ti ti-search"></i>
 						</span>
 					</div>
-					<div class="mb-0">
-						<select id="departmentFilter" class="form-select select2" style="width: 200px;">
+			
+					<div>
+						<select id="departmentFilter" class="form-select select2" style="width:200px;">
 							<option value="">All Departments</option>
 						</select>
 					</div>
-					<div class="mb-0 position-relative">
-						<!-- Filter Button -->
+			
+					<div class="position-relative">
 						<button class="btn btn-outline-primary" data-bs-toggle="dropdown">
 							<i class="ti ti-filter"></i> Filters
 						</button>
-
+			
 						<ul class="dropdown-menu" data-bs-auto-close="outside">
-							<!-- VIEW -->
 							<li>
 								<a class="dropdown-item view-folder" href="#" data-filter="lastView">
 									<i class="ti ti-eye"></i> Last View
@@ -272,20 +275,34 @@
 							</li>
 						</ul>
 					</div>
+			
 				</div>
-				<div class="filtr_right">
-					<div class="dropdown w-100 w-sm-auto">
-						<div class="input-group">
-							<span class="input-group-text border">Sort by:</span>
-							<select id="recentActivitySort" class="form-select border text-black">
-								<option value="name_asc">A-Z</option>
-								<option value="name_desc">Z-A</option>
-								<option value="updatedAt_desc">Date (Newest)</option>
-								<option value="updatedAt_asc">Date (Oldest)</option>
-							</select>
-						</div>
+			
+				<!-- Right -->
+				<div class="filtr_right d-flex align-items-center gap-2">
+			
+					<button
+					type="button"
+					class="btn btn-outline-primary d-flex align-items-center justify-content-center view-btn"
+					data-bs-toggle="tooltip"
+					data-bs-placement="top"
+					title="Folders List"
+					onclick="window.location.href='/folders-files?view=list'">
+					<i class="ti ti-layout-list"></i>
+				</button>
+					<div class="input-group" style="width:220px;">
+						<span class="input-group-text border">Sort by:</span>
+						<select id="recentActivitySort" class="form-select border text-black">
+							<option value="name_asc">A-Z</option>
+							<option value="name_desc">Z-A</option>
+							<option value="updatedAt_desc">Date (Newest)</option>
+							<option value="updatedAt_asc">Date (Oldest)</option>
+						</select>
 					</div>
+			
+			
 				</div>
+			
 			</div>
 
 
@@ -390,9 +407,44 @@
 				currentFolderDepartmentId: null,
 				currentShow: ''
 			};
+			
+			// ============================================
+			// GET FOLDER ID FROM URL PARAMETER
+			// ============================================
+			const urlParams = new URLSearchParams(window.location.search);
+			const initialFolderId = urlParams.get('folder');
+			
 			document.getElementById('documentCard').addEventListener('click', function () { window.location.href = '/documents/list';});
 			let folderTreeCache = { key: null, data: null };
-		
+			// Track folder visit when a folder is opened
+async function trackFolderVisit(folderId, projectId, departmentId) {
+    try {
+        const response = await fetch('/api/session/track-folder-visit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                folderId: folderId,
+                projectId: projectId,
+                departmentId: departmentId
+            }),
+            credentials: 'include' // Important for session handling
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.warn('Failed to track folder visit:', data.message);
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Error tracking folder visit:', error);
+        // Don't block the user experience if tracking fails
+        return null;
+    }
+}
 			function getFolderCacheKey() {
 				return JSON.stringify({
 					projectId,
@@ -400,7 +452,8 @@
 					searchQuery,
 					currentSort,
 					currentFilter,
-					currentShow: folderState.currentShow
+					currentShow: folderState.currentShow,
+					initialFolderId
 				});
 			}
 		
@@ -663,6 +716,9 @@
 				} else {
 					queryParams.append("show", folderState.parentOnly ? "true" : "false");
 				}
+				if (initialFolderId) {
+					queryParams.append("folderId", initialFolderId);
+				}
 				if (forceRefetch) {
 					queryParams.append("_ts", Date.now());
 				}
@@ -879,7 +935,21 @@
 		
 					const subfolders = getSubfolders(allFolders, parentFolderId);
 					const allFilesInThisFolderAndSubfolders = collectAllFilesRecursively(allFolders, parentFolderId);
-		
+					if (parentFolderId) {
+						const currentFolderNode = findFolderById(allFolders, parentFolderId);
+						const departmentId = currentFolderNode?.departmentId?._id || 
+											currentFolderNode?.departmentId || 
+											folderState.currentFolderDepartmentId || 
+											selectedDepartment || 
+											null;
+						
+						trackFolderVisit(
+							parentFolderId,
+							projectId || document.getElementById("folderProjectName")?.value || null,
+							departmentId
+						);
+					}
+
 					folderState.currentFolderId = parentFolderId;
 					folderState.selectedFolders = parentPath;
 		
@@ -945,12 +1015,12 @@
 							<p class="mb-2 d-flex align-items-center gap-3">
 							<span>
 								<i class="ti ti-folder me-1 fs-16 text-warning"></i>
-								${folder?.totalFolders ?? 0} Folders
+								${folder?.subfolderCount ?? 0} Folders
 							</span>
 
 							<span>
 								<i class="ti ti-files me-1 fs-16 text-primary"></i>
-								${folder?.totalDocument ?? 0} Files
+								${folder?.fileCount ?? 0} Files
 							</span>
 						</p>
 						<p class="mb-2">
@@ -1014,13 +1084,25 @@
 						</div>
 					`;
 		
-						if (!isUserBlocked && (canView || isSuperAdmin)) {
+					if (!isUserBlocked && (canView || isSuperAdmin)) {
 							if (isMobile) {
-								div.addEventListener("click", () => {
+								div.addEventListener("click", async () => {
+									// Track folder visit before navigating
+									await trackFolderVisit(
+										folder._id,
+										projectId || document.getElementById("folderProjectName")?.value,
+										folder.departmentId?._id || selectedDepartment
+									);
 									loadFolders(folder._id, [...parentPath, { id: folder._id, name: folder.name }]);
 								});
-							} else {
-								div.addEventListener("dblclick", () => {
+							}  else {
+								div.addEventListener("dblclick", async () => {
+									// Track folder visit before navigating
+									await trackFolderVisit(
+										folder._id,
+										projectId || document.getElementById("folderProjectName")?.value,
+										folder.departmentId?._id || selectedDepartment
+									);
 									loadFolders(folder._id, [...parentPath, { id: folder._id, name: folder.name }]);
 								});
 							}
@@ -1267,7 +1349,7 @@
 					setTimeout(() => Swal.close(), 1800);
 				}
 			});
-		
+	
 			// ============================================
 			// FOLDER FORM SUBMIT
 			// ============================================

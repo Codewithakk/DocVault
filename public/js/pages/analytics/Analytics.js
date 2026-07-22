@@ -88,6 +88,126 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
 }
 
+async function loadStorageData(projectId = '') {
+    try {
+        const url = `/api/myStorage`;
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // Use the percentage directly from API
+            const usedPercentage = data.usedPercentage || 0;
+            const remainingPercentage = data.remainingPercentage || 100;
+            
+            // Update progress bar (show used percentage)
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${usedPercentage}%`;
+                progressBar.setAttribute('aria-valuenow', usedPercentage);
+                
+                // Color coding based on usage
+                if (usedPercentage > 90) {
+                    progressBar.className = 'progress-bar bg-danger rounded';
+                } else if (usedPercentage > 75) {
+                    progressBar.className = 'progress-bar bg-warning rounded';
+                } else {
+                    progressBar.className = 'progress-bar bg-info rounded';
+                }
+            }
+            
+            // Update storage summary text
+            const summaryText = document.querySelector('.d-flex.align-items-center.justify-content-between p:first-child');
+            if (summaryText) {
+                const usedGB = data.usedStorage || 0;
+                const totalGB = data.totalStorage || 0;
+                summaryText.textContent = `${usedGB.toFixed(2)} GB used of ${totalGB.toFixed(2)} GB`;
+            }
+            
+            // Update percentage text
+            const percentageText = document.querySelector('.d-flex.align-items-center.justify-content-between p.text-title');
+            if (percentageText) {
+                percentageText.textContent = `${Math.round(usedPercentage)}%`;
+            }
+            
+            // Update storage distribution
+            updateStorageDistribution(data);
+        } else {
+            console.error('Failed to load storage data:', result.message);
+            showStorageError();
+        }
+    } catch (error) {
+        console.error('Error loading storage data:', error);
+        showStorageError();
+    }
+}
+
+// Helper function to show error state
+function showStorageError() {
+    const progressBar = document.querySelector('.progress-bar');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+    const summaryText = document.querySelector('.d-flex.align-items-center.justify-content-between p:first-child');
+    if (summaryText) {
+        summaryText.textContent = 'Error loading storage data';
+    }
+    const percentageText = document.querySelector('.d-flex.align-items-center.justify-content-between p.text-title');
+    if (percentageText) {
+        percentageText.textContent = '0%';
+    }
+}
+
+function updateStorageDistribution(data) {
+    const folderWraps = document.querySelectorAll('.folder-wrap');
+    
+    if (folderWraps.length >= 3) {
+        // Get storage values in GB - use the exact values from API
+        const docSize = data.documents || 0;
+        const mediaSize = data.media || 0;
+        const othersSize = data.others || 0;
+        
+        // Get the percentage values from API (optional - if you want to show percentages)
+        const docPercentage = data.documentsPercentage || 0;
+        const mediaPercentage = data.mediaPercentage || 0;
+        const othersPercentage = data.othersPercentage || 0;
+        
+        // Get counts
+        const docCount = data.documentsCount || 0;
+        const mediaCount = data.mediaCount || 0;
+        const othersCount = data.othersCount || 0;
+        
+        // Update the h6 elements with GB values
+        // For very small values, show in MB instead of GB
+        const docDisplay = docSize < 0.001 ? `${(docSize * 1024).toFixed(2)} MB` : `${docSize.toFixed(2)} GB`;
+        const mediaDisplay = mediaSize < 0.001 ? `${(mediaSize * 1024).toFixed(2)} MB` : `${mediaSize.toFixed(2)} GB`;
+        const othersDisplay = othersSize < 0.001 ? `${(othersSize * 1024).toFixed(2)} MB` : `${othersSize.toFixed(2)} GB`;
+        
+        folderWraps[0].querySelector('h6').textContent = docDisplay;
+        folderWraps[1].querySelector('h6').textContent = mediaDisplay;
+        folderWraps[2].querySelector('h6').textContent = othersDisplay;
+        
+        // Update the labels with file counts (showing the count from API)
+        const labels = document.querySelectorAll('.folder-wrap .fs-12');
+        if (labels.length >= 3) {
+            // Update the labels to show counts (if you want)
+            // labels[0].textContent = `Files (${docCount} files)`;
+            // labels[1].textContent = `Media (${mediaCount} files)`;
+            // labels[2].textContent = `Others (${othersCount} files)`;
+            
+            // OR update to show percentages
+            // labels[0].textContent = `Files (${docPercentage.toFixed(1)}%)`;
+            // labels[1].textContent = `Media (${mediaPercentage.toFixed(1)}%)`;
+            // labels[2].textContent = `Others (${othersPercentage.toFixed(1)}%)`;
+            
+            // Keep original labels but maybe add count as tooltip or secondary text
+            // Currently keeping the labels as "Files", "Media", "Others"
+        }
+    }
+}
 // =================== Documents ===================
 async function loadDocuments(selectedDept = "", sortBy = "") {
     try {
@@ -112,21 +232,19 @@ async function loadDocuments(selectedDept = "", sortBy = "") {
         }
 
         result.data.documents.forEach(doc => {
-            const { metadata, department, compliance, files = [], archivedAt, docExpiresAt } = doc;
+            const { metadata, department, compliance, files, archivedAt } = doc;
 
-            // Use metadata.fileName as the main display name
-            const displayName = metadata?.fileName?.trim() || 'Untitled Document';
-
-            // Find the latest version file
-            const latestFile = files.reduce((latest, file) => {
-                const currentVer = file.version?.$numberDecimal || file.version || 0;
-                const latestVer = latest.version?.$numberDecimal || latest.version || 0;
-                return Number(currentVer) > Number(latestVer) ? file : latest;
-            }, files[0] || {});
+            // FIX: files is an object, not an array
+            const file = files || {}; 
+            
+            // Use originalName from files object as display name
+            const displayName = file?.originalName?.trim() || metadata?.fileName?.trim() || 'Untitled Document';
+            
             const expiry = compliance?.isCompliance && compliance.expiryDate
                 ? formatDateTime(compliance.expiryDate)
                 : 'N/A';
-            // Call the new function to get the status and icon
+                
+            // Call the function to get the status and icon
             const retentionStatus = getRetentionStatus(archivedAt, compliance?.expiryDate);
             const retentionDisplay = `
     <p class="mb-0 d-flex align-items-center fw-medium text-neutral">
@@ -134,18 +252,27 @@ async function loadDocuments(selectedDept = "", sortBy = "") {
         ${retentionStatus.status}
     </p>
 `;
-            const fileNameForIcon = latestFile?.originalName || '';
-            const fileSizeKB = latestFile?.fileSize
-                ? `${Math.round(latestFile.fileSize / 1024)} KB`
-                : '—';
+            
+            // Get file extension and determine if it's an image
+            const ext = file?.originalName?.split('.').pop()?.toLowerCase() || '';
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
+            const isImage = imageExtensions.includes(ext);
+            const imagePath = file?.fileUrl || '';
+            const fileId = file?._id || doc?._id || '';
+            
+            // For images, use the actual image URL; for other files, use icon
+            let thumbnailSrc;
+            if (isImage && imagePath) {
+                thumbnailSrc = imagePath;
+            } else {
+                thumbnailSrc = fileIcons[ext] || fileIcons.default;
+            }
 
-            const versionLabel = latestFile?.version
-                ? typeof latestFile.version === 'object'
-                    ? latestFile.version.$numberDecimal
-                    : latestFile.version
-                : '1.0';
+            // Format file size - already in KB/MB format from backend
+            const fileSizeKB = file?.fileSize || '—';
 
-            const fileIcon = getFileIcon(fileNameForIcon);
+            const versionLabel = file?.version || '1.0';
+
             const isCompliant = compliance?.isCompliance
                 ? `<p class="text-success d-flex align-items-center gap-2 mb-0">
                         <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle" style="width: 28px; height: 28px;">
@@ -165,33 +292,48 @@ async function loadDocuments(selectedDept = "", sortBy = "") {
                     <button type="button" class="btn border-0" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="ti ti-settings"></i>
                     </button>
-                    <!-- 1. DROPDOWN MENU – add the two new items -->
-<ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
-                    <li><a class="dropdown-item" href="/documents/edit/${doc._id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
-                    <li>
-                        <a class="dropdown-item share-btn" href="#" data-doc-id="${doc._id}"  data-file-id="${doc.files?.[0]?._id || ''}"  data-bs-toggle="modal" data-bs-target="#sharedoc-modal">
-                            <i class="ti ti-share"></i> Share
-                        </a>
-                    </li>
-                    <li>
-<a class="dropdown-item" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#versionhistory-modal">
-    <i class="ti ti-history"></i> Version History
-</a></li>
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-file-id="${doc._id || ''}" data-bs-target="#downloaddoc-modal"><i class="ti ti-download"></i> Download</a></li>
-                    <li><a class="dropdown-item btn-delete" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal"><i class="ti ti-trash"></i> Move to Trash</a></li>
-                    <li><a class="dropdown-item archive-document" href="#"  data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal"><i class="ti ti-archive"></i> Move to Archive</a></li>
-                </ul>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/documents/${doc._id}/versions/view?version=""><i class="ti ti-eye"></i> View</a></li>
+                        <li><a class="dropdown-item" href="/documents/edit/${doc._id}"><i class="ti ti-pencil-minus"></i> Edit</a></li>
+                        <li>
+                            <a class="dropdown-item share-btn" href="#" data-doc-id="${doc._id}" data-file-id="${file?._id || ''}" data-bs-toggle="modal" data-bs-target="#sharedoc-modal">
+                                <i class="ti ti-share"></i> Share
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#versionhistory-modal">
+                                <i class="ti ti-history"></i> Version History
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-file-id="${doc._id || ''}" data-bs-target="#downloaddoc-modal">
+                                <i class="ti ti-download"></i> Download
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item btn-delete" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#trashdoc-modal">
+                                <i class="ti ti-trash"></i> Move to Trash
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item archive-document" href="#" data-id="${doc._id}" data-bs-toggle="modal" data-bs-target="#archivedoc-modal">
+                                <i class="ti ti-archive"></i> Move to Archive
+                            </a>
+                        </li>
+                    </ul>
                 </div>`;
 
-            // --- Row HTML ---
+            // --- Row HTML with click handler on file name ---
             const rowHTML = `
                 <tr>
                     <td>${actionsDropdown}</td>
                     <td>
-                        <div class="flxtblleft">
+                        <div class="flxtblleft" style="cursor: pointer;" onclick="window.open('/folders/view/${fileId}', '_blank')">
                             <span class="avatar rounded bg-light">
-                                <img src="${fileIcon}" alt="icon" style="width: 32px; height: 32px;">
+                                <img src="${thumbnailSrc}" 
+                                     alt="icon" 
+                                     style="width: 32px; height: 32px; object-fit: cover;"
+                                     onerror="this.src='${fileIcons.default}'">
                             </span>
                             <div class="flxtbltxt">
                                 <p class="fs-14 mb-1 fw-medium text-neutral text-truncate" style="max-width: 200px;" title="${escapeHtml(displayName)}">
@@ -204,7 +346,7 @@ async function loadDocuments(selectedDept = "", sortBy = "") {
                     </td>
                     <td><p class="mb-0">${escapeHtml(department?.name || 'N/A')}</p></td>
                     <td>${isCompliant}</td>
-                 <td>${retentionDisplay}</td>
+                    <td>${retentionDisplay}</td>
                     <td><p class="mb-0 tbl_date">${expiry}</p></td>
                 </tr>`;
 
@@ -310,6 +452,7 @@ function updateGrowthBadge(cardSelector, growthPercent) {
 document.addEventListener('DOMContentLoaded', () => {
     let currentDept = "";
     let currentSort = "";
+    
     // Department Filter
     $("#analyticsDepartment").on("change", function () {
         currentDept = $(this).val();
@@ -322,11 +465,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDocuments(currentDept, currentSort);
     });
 
+    // Load all data
     loadDashboardStats();
     loadFileStatusLogs();
     loadDocuments();
     loadAnalyticsStats();
     loadFileUsage();
+    loadStorageData(); // <-- ADD THIS LINE
+    
     document.getElementById('filterRange')?.addEventListener('change', (e) => {
         loadDashboardStats(e.target.value);
     });

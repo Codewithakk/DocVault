@@ -6,7 +6,7 @@
             <!-- Breadcrumb -->
             <div class="d-flex align-items-center justify-content-between page-breadcrumb mb-3">
                 <div class="my-auto mb-2">
-                    <h2 class="mb-1">All Documents ( <span class="totalDoc">10</span> )</h2>
+                    <h2 class="mb-1">All Files ( <span class="totalDoc">10</span> )</h2>
                     <nav>
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item">
@@ -14,7 +14,7 @@
                             </li>
                             <li class="breadcrumb-item">Dashboard</li>
                             <li class="breadcrumb-item">Report</li>
-                            <li class="breadcrumb-item">All Documents</li>
+                            <li class="breadcrumb-item">All Files</li>
                         </ol>
                     </nav>
                 </div>
@@ -31,7 +31,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">All</h5>
                                 <h4 class="fs-21 mb-1">15</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button>
                         <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
@@ -41,7 +41,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">Pending</h5>
                                 <h4 class="fs-21 mb-1">5</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button>
                         <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
@@ -51,7 +51,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">Approved</h5>
                                 <h4 class="fs-21 mb-1">10</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button>
                         <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
@@ -61,7 +61,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">Rejected</h5>
                                 <h4 class="fs-21 mb-1">0</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button>
                         <!-- <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
@@ -71,7 +71,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">Draft</h5>
                                 <h4 class="fs-21 mb-1">1</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button> -->
                         <button type="button" class="d-flex gap-2 align-items-center btn btn-outline-light shadow-sm rounded-3 status-tab">
@@ -81,7 +81,7 @@
                             <div class="fltrtxt text-start">
                                 <h5 class="fs-14 mb-1 fw-medium">Compliance and Retention</h5>
                                 <h4 class="fs-21 mb-1">0</h4>
-                                <p class="text-gray-7 fw-normal">Documents</p>
+                                <p class="text-gray-7 fw-normal">Files</p>
                             </div>                            
                         </button>
                     </div>
@@ -179,7 +179,7 @@
                         </div>
             </div>
 
-            <!-- Documents Table -->
+            <!-- Files Table -->
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive" id="documentsTableWrapper">
@@ -193,8 +193,8 @@
                                     <th>Metadata</th>
                                     <th>Last Modified on</th>
                                     <th>Owner</th>
-                                    <th>Department</th>
                                     <th>Project Name</th>
+                                    <th>Department</th>
                                     <th>Shared With</th>
                                     <th>Donor</th>
                                     <th>Vendor</th>
@@ -230,7 +230,7 @@
             <script>
                 (function ($) {
                     "use strict";
-            
+        
                     const urlParams = new URLSearchParams(window.location.search);
                     const departmentIdFromUrl = urlParams.get('departmentId'); 
             
@@ -247,18 +247,17 @@
                     const modalEl = document.getElementById('addMemberModal');
                     const modal = new bootstrap.Modal(modalEl);
                     const memberSelect = document.getElementById('approverSelect');
-                    const fileIcons = {
-                        ppt: "/img/icons/fn1.png",
-                        pptx: "/img/icons/fn1.png",
-                        doc: "/img/icons/fn2.png",
-                        docx: "/img/icons/fn2.png",
-                        xls: "/img/icons/fn3.png",
-                        xlsx: "/img/icons/fn3.png",
-                        pdf: "/img/icons/fn4.png",
-                        default: "/img/icons/fn1.png"
-                    };
+                    // const fileIcons = {
+                    //     ppt: "/img/icons/fn1.png",
+                    //     pptx: "/img/icons/fn1.png",
+                    //     doc: "/img/icons/fn2.png",
+                    //     docx: "/img/icons/fn2.png",
+                    //     xls: "/img/icons/fn3.png",
+                    //     xlsx: "/img/icons/fn3.png",
+                    //     pdf: "/img/icons/fn4.png",
+                    //     default: "/img/icons/fn1.png"
+                    // };
                     let selectedDateRange = null;
-            
                     // === DOCUMENT COUNTS INTEGRATION ===
                     async function updateDocumentCounts() {
                         try {
@@ -300,10 +299,7 @@
                                         else if (label === 'Approved') count = counts.Approved || 0;
                                         else if (label === 'Rejected') count = counts.Rejected || 0;
                                         else if (label === 'Draft') count = counts.Draft || 0;
-                                        else if (label === 'Compliance and Retention') {
-                                            // For compliance, we might need a different endpoint or calculation
-                                            // For now, we'll keep it as 0 or you can calculate from filtered data
-                                            count = 0;
+                                        else if (label === 'Compliance and Retention') { count = counts.Compliance || 0;
                                         }
                                         countElement.textContent = count;
                                     }
@@ -528,8 +524,8 @@
                             { title: 'Tags', orderable: true },
                             { title: 'Last Modified on', orderable: true },
                             { title: 'Owner', orderable: true },
-                            { title: 'Department', orderable: true },
                             { title: 'Project Name', orderable: true },
+                            { title: 'Department', orderable: true },
                             { title: 'Shared With', orderable: false },
                             { title: 'Donor', orderable: true },
                             { title: 'Vendor', orderable: true },
@@ -670,7 +666,7 @@
                             })()
                             : '-';
             
-                        const metadata = doc.metadata ? `${doc.metadata.fileName || '-'}, ${doc.metadata.fileDescription || '-'}` : '-';
+                        const metadata = doc.metadata ? `${doc.metadata.fileName || '-'}` : '-';
                         const sharedWith = doc.sharedWithUsers?.length
                             ? (() => {
                                 const users = doc.sharedWithUsers.slice(0, 3);
@@ -706,7 +702,15 @@
                         const currentVersion = currentVersionLabel !== null
                             ? `v${currentVersionLabel.toFixed(1)}`
                             : '-';
-            
+                            // Event delegation for document file clicks
+                        $(document).on('click', '.document-file-icon, .document-file-name', function(e) {
+                            e.preventDefault();
+                            const $parent = $(this).closest('.document-file');
+                            const fileId = $parent.data('file-id');
+                            if (fileId) {
+                                window.open(`/folders/view/${fileId}`, '_blank');
+                            }
+                        });
                         let allVersions = [];
             
                         if (currentVersionLabel !== null) {
@@ -722,17 +726,42 @@
                                 <div><strong>Current Version:</strong> ${currentVersion}</div>
                                 <div><strong>Versions:</strong> ${allVersions.join(', ')}</div>
                             </div>`;
-                        const filesInfo = doc?.files
-                            ? `<div class="d-flex align-items-center">
-                                    <span class="avatar rounded bg-light me-2">
-                                        <img src="${fileIcons[doc?.files?.originalName?.split('.')?.pop()?.toLowerCase()] || fileIcons.default}" style="height:30px;">
-                                    </span>
-                                    <div>
-                                         <p class="mb-0 text-dark">${doc?.metadata?.fileName || 'N/A'}</p>
-                                        <small class="text-muted">${doc?.files.fileSize}</small>
-                                    </div>
-                                </div>`
-                            : '-';
+                        const ext = doc?.files?.originalName?.split('.').pop()?.toLowerCase() || '';
+                        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'];
+                        const isImage = imageExtensions.includes(ext);
+                        
+                        // Get the correct file URL/path
+                        const imagePath = doc?.files?.fileUrl || doc?.files?.url || '';
+                        const fileId = doc?.files?._id || doc?._id || '';
+                        
+                        // For images, use the actual image URL; for other files, use icon
+                        let thumbnailSrc;
+                        if (isImage && imagePath) {
+                            thumbnailSrc = imagePath;
+                        } else {
+                            thumbnailSrc = fileIcons[ext] || fileIcons.default;
+                        }
+
+                        // Format file size
+                        const fileSize = doc?.files?.fileSize 
+                            ? (typeof doc.files.fileSize === 'number' 
+                                ? (doc.files.fileSize / 1024).toFixed(1) + ' KB' 
+                                : doc.files.fileSize)
+                            : 'N/A';
+
+                            const filesInfo = doc?.files
+    ? `<div class="d-flex align-items-center document-file" data-file-id="${fileId}">
+        <span class="avatar rounded bg-light me-2 document-file-icon" style="cursor:pointer">
+            <img src="${thumbnailSrc}"
+                style="height:30px;width:30px;object-fit:cover;"
+                onerror="this.src='${fileIcons.default}'">
+        </span>
+        <div>
+            <p class="mb-0 text-dark document-file-name" style="cursor:pointer">${doc?.files?.originalName || 'N/A'}</p>
+            <small class="text-muted">${fileSize}</small>
+        </div>
+    </div>`
+    : '-';
                         let dropdown;
                         if (hasFullAccess) {
                             dropdown = `
@@ -774,8 +803,8 @@
                             tags,
                             lastModified,
                             owner,
-                            departmentName,
                             projectName,
+                            departmentName,
                             sharedWith,
                             donor,
                             vendor,

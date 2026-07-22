@@ -639,7 +639,10 @@ export const getDocuments = async (req, res) => {
 
             // For admin and user, they can only see documents they own
             if (profile_type === "admin" || profile_type === "user") {
-                accessRules.push({ owner: userId });
+                accessRules.push(
+                    { owner: userId },
+                    { sharedWithUsers: userId }
+                );
             }
 
             // For vendor, they can see approved documents where they are the vendor
@@ -881,7 +884,7 @@ export const getDocuments = async (req, res) => {
             .populate("documentDonor", "name profile_image")
             .populate("documentVendor", "name profile_image")
             .populate("sharedWithUsers", "name profile_image email")
-            .populate("files", "originalName version fileSize")
+            .populate("files", "originalName version fileSize s3Url")
             .populate({
                 path: "documentApprovalAuthority.userId",
                 select: "name email profile_image profile_type userDetails.employee_id"
@@ -891,25 +894,43 @@ export const getDocuments = async (req, res) => {
             .limit(limitNum)
             .lean();
 
-        documents.forEach(doc => {
-            const filesArray = doc.files || [];
-            const totalBytes = filesArray.reduce((sum, file) => {
-                return sum + (Number(file.fileSize) || 0);
-            }, 0);
+            const fileWiseDocuments = [];
 
-            const formatted = formatTotalFileSize(totalBytes);
-            const firstFile = filesArray[0] || {};
-            const firstFileOriginalName = firstFile.originalName || null;
-            const firstFileId = firstFile._id || null;
-            doc.files = {
-                _id: firstFileId,
-                originalName: firstFileOriginalName,
-                version: doc.currentVersionLabel || null,
-                fileSize: formatted
-            };
-        });
+            documents.forEach(doc => {
+                doc.isOwner = doc.owner?._id?.toString() === userId?.toString();
+            
+                const filesArray = doc.files || [];
+            
+                // If document has no files, keep one record
+                if (filesArray.length === 0) {
+                    fileWiseDocuments.push({
+                        ...doc,
+                        files: null
+                    });
+                    return;
+                }
+            
+                filesArray.forEach(file => {
+                    fileWiseDocuments.push({
+                        ...doc,
+                        files: {
+                            _id: file._id,
+                            originalName: file.originalName,
+                            version: file.version?.toString() || doc.currentVersionLabel,
+                            fileSize: formatTotalFileSize(Number(file.fileSize || 0)),
+                            fileUrl: file?.s3Url,
+                        }
+                    });
+                });
+            });
+            
+            documents = fileWiseDocuments;
         
-        const totalDocuments = await Document.countDocuments(filter);
+            const docs = await Document.find(filter).select("files").lean();
+
+            const totalDocuments = docs.reduce((count, doc) => {
+                return count + Math.max(doc.files?.length || 0, 1);
+            }, 0);
 
         return successResponse(res, {
             documents,
@@ -927,16 +948,16 @@ export const getDocuments = async (req, res) => {
         return errorResponse(res, error, "Failed to retrieve documents");
     }
 };
-export const getDocumentsCount = async (req, res) => { 
-    try {        
+export const getDocumentsCount = async (req, res) => {
+    try {
         const { department, project, status } = req.query;
         const userId = req.user?._id;
         const profileType = req.user?.profile_type;
 
         // --- Build base filter ---
-        const filter = { 
-            isDeleted: false, 
-            isArchived: false 
+        const filter = {
+            isDeleted: false,
+            isArchived: false
         };
 
         // --- FIXED ACCESS CONTROL (same as getDocuments) ---
@@ -944,20 +965,23 @@ export const getDocumentsCount = async (req, res) => {
             const accessRules = [];
 
             if (profileType === "admin" || profileType === "user") {
-                accessRules.push({ owner: new mongoose.Types.ObjectId(userId) });
+                accessRules.push(
+                    { owner: new mongoose.Types.ObjectId(userId) },
+                    { sharedWithUsers: new mongoose.Types.ObjectId(userId) }
+                );
             }
 
             if (profileType === "vendor") {
-                accessRules.push({ 
+                accessRules.push({
                     documentVendor: new mongoose.Types.ObjectId(userId),
-                    status: "Approved" 
+                    status: "Approved"
                 });
             }
 
             if (profileType === "donor") {
-                accessRules.push({ 
+                accessRules.push({
                     documentDonor: new mongoose.Types.ObjectId(userId),
-                    status: "Approved" 
+                    status: "Approved"
                 });
             }
 
@@ -970,11 +994,10 @@ export const getDocumentsCount = async (req, res) => {
             }
         }
 
-        // --- NEW: Status filter ---
+        // --- Status filter ---
         if (status) {
             const normalizedStatus = status.replace(/\s+/g, ' ').trim();
-            
-            // Handle special status types
+
             if (normalizedStatus === "uploaded") {
                 const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
                 const startOfNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
@@ -984,7 +1007,6 @@ export const getDocumentsCount = async (req, res) => {
                 delete filter.isDeleted;
                 delete filter.isArchived;
                 if (filter.$or) {
-                    // If we already have $or, combine with $and
                     filter.$and = filter.$and || [];
                     filter.$and.push({
                         $or: [
@@ -1006,9 +1028,8 @@ export const getDocumentsCount = async (req, res) => {
             }
             else if (normalizedStatus === "Compliance and Retention") {
                 filter["compliance.isCompliance"] = true;
-            } 
+            }
             else {
-                // Regular status filter
                 filter.status = normalizedStatus;
             }
         }
@@ -1018,51 +1039,72 @@ export const getDocumentsCount = async (req, res) => {
             const deptArray = department
                 .split(',')
                 .filter(id => mongoose.Types.ObjectId.isValid(id));
-            
+
             if (deptArray.length > 0) {
-                filter.department = deptArray.length === 1 
-                    ? new mongoose.Types.ObjectId(deptArray[0]) 
+                filter.department = deptArray.length === 1
+                    ? new mongoose.Types.ObjectId(deptArray[0])
                     : { $in: deptArray.map(id => new mongoose.Types.ObjectId(id)) };
             }
         }
 
         // --- Project filter ---
         const selectedProject = project || req.session?.selectedProject;
-        
+
         if (selectedProject && mongoose.Types.ObjectId.isValid(selectedProject)) {
             filter.project = new mongoose.Types.ObjectId(selectedProject);
         }
 
+        /** -------------------------------------------------------------
+         * FILE-COUNT HELPER
+         *
+         * The document list endpoint (getDocuments) now shows one row per
+         * FILE, not per document (a doc with 2 files = 2 rows, a doc with
+         * 0 files = 1 row with files: null). So these counts need to add
+         * up the same way: each document contributes MAX(files.length, 1)
+         * to whichever bucket it falls into, instead of contributing 1.
+         * ------------------------------------------------------------- */
+        const fileCountProjection = {
+            fileCount: {
+                $let: {
+                    vars: { size: { $size: { $ifNull: ["$files", []] } } },
+                    in: { $cond: [{ $gt: ["$$size", 0] }, "$$size", 1] }
+                }
+            }
+        };
+
         // --- Get ALL matching documents for debugging ---
         const allMatchingDocs = await Document.find(filter)
-            .select('_id status name department project owner documentVendor documentDonor')
+            .select('_id status name department project owner documentVendor documentDonor files')
             .lean();
 
         if (allMatchingDocs.length > 0) {
             allMatchingDocs.forEach((doc, index) => {
-                console.log(`  ${index + 1}. ID: ${doc._id}, Status: ${doc.status}, Name: ${doc.name || 'N/A'}`);
+                const fileCount = doc.files?.length > 0 ? doc.files.length : 1;
+                console.log(`  ${index + 1}. ID: ${doc._id}, Status: ${doc.status}, Name: ${doc.name || 'N/A'}, Files: ${fileCount}`);
             });
         } else {
             console.log('⚠️ No matching documents found!');
         }
 
         const [statusResult, complianceResult] = await Promise.all([
-            // Get all status counts in one go
+            // File-count per status (not document-count)
             Document.aggregate([
                 { $match: filter },
-                { 
-                    $group: { 
-                        _id: "$status", 
-                        count: { $sum: 1 } 
-                    } 
+                { $project: { status: 1, ...fileCountProjection } },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: "$fileCount" }
+                    }
                 },
                 { $sort: { _id: 1 } }
             ]),
-            // Get compliance count
-            Document.countDocuments({
-                ...filter,
-                "compliance.isCompliance": true
-            })
+            // File-count for compliance docs (not document-count)
+            Document.aggregate([
+                { $match: { ...filter, "compliance.isCompliance": true } },
+                { $project: fileCountProjection },
+                { $group: { _id: null, count: { $sum: "$fileCount" } } }
+            ]).then(res => res[0]?.count || 0)
         ]);
 
         // --- Build response with defaults ---
@@ -1073,9 +1115,8 @@ export const getDocumentsCount = async (req, res) => {
             Rejected: 0
         };
 
-        // Map status results
         statusResult.forEach(({ _id, count }) => {
-            console.log(`  ↳ Processing status "${_id}": ${count} documents`);
+            console.log(`  ↳ Processing status "${_id}": ${count} files`);
             if (statusMap.hasOwnProperty(_id)) {
                 statusMap[_id] = count;
             } else {
@@ -1083,27 +1124,49 @@ export const getDocumentsCount = async (req, res) => {
             }
         });
 
-        // Calculate totals
+        // Calculate totals (now file totals)
         const totalCount = statusResult.reduce((sum, item) => sum + item.count, 0);
         const allCount = statusMap.Draft + statusMap.Pending + statusMap.Approved + statusMap.Rejected;
 
-        // --- Get detailed status breakdown with document IDs ---
+        // --- Get detailed status breakdown, one entry per FILE ---
         const detailedStatusBreakdown = {};
-        
-        // If a specific status is requested, only show that status in details
+
         const statusesToShow = status ? [status] : ['Draft', 'Pending', 'Approved', 'Rejected'];
-        
+
         for (const statusType of statusesToShow) {
             const docs = await Document.find({ ...filter, status: statusType })
-                .select('_id metadata status')
+                .select('_id metadata status files')
+                .populate({ path: "files", select: "originalName" })
                 .lean();
-            
-            if (docs.length > 0) {
-                detailedStatusBreakdown[statusType] = docs.map(doc => ({
-                    id: doc._id,
-                    name: doc.metadata || 'Unnamed',
-                    status: doc.status
-                }));
+
+            if (!docs.length) continue;
+
+            const entries = [];
+            for (const doc of docs) {
+                const filesArray = doc.files || [];
+
+                if (!filesArray.length) {
+                    entries.push({
+                        id: doc._id,
+                        documentId: doc._id,
+                        name: doc.metadata || 'Unnamed',
+                        status: doc.status
+                    });
+                    continue;
+                }
+
+                for (const file of filesArray) {
+                    entries.push({
+                        id: file._id,
+                        documentId: doc._id,
+                        name: file.originalName || doc.metadata || 'Unnamed',
+                        status: doc.status
+                    });
+                }
+            }
+
+            if (entries.length) {
+                detailedStatusBreakdown[statusType] = entries;
             }
         }
 
@@ -1281,7 +1344,7 @@ export const getComplianceDocuments = async (req, res) => {
         const skip = (pageNum - 1) * limitNum;
 
         // --- Fetch documents ---
-        const documents = await Document.find(filter)
+        let documents = await Document.find(filter)
             .select(`
                 files updatedAt createdAt wantApprovers signature isDeleted isArchived archivedAt
                 comment sharedWithUsers compliance status metadata tags owner versioning
@@ -1298,7 +1361,7 @@ export const getComplianceDocuments = async (req, res) => {
             .populate("documentDonor", "name profile_image")
             .populate("documentVendor", "name profile_image")
             .populate("sharedWithUsers", "name profile_image email")
-            .populate("files", "originalName version fileSize")
+            .populate("files", "originalName version fileSize s3Url")
             .populate({
                 path: "documentApprovalAuthority.userId",
                 select: "name email profile_image profile_type userDetails.employee_id"
@@ -1308,7 +1371,44 @@ export const getComplianceDocuments = async (req, res) => {
             .limit(limitNum)
             .lean();
 
-        const totalDocuments = await Document.countDocuments(filter);
+        // --- Expand each document into one record per file (same as getDocuments) ---
+        const fileWiseDocuments = [];
+
+        documents.forEach(doc => {
+            doc.isOwner = doc.owner?._id?.toString() === userId?.toString();
+
+            const filesArray = doc.files || [];
+
+            // If document has no files, keep one record
+            if (filesArray.length === 0) {
+                fileWiseDocuments.push({
+                    ...doc,
+                    files: null
+                });
+                return;
+            }
+
+            filesArray.forEach(file => {
+                fileWiseDocuments.push({
+                    ...doc,
+                    files: {
+                        _id: file._id,
+                        originalName: file.originalName,
+                        version: file.version?.toString() || doc.currentVersionLabel,
+                        fileSize: formatTotalFileSize(Number(file.fileSize || 0)),
+                        fileUrl: file?.s3Url,
+                    }
+                });
+            });
+        });
+
+        documents = fileWiseDocuments;
+
+        const docs = await Document.find(filter).select("files").lean();
+
+        const totalDocuments = docs.reduce((count, doc) => {
+            return count + Math.max(doc.files?.length || 0, 1);
+        }, 0);
 
         return successResponse(res, {
             documents,
@@ -3140,7 +3240,7 @@ export const viewDocumentVersion = async (req, res) => {
             .populate("projectManager", 'name email profile_image')
             .populate("documentDonor", 'name email profile_image')
             .populate("documentVendor", 'name email profile_image')
-            .populate("files", 'originalName fileType fileSize fileUrl')
+            .populate("files", 'originalName fileType fileSize s3Url')
             .populate({
                 path: "owner",
                 select: "name email userDetails",
@@ -3165,7 +3265,7 @@ export const viewDocumentVersion = async (req, res) => {
                 { versionNumber: Number(version) }
             ]
         })
-            .populate("files", 'originalName fileType fileSize fileUrl')
+            .populate("files", 'originalName fileType fileSize s3Url')
             .populate("createdBy", "name email")
             .lean();
 
@@ -3187,7 +3287,7 @@ export const viewDocumentVersion = async (req, res) => {
             { path: "projectManager", select: "name email profile_image" },
             { path: "documentDonor", select: "name email profile_image" },
             { path: "documentVendor", select: "name email profile_image" },
-            { path: "files", select: "originalName fileType fileSize fileUrl" },
+            { path: "files", select: "originalName fileType fileSize s3Url" },
 
             {
                 path: "owner",
@@ -5329,7 +5429,6 @@ export const verifyApprovalMail = async (req, res) => {
     }
 };
 
-
 export const getApprovals = async (req, res) => {
     try {
         const { documentId } = req.params;
@@ -5361,19 +5460,26 @@ export const getApprovals = async (req, res) => {
 
         approvals.sort((a, b) => (a.priority || 0) - (b.priority || 0));
 
+        // Process all files instead of just the first one
         const filesArray = document.files || [];
         const totalBytes = filesArray.reduce((sum, file) => sum + (Number(file.fileSize) || 0), 0);
         const formatted = formatTotalFileSize(totalBytes);
-        const firstFile = filesArray[0] || {};
-        const firstFileOriginalName = firstFile.originalName || null;
-        const firstFileId = firstFile._id || null;
 
-        document.files = {
-            _id: firstFileId,
-            originalName: firstFileOriginalName,
+        // Map all files to the desired format
+        const processedFiles = filesArray.map(file => ({
+            _id: file._id || null,
+            originalName: file.originalName || null,
             version: document.currentVersionLabel || null,
-            fileSize: formatted
-        };
+            fileSize: file.fileSize || 0,
+            fileUrl: file.s3Url || null,
+        }));
+
+        // Option 1: Replace files with the processed array
+        document.files = processedFiles;
+
+        // Option 2: Keep the original structure and add a processedFiles field
+        // document.processedFiles = processedFiles;
+        // document.totalFileSize = formatted;
 
         return successResponse(res, { document, approvals }, "Approvals fetched successfully from document");
     } catch (error) {

@@ -42,55 +42,92 @@ export const getDashboardStats = async (req, res) => {
         const user = req.user || req.session.user;
         const userId = new mongoose.Types.ObjectId(user._id);
         const profileType = user.profile_type?.toLowerCase();
- 
+
         const { selectedProjectId } = getSessionFilters(req);
         const filter = req.query.filter || "year";
         /* ------------------ DATE RANGE FROM HELPER ------------------ */
         const range = await getDateRange(filter);
- 
+
         if (!range) {
             return errorResponse(res, {}, "Invalid filter option");
         }
- 
+
         const { start, end } = range;
- 
+
         /* ------------------ PREVIOUS PERIOD RANGE ------------------ */
         const diff = end.getTime() - start.getTime();
         const prevStart = new Date(start.getTime() - diff);
         const prevEnd = new Date(end.getTime() - diff);
- 
+
         /* ------------------ BASE MATCH ------------------ */
         const baseMatch = [
             { isDeleted: { $ne: true } },
             { isArchived: { $ne: true } }
         ];
- 
+
+        // --- ACCESS CONTROL (matches getDocuments / getDocumentsCount) ---
+        // NOTE: the original only checked `owner`, which meant documents
+        // shared with the user (sharedWithUsers) or approved vendor/donor
+        // documents never showed up in this dashboard even though they show
+        // up in the document list. Aligned here so the numbers agree.
         if (profileType !== "superadmin") {
-            baseMatch.push({ owner: userId });
+            if (profileType === "vendor") {
+                baseMatch.push({ documentVendor: userId, status: "Approved" });
+            } else if (profileType === "donor") {
+                baseMatch.push({ documentDonor: userId, status: "Approved" });
+            } else {
+                baseMatch.push({
+                    $or: [
+                        { owner: userId },
+                        { sharedWithUsers: userId }
+                    ]
+                });
+            }
         }
- 
+
         if (selectedProjectId) {
             baseMatch.push({ project: selectedProjectId });
         }
- 
+
         /* ------------------ MATCH CURRENT ------------------ */
         const currentMatch = [
             ...baseMatch,
             { createdAt: { $gte: start, $lte: end } }
         ];
- 
+
         /* ------------------ MATCH PREVIOUS ------------------ */
         const previousMatch = [
             ...baseMatch,
             { createdAt: { $gte: prevStart, $lte: prevEnd } }
         ];
+
+        /* -------------------------------------------------------------
+         * FILE-COUNT PROJECTION
+         *
+         * Document.files is a real, stored array of File references
+         * (see Document schema: files: [{ ref: "File" }]) - no $lookup
+         * needed, $size reads it directly. Each document contributes
+         * MAX(files.length, 1), so a document with zero files still
+         * counts as 1 - matching the list/count endpoints' "files: null"
+         * fallback row.
+         * ------------------------------------------------------------- */
+        const fileCountProjection = {
+            fileCount: {
+                $let: {
+                    vars: { size: { $size: { $ifNull: ["$files", []] } } },
+                    in: { $cond: [{ $gt: ["$$size", 0] }, "$$size", 1] }
+                }
+            }
+        };
+
         /* ------------------ DEPARTMENT WISE COUNT (NO GROWTH) ------------------ */
         const departmentStats = await Document.aggregate([
             { $match: { $and: baseMatch } },
+            { $project: { department: 1, ...fileCountProjection } },
             {
                 $group: {
                     _id: "$department",
-                    count: { $sum: 1 }
+                    count: { $sum: "$fileCount" }
                 }
             },
             {
@@ -111,18 +148,20 @@ export const getDashboardStats = async (req, res) => {
                 }
             }
         ]);
- 
-        /* ------------------ AGGREGATION ------------------ */
+
+        /* ------------------ AGGREGATION (file counts by status) ------------------ */
         const currentStats = await Document.aggregate([
             { $match: { $and: currentMatch } },
-            { $group: { _id: "$status", count: { $sum: 1 } } }
+            { $project: { status: 1, ...fileCountProjection } },
+            { $group: { _id: "$status", count: { $sum: "$fileCount" } } }
         ]);
- 
+
         const previousStats = await Document.aggregate([
             { $match: { $and: previousMatch } },
-            { $group: { _id: "$status", count: { $sum: 1 } } }
+            { $project: { status: 1, ...fileCountProjection } },
+            { $group: { _id: "$status", count: { $sum: "$fileCount" } } }
         ]);
- 
+
         /* ------------------ FORMAT ------------------ */
         const formatStats = (data) => {
             const stats = { total: 0, draft: 0, pending: 0, approved: 0, rejected: 0 };
@@ -133,49 +172,47 @@ export const getDashboardStats = async (req, res) => {
             });
             return stats;
         };
- 
+
         const current = formatStats(currentStats);
         const previous = formatStats(previousStats);
- 
+
         /* ------------------ GROWTH FUNCTION ------------------ */
         const getGrowth = (curr, prev) => {
             if (prev === 0) return curr > 0 ? 100 : 0;
             return ((curr - prev) / prev) * 100;
         };
- 
+
         /* ------------------ RESPONSE ------------------ */
         const response = {
             filter,
             startDate: start,
             endDate: end,
- 
+
             total: current.total,
             totalGrowth: getGrowth(current.total, previous.total),
- 
+
             draft: current.draft,
             draftGrowth: getGrowth(current.draft, previous.draft),
- 
+
             pending: current.pending,
             pendingGrowth: getGrowth(current.pending, previous.pending),
- 
+
             approved: current.approved,
             approvedGrowth: getGrowth(current.approved, previous.approved),
- 
+
             rejected: current.rejected,
             rejectedGrowth: getGrowth(current.rejected, previous.rejected),
- 
+
             departmentDocumentCounts: departmentStats
         };
- 
+
         return successResponse(res, response, "Dashboard stats fetched successfully");
- 
+
     } catch (err) {
         console.error("Dashboard Error:", err);
         return errorResponse(res, err, "Failed to fetch stats");
     }
 };
-
-
 
 export const getFileStatus = async (req, res) => {
     try {

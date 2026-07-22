@@ -14,7 +14,6 @@ const normalizeUrl = (url) => {
 
 const methodMap = { GET: 'read', POST: 'write', PUT: 'write', PATCH: 'write', DELETE: 'delete' };
 
-// 🔥 NEW — FETCH DESIGNATION FOR ALL USER TYPES
 function getUserDesignationId(user) {
     return (
         user?.userDetails?.designation ||

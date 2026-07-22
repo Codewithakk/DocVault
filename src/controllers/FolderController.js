@@ -25,6 +25,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import Designation from '../models/Designation.js';
 import { formatStorage } from '../helper/Common.js';
 import { formatDate, formatFileSize, getFileExtension, getFileIconClass, getFileTypeDisplay, getSharingStatus, isItemShared } from '../helper/CommonHelper.js';
+import checkAccessPermission from '../middlewares/checkAccessPermissions.js';
 //Page controlers
 
 // Folder list by ID
@@ -176,7 +177,8 @@ export const showFoldersandFilesPage = async (req, res) => {
             pageDescription: "Track folder-level permission changes and access events.",
             metaKeywords: "folder permission logs, folder access logs, esangrah audit",
             canonicalUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-            user: req.user
+            user: req.user,
+            projectId: req.query.id || req.session.selectedProject,
         });
 
     } catch (err) {
@@ -516,84 +518,154 @@ export const folderSummary = async (req, res) => {
         const { departmentId } = req.query;
         const selectedYear = req.session?.selectedYear || null;
         const selectedProjectId = req.session?.selectedProject || null;
-        
-        // Base filters
+        const user = req.session.user;
+        const profileType = user?.profile_type;
+        const userId = new mongoose.Types.ObjectId(user._id);
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        let finalProjectId = null;
+        if (selectedProjectId && selectedProjectId !== "all") {
+            finalProjectId = new mongoose.Types.ObjectId(selectedProjectId);
+        }
+
+        // ====================== FOLDER FILTER ======================
         const folderFilter = {
-            status: "active",
-            deletedAt: null
+            isArchived: false,
+            isDeleted: false,
+            parent: { $exists: true, $ne: null }
         };
 
-        const fileFilter = {
-            status: "active"
+        if (finalProjectId) folderFilter.projectId = finalProjectId;
+        if (departmentId && departmentId !== "all") {
+            folderFilter.departmentId = new mongoose.Types.ObjectId(departmentId);
+        }
+
+        // Permission for Folders
+        if (profileType !== "superadmin") {
+            const accessConditions = [
+                { owner: userId },
+                { "permissions.principal": userId }
+            ];
+
+            if (profileType === "vendor") {
+                const vendorFolderIds = await Document.distinct("folderId", {
+                    documentVendor: userId,
+                    isDeleted: false,
+                    isArchived: false,
+                });
+                if (vendorFolderIds.length) accessConditions.push({ _id: { $in: vendorFolderIds } });
+            }
+
+            if (profileType === "donor") {
+                const donorFolderIds = await Document.distinct("folderId", {
+                    documentDonor: userId,
+                    isDeleted: false,
+                    isArchived: false,
+                });
+                if (donorFolderIds.length) accessConditions.push({ _id: { $in: donorFolderIds } });
+            }
+
+            folderFilter.$or = accessConditions;
+        }
+
+        const folders = await Folder.find(folderFilter).select('_id').lean();
+        const folderIds = folders.map(f => f._id);
+
+        // ====================== DOCUMENT FILTER (For accurate file count) ======================
+        const documentMatch = {
+            isDeleted: false,
+            isArchived: false,
         };
 
-        // Department filter
-        if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
-            const deptId = new mongoose.Types.ObjectId(departmentId);
-            folderFilter.departmentId = deptId;
-            fileFilter.departmentId = deptId;
+        if (finalProjectId) {
+            documentMatch.project = finalProjectId;
+        }
+        if (departmentId && departmentId !== "all") {
+            documentMatch.department = new mongoose.Types.ObjectId(departmentId);
         }
 
-        // Project filter
-        if (selectedProjectId && mongoose.Types.ObjectId.isValid(selectedProjectId)) {
-            const projId = new mongoose.Types.ObjectId(selectedProjectId);
-            folderFilter.projectId = projId;
-            fileFilter.projectId = projId;
+        if (profileType !== "superadmin") {
+            documentMatch.$or = [
+                { owner: userId },
+                { sharedWithUsers: userId },
+                { "documentApprovalAuthority.userId": userId }
+            ];
+
+            if (profileType === "vendor") documentMatch.$or.push({ documentVendor: userId });
+            if (profileType === "donor") documentMatch.$or.push({ documentDonor: userId });
         }
 
-        // Year filter
-        if (selectedYear) {
-            const startDate = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
-            const endDate = new Date(`${Number(selectedYear) + 1}-01-01T00:00:00.000Z`);
-            folderFilter.createdAt = { $gte: startDate, $lt: endDate };
-            fileFilter.createdAt = { $gte: startDate, $lt: endDate };
-        }
+        // ====================== FILE COUNT (Using Document.files - Most Accurate) ======================
+        let totalFiles = 0;
 
-        // Execute all queries in parallel
-        const [
-            totalFolders,
-            totalFiles,
-            storageResult,
-            permissions
-        ] = await Promise.all([
-            Folder.countDocuments(folderFilter),
-            File.countDocuments(fileFilter),
-            File.aggregate([
-                { $match: fileFilter },
+        if (folderIds.length > 0 || profileType === "superadmin") {
+            const fileCountResult = await Document.aggregate([
+                { $match: documentMatch },
+                {
+                    $project: {
+                        fileCount: { $size: "$files" }
+                    }
+                },
                 {
                     $group: {
                         _id: null,
-                        totalSize: {
-                            $sum: { $ifNull: ["$fileSize", 0] }
-                        }
+                        totalFiles: { $sum: "$fileCount" }
                     }
                 }
-            ]),
-            Designation.countDocuments({ status: "Active" })
+            ]);
+
+            totalFiles = fileCountResult[0]?.totalFiles || 0;
+        }
+
+        // ====================== STORAGE ======================
+        const storageResult = await File.aggregate([
+            {
+                $match: {
+                    status: "active",
+                    ...(finalProjectId && { projectId: finalProjectId }),
+                    ...(departmentId && departmentId !== "all" && {
+                        departmentId: new mongoose.Types.ObjectId(departmentId)
+                    }),
+                    ...(profileType !== "superadmin" && folderIds.length > 0 && {
+                        folder: { $in: folderIds }
+                    })
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalSize: { $sum: { $ifNull: ["$fileSize", 0] } }
+                }
+            }
         ]);
 
-        // Storage calculations
-        const totalBytes = storageResult.length ? storageResult[0].totalSize : 0;
-        const totalStorageGB = 200;
-    
+        const totalBytes = storageResult[0]?.totalSize || 0;
         const storage = formatStorage(totalBytes);
 
+        // ====================== RESPONSE ======================
         return res.status(200).json({
             success: true,
             message: "Dashboard summary fetched successfully",
             data: {
-                totalFolders,
-                totalFiles,
+                totalFolders: folderIds.length,
+                totalFiles,           // Now consistent with getFoldersCount logic
                 storage,
-                permissions
+                permissions: await Designation.countDocuments({ status: "Active" })
             }
         });
+
     } catch (error) {
         logger.error("Error fetching dashboard summary:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to retrieve dashboard summary",
-            error: error.message
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
         });
     }
 };
@@ -636,6 +708,54 @@ export const listFolders = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error while fetching folders'
+        });
+    }
+};
+
+export const folderDirectory = async (req, res) => {
+    try {
+        const { folderId } = req.params;
+
+        const folder = await Folder.findById(folderId)
+            .populate("ancestors", "name")
+            .lean();
+
+        if (!folder) {
+            return res.status(404).json({
+                success: false,
+                message: "Folder not found"
+            });
+        }
+
+        // Build hierarchy with id and name
+        const hierarchy = [
+            ...(folder.ancestors || []).map((ancestor) => ({
+                id: ancestor._id,
+                name: ancestor.name,
+            })),
+            {
+                id: folder._id,
+                name: folder.name,
+            },
+        ];
+
+        // Optional: string path
+        const folderPath = hierarchy.map((item) => item.name).join("/");
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                path: folderPath,
+                hierarchy,
+            },
+        });
+
+    } catch (err) {
+        logger.error("Folder directory error:", err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching directory",
         });
     }
 };
@@ -849,12 +969,10 @@ export const updateFolderStatus = async (req, res) => {
             entityType: "Folder",
             action: markDeleted ? "RECYCLE" : "RESTORE",
             details: markDeleted
-                ? `Folder moved to recycle bin${
-                      cascadeBool ? " with all subfolders" : ""
-                  }: ${folder.name} by ${req.user?.name}`
-                : `Folder restored${
-                      cascadeBool ? " with all subfolders" : ""
-                  }: ${folder.name} by ${req.user?.name}`,
+                ? `Folder moved to recycle bin${cascadeBool ? " with all subfolders" : ""
+                }: ${folder.name} by ${req.user?.name}`
+                : `Folder restored${cascadeBool ? " with all subfolders" : ""
+                }: ${folder.name} by ${req.user?.name}`,
             meta: {
                 cascade: cascadeBool,
                 previousStatus: markDeleted ? "active" : "inactive",
@@ -865,12 +983,10 @@ export const updateFolderStatus = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: markDeleted
-                ? `Folder moved to recycle bin${
-                      cascadeBool ? " (including subfolders and files)" : ""
-                  }.`
-                : `Folder restored${
-                      cascadeBool ? " (including subfolders and files)" : ""
-                  }.`,
+                ? `Folder moved to recycle bin${cascadeBool ? " (including subfolders and files)" : ""
+                }.`
+                : `Folder restored${cascadeBool ? " (including subfolders and files)" : ""
+                }.`,
             folder
         });
     } catch (err) {
@@ -887,7 +1003,7 @@ export const deleteFolder = async (req, res) => {
     try {
         const { id } = req.params;
         const ownerId = req.user._id;
-        
+
         // Find the folder
         const folder = await Folder.findOne({ _id: id, owner: ownerId });
         if (!folder) {
@@ -896,17 +1012,17 @@ export const deleteFolder = async (req, res) => {
 
         // Get all files in this folder
         const fileIds = folder.files || [];
-        
+
         // Delete files from database
         if (fileIds.length > 0) {
             await File.deleteMany({ _id: { $in: fileIds } });
         }
 
         // Delete subfolders recursively with their files
-        const subfolders = await Folder.find({ 
-            parent: id, 
-            owner: ownerId, 
-            isDeleted: false 
+        const subfolders = await Folder.find({
+            parent: id,
+            owner: ownerId,
+            isDeleted: false
         });
 
         for (const subfolder of subfolders) {
@@ -928,14 +1044,14 @@ export const deleteFolder = async (req, res) => {
             entityType: "Folder",
             action: "DELETE",
             details: `Folder and its contents permanently deleted: ${folder.name} by ${req.user?.name}`,
-            meta: { 
+            meta: {
                 filesDeleted: fileIds.length,
                 subfoldersDeleted: subfolders.length
             }
         });
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             message: "Folder and all contents permanently deleted",
             data: {
                 filesDeleted: fileIds.length,
@@ -980,7 +1096,7 @@ export const emptyRecycleBin = async (req, res) => {
         for (const folder of folders) {
             // Get files in this folder
             const fileIds = folder.files || [];
-            
+
             // Delete files from database
             if (fileIds.length > 0) {
                 await File.deleteMany({ _id: { $in: fileIds } });
@@ -1118,7 +1234,7 @@ export const uploadToFolder = async (req, res) => {
 };
 export const getFoldersCount = async (req, res) => {
     try {
-        const { departmentId, projectId } = req.query;
+        const { departmentId } = req.query;
         const userId = req.user?._id;
         const profileType = req.user?.profile_type;
         const { selectedProjectId } = getSessionFilters(req);
@@ -1130,6 +1246,7 @@ export const getFoldersCount = async (req, res) => {
             });
         }
 
+        const projectId = selectedProjectId;
         let finalProjectId = null;
 
         if (projectId && projectId !== "all") {
@@ -1138,7 +1255,7 @@ export const getFoldersCount = async (req, res) => {
             finalProjectId = new mongoose.Types.ObjectId(selectedProjectId);
         }
 
-        // Base match for folders
+        // ====================== FOLDER FILTERING ======================
         const folderMatch = {
             isArchived: false,
             isDeleted: false,
@@ -1148,12 +1265,11 @@ export const getFoldersCount = async (req, res) => {
         if (finalProjectId) {
             folderMatch.projectId = finalProjectId;
         }
-
         if (departmentId && departmentId !== "all") {
             folderMatch.departmentId = new mongoose.Types.ObjectId(departmentId);
         }
 
-        // Permission filtering for folders
+        // Permission filtering for folders (existing logic)
         if (profileType !== "superadmin") {
             const accessConditions = [
                 { owner: userId },
@@ -1166,10 +1282,7 @@ export const getFoldersCount = async (req, res) => {
                     isDeleted: false,
                     isArchived: false,
                 });
-
-                accessConditions.push({
-                    _id: { $in: vendorFolderIds }
-                });
+                accessConditions.push({ _id: { $in: vendorFolderIds } });
             }
 
             if (profileType === "donor") {
@@ -1178,40 +1291,88 @@ export const getFoldersCount = async (req, res) => {
                     isDeleted: false,
                     isArchived: false,
                 });
-
-                accessConditions.push({
-                    _id: { $in: donorFolderIds }
-                });
+                accessConditions.push({ _id: { $in: donorFolderIds } });
             }
 
             folderMatch.$or = accessConditions;
         }
 
-        // Get all folder IDs that match the criteria
-        const folders = await Folder.find(folderMatch).select('_id permissions owner').lean();
+        const folders = await Folder.find(folderMatch)
+            .select('_id permissions owner')
+            .lean();
+
         const folderIds = folders.map(f => f._id);
 
-        // 1. TOTAL FOLDERS - From Folder schema
+        // ====================== DOCUMENT FILTERING (FIXED) ======================
+        const documentMatch = {
+            isDeleted: false,
+            isArchived: false,
+        };
+
+        if (finalProjectId) {
+            documentMatch.project = finalProjectId;
+        }
+
+        if (departmentId && departmentId !== "all") {
+            documentMatch.department = new mongoose.Types.ObjectId(departmentId); // Note: fixed field name
+        }
+
+        // ✅ IMPORTANT: Apply proper permission filter for normal users
+        if (profileType !== "superadmin") {
+            documentMatch.$or = [
+                { owner: userId },                    // Owner
+                { sharedWithUsers: userId },          // Shared directly with user
+                // Optional: Also include documents where user is in approval chain
+                { "documentApprovalAuthority.userId": userId }
+            ];
+
+            // Add vendor/donor specific access
+            if (profileType === "vendor") {
+                documentMatch.$or.push({ documentVendor: userId });
+            }
+            if (profileType === "donor") {
+                documentMatch.$or.push({ documentDonor: userId });
+            }
+        }
+
+        // ====================== COUNTS ======================
+
+        // 1. TOTAL FOLDERS
         const totalFolders = folderIds.length;
 
-        // 2. SHARED FOLDERS - From Folder schema (has permissions for this user)
-        const sharedFolders = folders.filter(f => 
-            f.permissions && f.permissions.some(p => 
+        // 2. SHARED FOLDERS
+        const sharedFolders = folders.filter(f =>
+            f.permissions?.some(p =>
                 p.principal && p.principal.toString() === userId.toString()
             )
         ).length;
 
-        // 3. WITH DOCUMENTS - From File schema (folders with active files)
+        // 3. Documents with files (WITH DOCUMENTS)
+        const fileCountResult = await Document.aggregate([
+            { $match: documentMatch },
+            {
+                $project: {
+                    fileCount: { $size: "$files" }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalFiles: { $sum: "$fileCount" }
+                }
+            }
+        ]);
+
+        const withDocuments = fileCountResult[0]?.totalFiles || 0;
+
+        // 4. EMPTY FOLDERS
         const activeFiles = await File.find({
             folder: { $in: folderIds },
             status: "active"
         }).distinct('folder');
-        
-        const withDocuments = activeFiles.length;
 
-        // 4. EMPTY FOLDERS - From Folder schema (no active files)
         const foldersWithFiles = new Set(activeFiles.map(id => id.toString()));
-        const emptyFolders = folders.filter(f => 
+        const emptyFolders = folders.filter(f =>
             !foldersWithFiles.has(f._id.toString())
         ).length;
 
@@ -1329,15 +1490,15 @@ export const getFoldersCount = async (req, res) => {
 //             {
 //                 $group: {
 //                     _id: null,
-            
+
 //                     totalFolders: { $sum: 1 },
-            
+
 //                     withDocuments: {
 //                         $sum: {
 //                             $size: "$documents"
 //                         }
 //                     },
-            
+
 //                     emptyFolders: {
 //                         $sum: {
 //                             $cond: [
@@ -1847,10 +2008,15 @@ export const getFoldersCount = async (req, res) => {
 // };
 export const getFolderTree = async (req, res) => {
     try {
-        const { rootId, departmentId, projectId, sort = "name_asc", filter = "lastModified", show, parentOnly } = req.query;
+        const { rootId, departmentId, projectId, folderId, sort = "name_asc", filter = "lastModified", show, parentOnly } = req.query;
         const userId = req.user?._id;
         const profileType = req.user?.profile_type;
         const { selectedProjectId } = getSessionFilters(req);
+        const permissions = req.accessPermission;
+
+        // Get login user's designation and department (for permission checking)
+        const userDesignationId = req.session?.user?.userDetails?.designation;
+        const userDepartmentId = req.session?.user?.userDetails?.department;
 
         if (!userId) {
             return res.status(401).json({
@@ -1906,43 +2072,94 @@ export const getFolderTree = async (req, res) => {
             match.projectId = finalProjectId;
         }
 
-        // Permission filtering
         if (profileType !== "superadmin") {
-            const accessConditions = [
-                { owner: userId },
-                { "permissions.principal": userId }
-            ];
+            if (permissions?.allOrganizations) {
+                // No restriction at all - skip building any $or.
+            } else {
+                const accessConditions = [];
 
-            if (profileType === "vendor") {
-                accessConditions.push({
-                    _id: {
-                        $in: await Document.distinct("folderId", {
-                            documentVendor: userId,
-                            isDeleted: false,
-                            isArchived: false
-                        })
-                    }
-                });
+                // OWN: User's own folders
+                if (permissions?.own) {
+                    accessConditions.push({ owner: userId });
+                }
+
+                // TEAM: folders explicitly shared with the user
+                if (permissions?.team) {
+                    accessConditions.push({ "permissions.principal": userId });
+                }
+
+                // DEPARTMENT: user's own department only
+                if (permissions?.department && userDepartmentId) {
+                    accessConditions.push({
+                        $and: [
+                            {
+                                departmentId: new mongoose.Types.ObjectId(userDepartmentId)
+                            },
+                            {
+                                $or: [
+                                    { owner: userId },
+                                    { "permissions.principal": userId }
+                                ]
+                            }
+                        ]
+                    });
+                }
+
+                // OTHER DEPARTMENTS: any department other than the user's own
+                if (permissions?.otherDepartments) {
+                    const departmentCondition = userDepartmentId
+                        ? {
+                            departmentId: {
+                                $ne: new mongoose.Types.ObjectId(userDepartmentId),
+                            },
+                        }
+                        : {
+                            departmentId: { $ne: null },
+                        };
+
+                    accessConditions.push({
+                        $and: [
+                            departmentCondition,
+                            {
+                                $or: [
+                                    { owner: userId },
+                                    { "permissions.principal": userId },
+                                ],
+                            },
+                        ],
+                    });
+                }
+
+                // Vendor specific
+                if (profileType === "vendor") {
+                    const vendorFolderIds = await Document.distinct("folderId", {
+                        documentVendor: userId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    accessConditions.push({ _id: { $in: vendorFolderIds } });
+                }
+
+                // Donor specific
+                if (profileType === "donor") {
+                    const donorFolderIds = await Document.distinct("folderId", {
+                        documentDonor: userId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    accessConditions.push({ _id: { $in: donorFolderIds } });
+                }
+
+                if (accessConditions.length > 0) {
+                    match.$or = accessConditions;
+                } else {
+                    // No permission flag granted anything -> deny access
+                    // entirely instead of defaulting to unrestricted.
+                    return res.json({ success: true, tree: [] });
+                }
             }
-
-            if (profileType === "donor") {
-                accessConditions.push({
-                    _id: {
-                        $in: await Document.distinct("folderId", {
-                            documentDonor: userId,
-                            isDeleted: false,
-                            isArchived: false
-                        })
-                    }
-                });
-            }
-
-            match.$or = accessConditions;
         }
 
-        /* -----------------------------------
-         * OPTIONAL: DEPARTMENT FILTER
-         * ----------------------------------- */
         let departmentFolderIds = [];
 
         if (departmentId && departmentId !== "all") {
@@ -1956,6 +2173,11 @@ export const getFolderTree = async (req, res) => {
                 departmentFilter.projectId = finalProjectId;
             }
 
+            // Respect the same access restriction already computed above.
+            if (match.$or) {
+                departmentFilter.$or = match.$or;
+            }
+
             const deptFolders = await Folder.find(
                 departmentFilter,
                 { _id: 1 }
@@ -1967,12 +2189,21 @@ export const getFolderTree = async (req, res) => {
 
             departmentFolderIds = deptFolders.map(f => f._id);
 
-            if (!match.$or) match.$or = [];
-
-            match.$or.push(
+            const deptOr = [
                 { _id: { $in: departmentFolderIds } },
-                { ancestors: { $in: departmentFolderIds } }
-            );
+                { ancestors: { $in: departmentFolderIds } },
+            ];
+
+            if (match.$or) {
+                // AND the permission $or together with the department $or
+                match.$and = (match.$and || []).concat([
+                    { $or: match.$or },
+                    { $or: deptOr },
+                ]);
+                delete match.$or;
+            } else {
+                match.$or = deptOr;
+            }
         }
 
         /* -----------------------------------
@@ -2034,6 +2265,23 @@ export const getFolderTree = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: "folders",
+                    let: { folderId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$parent", "$$folderId"] },
+                                isDeleted: false,
+                                isArchived: false
+                            }
+                        },
+                        { $count: "count" }
+                    ],
+                    as: "subfolderCountArr"
+                }
+            },
+            {
                 $project: {
                     name: 1,
                     slug: 1,
@@ -2049,6 +2297,19 @@ export const getFolderTree = async (req, res) => {
                         $ifNull: [
                             { $arrayElemAt: ["$documentCount.count", 0] },
                             0
+                        ]
+                    },
+                    subfolderCount: {
+                        $ifNull: [
+                            { $arrayElemAt: ["$subfolderCountArr.count", 0] },
+                            0
+                        ]
+                    },
+                    fileCount: { $size: { $ifNull: ["$files", []] } },
+                    itemCount: {
+                        $add: [
+                            { $ifNull: [{ $arrayElemAt: ["$subfolderCountArr.count", 0] }, 0] },
+                            { $size: { $ifNull: ["$files", []] } }
                         ]
                     },
                     files: {
@@ -2131,7 +2392,7 @@ export const getFolderTree = async (req, res) => {
             // Process children first
             node.children.forEach(child => applyOperations(child));
 
-            // Department filter
+            // Department filter (from query param - for filtering results)
             if (departmentId && departmentId !== "all") {
                 node.children = node.children.filter(child => {
                     const belongs =
@@ -2241,7 +2502,7 @@ export const getFolderTree = async (req, res) => {
 
                 const matchesShow = (folder) => {
                     const hasDocuments = folder.totalDocument > 0;
-                    const hasFiles = (folder.files?.length || 0) > 0; 
+                    const hasFiles = (folder.files?.length || 0) > 0;
                     const isShared = folder.permissions?.some(
                         p => p.principal?.toString() === userId.toString()
                     );
@@ -2251,7 +2512,7 @@ export const getFolderTree = async (req, res) => {
                         case 'Empty':
                             return !hasDocuments && !hasFiles;
                         case 'Shared':
-                            return isShared || isNotOwner;
+                            return isShared && !folder.isOwner;
                         case 'Total':
                             return true;
                         default:
@@ -2265,7 +2526,7 @@ export const getFolderTree = async (req, res) => {
 
                 tree = [{
                     _id: "root-folder",
-                    name: "Folder",
+                    name: "All Folders",
                     slug: "folder",
                     path: "/folder",
                     parent: null,
@@ -2277,7 +2538,35 @@ export const getFolderTree = async (req, res) => {
                 }];
             }
         }
+        if (folderId) {
+            const selectedFolder = map.get(folderId.toString());
 
+            if (!selectedFolder) {
+                return res.json({
+                    success: true,
+                    tree: []
+                });
+            }
+
+            // If it has a parent, return parent -> selectedFolder
+            if (selectedFolder.parent) {
+                const parentFolder = map.get(selectedFolder.parent.toString());
+
+                if (parentFolder) {
+                    tree = [{
+                        ...parentFolder,
+                        children: parentFolder.children.filter(
+                            child => child._id.toString() === folderId.toString()
+                        )
+                    }];
+                } else {
+                    tree = [selectedFolder];
+                }
+            } else {
+                // Selected folder is a root folder
+                tree = [selectedFolder];
+            }
+        }
         return res.json({
             success: true,
             tree
@@ -3616,17 +3905,22 @@ export const deleteFolderPermission = async (req, res) => {
     }
 };
 
-export const allFoldersFiles = async (req, res) => { 
+export const allFoldersFiles = async (req, res) => {
     try {
         const user = req.user;
         const ownerId = user._id;
         const profileType = user.profile_type;
         const selectedProjectId = req.session.selectedProject || null;
+        const permissions = req.accessPermission;
+
+        // Get login user's designation and department (for permission checking)
+        const userDesignationId = req.session?.user?.userDetails?.designation;
+        const userDepartmentId = req.session?.user?.userDetails?.department;
 
         // Pagination parameters
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
-        
+
         // Filter parameters
         const search = req.query.search || "";
         const sortBy = req.query.sortBy || "updatedAt";
@@ -3634,56 +3928,202 @@ export const allFoldersFiles = async (req, res) => {
         const departmentId = req.query.department || null;
         const itemType = req.query.itemType || "all";
         const viewFilter = req.query.viewFilter || null;
+        const parentFolderId = req.query.parentFolder || null;
 
-        // Base filters for folders (has isDeleted field)
+        // Base filters for folders
         const folderBaseFilters = {
             isDeleted: false,
             ...(departmentId && departmentId !== 'null' && { departmentId }),
             ...(selectedProjectId && { projectId: selectedProjectId })
         };
 
-        // Base filters for files (no isDeleted field)
+        // Base filters for files
         const fileBaseFilters = {
             ...(departmentId && departmentId !== 'null' && { departmentId }),
             ...(selectedProjectId && { projectId: selectedProjectId })
         };
 
+        // Build permission conditions
+        let folderPermissionConditions = [];
+        let filePermissionConditions = [];
+
+        if (profileType !== "superadmin") {
+            if (permissions?.allOrganizations) {
+                // No restriction at all
+            } else {
+                // OWN: User's own folders/files
+                if (permissions?.own) {
+                    folderPermissionConditions.push({ owner: ownerId });
+                    filePermissionConditions.push({ uploadedBy: ownerId });
+                }
+
+                // TEAM: items explicitly shared with the user
+                if (permissions?.team) {
+                    folderPermissionConditions.push({ "permissions.principal": ownerId });
+                    filePermissionConditions.push({ "permissions.principal": ownerId });
+                }
+
+                // DEPARTMENT: user's own department only
+                if (permissions?.department && userDepartmentId) {
+                    const deptId = new mongoose.Types.ObjectId(userDepartmentId);
+
+                    folderPermissionConditions.push({
+                        $and: [
+                            { departmentId: deptId },
+                            {
+                                $or: [
+                                    { owner: ownerId },
+                                    { "permissions.principal": ownerId }
+                                ]
+                            }
+                        ]
+                    });
+
+                    filePermissionConditions.push({
+                        $and: [
+                            { departmentId: deptId },
+                            {
+                                $or: [
+                                    { uploadedBy: ownerId },
+                                    { "permissions.principal": ownerId }
+                                ]
+                            }
+                        ]
+                    });
+                }
+
+                // OTHER DEPARTMENTS: any department other than the user's own
+                if (permissions?.otherDepartments) {
+                    const departmentCondition = userDepartmentId
+                        ? {
+                            departmentId: {
+                                $ne: new mongoose.Types.ObjectId(userDepartmentId),
+                            },
+                        }
+                        : {
+                            departmentId: { $ne: null },
+                        };
+
+                    folderPermissionConditions.push({
+                        $and: [
+                            departmentCondition,
+                            {
+                                $or: [
+                                    { owner: ownerId },
+                                    { "permissions.principal": ownerId },
+                                ],
+                            },
+                        ],
+                    });
+
+                    filePermissionConditions.push({
+                        $and: [
+                            departmentCondition,
+                            {
+                                $or: [
+                                    { uploadedBy: ownerId },
+                                    { "permissions.principal": ownerId },
+                                ],
+                            },
+                        ],
+                    });
+                }
+
+                // Vendor specific
+                if (profileType === "vendor") {
+                    const vendorFolderIds = await Document.distinct("folderId", {
+                        documentVendor: ownerId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    folderPermissionConditions.push({ _id: { $in: vendorFolderIds } });
+
+                    const vendorFileIds = await Document.distinct("fileId", {
+                        documentVendor: ownerId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    filePermissionConditions.push({ _id: { $in: vendorFileIds } });
+                }
+
+                // Donor specific
+                if (profileType === "donor") {
+                    const donorFolderIds = await Document.distinct("folderId", {
+                        documentDonor: ownerId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    folderPermissionConditions.push({ _id: { $in: donorFolderIds } });
+
+                    const donorFileIds = await Document.distinct("fileId", {
+                        documentDonor: ownerId,
+                        isDeleted: false,
+                        isArchived: false,
+                    });
+                    filePermissionConditions.push({ _id: { $in: donorFileIds } });
+                }
+            }
+        }
+
         // Build queries for folders and files
-        const folderQuery = {
+        let folderQuery = {
             ...folderBaseFilters,
-            ...(profileType !== "superadmin" && { 
-                $or: [
-                    { owner: ownerId },
-                    { "permissions.principal": ownerId }
-                ]
-            })
+            parent: parentFolderId ? parentFolderId : null,
         };
 
-        // ✅ FIXED: File query using status: "active" instead of isDeleted
-        const fileQuery = {
-            status: "active",  // Files use status field, not isDeleted
+        let fileQuery = {
+            status: "active",
+            folder: parentFolderId ? parentFolderId : null,
             ...fileBaseFilters,
-            ...(profileType !== "superadmin" && { 
-                $or: [
-                    { uploadedBy: ownerId },
-                    { "permissions.principal": ownerId }
-                ]
-            })
         };
+
+        // Apply permission conditions
+        if (folderPermissionConditions.length > 0) {
+            folderQuery.$or = folderPermissionConditions;
+        } else if (profileType !== "superadmin" && !permissions?.allOrganizations) {
+            return res.json({ success: true, items: [], total: 0, page: 1, totalPages: 0, limit: limit });
+        }
+
+        if (filePermissionConditions.length > 0) {
+            fileQuery.$or = filePermissionConditions;
+        } else if (profileType !== "superadmin" && !permissions?.allOrganizations) {
+            return res.json({ success: true, items: [], total: 0, page: 1, totalPages: 0, limit: limit });
+        }
 
         // Add search
         if (search) {
-            folderQuery.$or = [
+            const folderSearchConditions = [
                 { name: { $regex: search, $options: "i" } },
                 { "metadata.tags": { $regex: search, $options: "i" } },
                 { "metadata.description": { $regex: search, $options: "i" } },
                 { slug: { $regex: search, $options: "i" } }
             ];
-            fileQuery.$or = [
+
+            const fileSearchConditions = [
                 { originalName: { $regex: search, $options: "i" } },
                 { fileType: { $regex: search, $options: "i" } },
                 { hash: { $regex: search, $options: "i" } }
             ];
+
+            if (folderQuery.$or) {
+                folderQuery.$and = [
+                    { $or: folderQuery.$or },
+                    { $or: folderSearchConditions }
+                ];
+                delete folderQuery.$or;
+            } else {
+                folderQuery.$or = folderSearchConditions;
+            }
+
+            if (fileQuery.$or) {
+                fileQuery.$and = [
+                    { $or: fileQuery.$or },
+                    { $or: fileSearchConditions }
+                ];
+                delete fileQuery.$or;
+            } else {
+                fileQuery.$or = fileSearchConditions;
+            }
         }
 
         // Determine which queries to run
@@ -3735,6 +4175,70 @@ export const allFoldersFiles = async (req, res) => {
 
         await Promise.all(queryPromises);
 
+        // Get immediate children counts for each folder (subfolder count + file count)
+        let folderChildrenCountsMap = new Map();
+
+        if (folderItems.length > 0) {
+            const folderIds = folderItems.map(f => f._id);
+
+            // Count immediate subfolders
+            const subfolderCounts = await Folder.aggregate([
+                {
+                    $match: {
+                        parent: { $in: folderIds },
+                        isDeleted: false
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$parent',
+                        subfolderCount: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            // Count immediate files
+            const fileCounts = await File.aggregate([
+                {
+                    $match: {
+                        folder: { $in: folderIds },
+                        status: "active"
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$folder',
+                        fileCount: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            // Initialize all folders with 0 counts
+            folderItems.forEach(folder => {
+                folderChildrenCountsMap.set(folder._id.toString(), {
+                    subfolderCount: 0,
+                    fileCount: 0
+                });
+            });
+
+            // Populate subfolder counts
+            subfolderCounts.forEach(item => {
+                folderChildrenCountsMap.set(item._id.toString(), {
+                    subfolderCount: item.subfolderCount,
+                    fileCount: folderChildrenCountsMap.get(item._id.toString())?.fileCount || 0
+                });
+            });
+
+            // Populate file counts (merge with existing subfolder counts)
+            fileCounts.forEach(item => {
+                const existing = folderChildrenCountsMap.get(item._id.toString()) || { subfolderCount: 0, fileCount: 0 };
+                folderChildrenCountsMap.set(item._id.toString(), {
+                    subfolderCount: existing.subfolderCount,
+                    fileCount: item.fileCount
+                });
+            });
+        }
+
         // Transform items to unified format with all formatting applied
         const unifiedItems = [];
 
@@ -3743,7 +4247,8 @@ export const allFoldersFiles = async (req, res) => {
             const permissions = folder.permissions || [];
             const isShared = isItemShared(permissions);
             const sharingStatus = getSharingStatus(permissions);
-            
+            const counts = folderChildrenCountsMap.get(folder._id.toString()) || { subfolderCount: 0, fileCount: 0 };
+
             unifiedItems.push({
                 _id: folder._id,
                 itemType: 'folder',
@@ -3782,8 +4287,9 @@ export const allFoldersFiles = async (req, res) => {
                 formattedUpdatedAt: formatDate(folder.updatedAt),
                 lastViewedAt: folder.lastViewedAt || folder.updatedAt,
                 formattedLastViewedAt: formatDate(folder.lastViewedAt || folder.updatedAt),
-                fileCount: folder.files?.length || 0,
-                itemCount: folder.files?.length || 0,
+                fileCount: counts.fileCount,
+                itemCount: counts.fileCount,
+                subfolderCount: counts.subfolderCount,
                 icon: 'ti ti-folder',
                 iconClass: 'text-warning',
                 type: 'Folder',
@@ -3805,7 +4311,7 @@ export const allFoldersFiles = async (req, res) => {
             const displayType = getFileTypeDisplay(fileType);
             const iconClass = getFileIconClass(fileType);
             const extension = getFileExtension(file.originalName, fileType);
-            
+
             unifiedItems.push({
                 _id: file._id,
                 itemType: 'file',
@@ -3852,10 +4358,10 @@ export const allFoldersFiles = async (req, res) => {
                 iconClass: iconClass,
                 type: displayType,
                 typeBadge: displayType,
-                typeColor: fileType.startsWith('image/') ? 'success' : 
-                           fileType === 'application/pdf' ? 'danger' :
-                           fileType.startsWith('video/') ? 'info' :
-                           fileType.startsWith('audio/') ? 'warning' : 'secondary',
+                typeColor: fileType.startsWith('image/') ? 'success' :
+                    fileType === 'application/pdf' ? 'danger' :
+                        fileType.startsWith('video/') ? 'info' :
+                            fileType.startsWith('audio/') ? 'warning' : 'secondary',
                 _fileData: {
                     activityLog: file.activityLog,
                     version: file.version
@@ -3878,7 +4384,7 @@ export const allFoldersFiles = async (req, res) => {
             if (!aVal && !bVal) return 0;
             if (!aVal) return sortOrder === 1 ? -1 : 1;
             if (!bVal) return sortOrder === 1 ? 1 : -1;
-            
+
             if (sortOrder === 1) {
                 return aVal > bVal ? 1 : -1;
             } else {
@@ -3894,7 +4400,7 @@ export const allFoldersFiles = async (req, res) => {
         const startIndex = (page - 1) * limit;
         const paginatedItems = unifiedItems.slice(startIndex, startIndex + limit);
 
-        // Format items for the table - ALL formatting is done on backend
+        // Format items for the table
         const tableItems = paginatedItems.map(item => {
             if (item.itemType === 'folder') {
                 return {
@@ -3923,6 +4429,7 @@ export const allFoldersFiles = async (req, res) => {
                     lastViewedAtRaw: item.lastViewedAt,
                     fileCount: item.fileCount,
                     itemCount: item.fileCount,
+                    subfolderCount: item.subfolderCount,
                     path: item.path,
                     permissions: item.permissions,
                     isShared: item.isShared,
@@ -3933,7 +4440,6 @@ export const allFoldersFiles = async (req, res) => {
                     isArchived: item.isArchived
                 };
             } else {
-                // File
                 return {
                     _id: item._id,
                     itemType: 'file',
