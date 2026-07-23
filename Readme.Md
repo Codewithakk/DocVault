@@ -169,7 +169,7 @@ admin965874@gmail.com
 **Password**
 
 ```text
-Admin@968574
+Admin@123
 ```
 
 ---
