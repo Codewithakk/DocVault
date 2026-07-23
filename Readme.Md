@@ -163,7 +163,7 @@ Use the administrator account below to explore all features.
 **Email**
 
 ```text
-admin965874@gmail.com
+admin965874@yopamil.com
 ```
 
 **Password**
